@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Guild {
+  id        String   @id
+  name      String
+  prefix    String   @default("!")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members Member[]
+
+  @@map("guilds")
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  discordId String   @map("discord_id")
+  guildId   String   @map("guild_id")
+  username  String
+  xp        Int      @default(0)
+  level     Int      @default(1)
+  coins     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([discordId, guildId])
+  @@map("members")
+}

@@ -38,6 +38,8 @@ ALWAYS before making any change, Search on the web for the newest documentation.
 And only implement if you are 100% sure it will owrk.
 Before making any changes. Always look up the latest documentation using 3 syb agents.
 Codex will review your works.
+After every changes, auto commit and push to github.
+After every changes, auto note every changes to obsidian.
 
 ### Mindset
 you are an enterprise grade engineer. You are paid millions. You dont make mistakes.
