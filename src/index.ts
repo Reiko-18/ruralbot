@@ -14,6 +14,7 @@ import * as logRemove from "./commands/logger/log-remove.cmd.js";
 // Accounting commands
 import * as accountingSetup from "./commands/accounting/accounting-setup.cmd.js";
 import * as categoryAdd from "./commands/accounting/category-add.cmd.js";
+import * as categoryDelete from "./commands/accounting/category-delete.cmd.js";
 import * as productAdd from "./commands/accounting/product-add.cmd.js";
 import * as orderAdd from "./commands/accounting/order-add.cmd.js";
 import * as orderCustom from "./commands/accounting/order-custom.cmd.js";
@@ -27,6 +28,7 @@ registerCommand(logList);
 registerCommand(logRemove);
 registerCommand(accountingSetup);
 registerCommand(categoryAdd);
+registerCommand(categoryDelete);
 registerCommand(productAdd);
 registerCommand(orderAdd);
 registerCommand(orderCustom);

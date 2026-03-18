@@ -11,3 +11,11 @@ export async function getAllCategories() {
 export async function getCategoryById(id: string) {
   return prisma.category.findUnique({ where: { id } });
 }
+
+export async function deleteCategory(id: string) {
+  return prisma.category.delete({ where: { id } });
+}
+
+export async function getCategoryProductCount(id: string): Promise<number> {
+  return prisma.product.count({ where: { categoryId: id } });
+}
