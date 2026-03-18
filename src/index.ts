@@ -27,6 +27,9 @@ import * as orderLookup from "./commands/accounting/order-lookup.cmd.js";
 // Config commands
 import * as botConfig from "./commands/config/bot-config.cmd.js";
 
+// Guild events
+import { registerGuildCreateEvent } from "./events/guild/guild-create.event.js";
+
 // Register commands
 registerCommand(logAdd);
 registerCommand(logList);
@@ -68,6 +71,8 @@ client.once(Events.ClientReady, async (readyClient) => {
   KeepAliveService.startSelfPing(process.env.RAILWAY_PUBLIC_URL ?? "");
   logger.info("Keep-alive services started");
 });
+
+registerGuildCreateEvent(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isAutocomplete()) {
