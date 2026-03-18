@@ -3,6 +3,8 @@ import {
   EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ComponentType,
   type ChatInputCommandInteraction,
 } from "discord.js";
@@ -13,67 +15,42 @@ import {
   getDistinctMonths,
   getDistinctDays,
 } from "../../services/accounting/repo_order.js";
-import type { OverviewState } from "../../types/accounting.type.js";
+import type { OverviewState, SalesAggregation } from "../../types/accounting.type.js";
 import { logger } from "../../services/logger/logger.js";
+
+const PAGE_SIZE = 15;
 
 export const data = new SlashCommandBuilder()
   .setName("sales-overview")
   .setDescription("View sales summary with order list and date filtering");
 
-function formatOrderLine(o: {
+type OrderRow = {
   id: string;
   productName: string;
   quantity: number;
   actualPrice: number;
   profit: number;
   createdAt: Date;
-}) {
+};
+
+function formatOrderLine(o: OrderRow) {
   const date = o.createdAt.toISOString().split("T")[0];
   const qty = o.quantity > 1 ? ` x${o.quantity}` : "";
-  return `\`${o.id}\` | ${date} | ${o.productName}${qty} | $${o.actualPrice}${qty ? ` (總$${(o.actualPrice * o.quantity).toFixed(0)})` : ""} | 利潤 $${o.profit.toFixed(0)}`;
+  return `\`${o.id}\` ${date} | ${o.productName}${qty} | $${o.actualPrice} | 利潤 $${o.profit.toFixed(0)}`;
 }
 
-function buildEmbeds(
-  stats: {
-    totalRevenue: number;
-    totalCost: number;
-    totalProfit: number;
-    orderCount: number;
-  },
-  orders: {
-    id: string;
-    productName: string;
-    quantity: number;
-    actualPrice: number;
-    profit: number;
-    createdAt: Date;
-  }[],
+function buildEmbed(
+  stats: SalesAggregation,
+  orders: OrderRow[],
   label: string,
-): EmbedBuilder[] {
+  page: number,
+) {
+  const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+  const start = page * PAGE_SIZE;
+  const pageOrders = orders.slice(start, start + PAGE_SIZE);
   const profitColor = stats.totalProfit >= 0 ? 0x00c853 : 0xff1744;
-  const embeds: EmbedBuilder[] = [];
 
-  // Build order lines
-  const lines = orders.map(formatOrderLine);
-
-  // Discord embed description limit is 4096 chars
-  // Split into chunks if needed
-  const chunks: string[][] = [[]];
-  let currentLen = 0;
-
-  for (const line of lines) {
-    // Reserve space for header on first chunk
-    const overhead = chunks.length === 1 ? 200 : 50;
-    if (currentLen + line.length + 1 > 4096 - overhead && chunks[chunks.length - 1].length > 0) {
-      chunks.push([]);
-      currentLen = 0;
-    }
-    chunks[chunks.length - 1].push(line);
-    currentLen += line.length + 1;
-  }
-
-  // First embed: summary + first chunk of orders
-  const firstEmbed = new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setTitle("📊 營業總覽")
     .setColor(profitColor)
     .addFields(
@@ -84,31 +61,32 @@ function buildEmbeds(
       { name: "總成本", value: `$${stats.totalCost.toFixed(2)}`, inline: true },
       { name: "總利潤", value: `$${stats.totalProfit.toFixed(2)}`, inline: true },
     )
+    .setFooter({ text: `第 ${page + 1}/${totalPages} 頁 ・ 共 ${orders.length} 筆訂單` })
     .setTimestamp();
 
-  if (orders.length === 0) {
-    firstEmbed.setDescription("*此期間沒有訂單*");
-    return [firstEmbed];
+  if (pageOrders.length === 0) {
+    embed.setDescription("*此期間沒有訂單*");
+  } else {
+    embed.setDescription(pageOrders.map(formatOrderLine).join("\n"));
   }
 
-  firstEmbed.setDescription(chunks[0].join("\n"));
-  embeds.push(firstEmbed);
+  return embed;
+}
 
-  // Additional embeds for overflow
-  for (let i = 1; i < chunks.length; i++) {
-    embeds.push(
-      new EmbedBuilder()
-        .setColor(profitColor)
-        .setDescription(chunks[i].join("\n"))
-        .setFooter(i === chunks.length - 1 ? { text: `共 ${orders.length} 筆訂單` } : null),
-    );
-  }
-
-  if (chunks.length === 1) {
-    firstEmbed.setFooter({ text: `共 ${orders.length} 筆訂單` });
-  }
-
-  return embeds;
+function buildPageButtons(page: number, totalPages: number) {
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("sales_prev")
+      .setLabel("◀ 上一頁")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(page <= 0),
+    new ButtonBuilder()
+      .setCustomId("sales_next")
+      .setLabel("下一頁 ▶")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(page >= totalPages - 1),
+  );
+  return row;
 }
 
 function buildYearMenu(years: number[]) {
@@ -194,63 +172,86 @@ function parseSelection(value: string): OverviewState {
   return { level: "all" };
 }
 
+async function buildDateMenu(state: OverviewState) {
+  if (state.level === "all") {
+    return buildYearMenu(await getDistinctYears());
+  }
+  if (state.level === "year") {
+    const months = await getDistinctMonths(state.year);
+    return months.length > 0
+      ? buildMonthMenu(state.year, months)
+      : buildYearMenu(await getDistinctYears());
+  }
+  if (state.level === "month") {
+    const days = await getDistinctDays(state.year, state.month);
+    return days.length > 0
+      ? buildDayMenu(state.year, state.month, days)
+      : buildMonthMenu(state.year, await getDistinctMonths(state.year));
+  }
+  // day
+  const days = await getDistinctDays(state.year, state.month);
+  return buildDayMenu(state.year, state.month, days);
+}
+
+function buildComponents(
+  dateMenu: ActionRowBuilder<StringSelectMenuBuilder>,
+  page: number,
+  totalOrders: number,
+) {
+  const totalPages = Math.max(1, Math.ceil(totalOrders / PAGE_SIZE));
+  const rows: ActionRowBuilder<any>[] = [dateMenu];
+  if (totalPages > 1) {
+    rows.push(buildPageButtons(page, totalPages));
+  }
+  return rows;
+}
+
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
 
   try {
-    const stats = await aggregateSales();
-    const orders = await getOrders();
-    const years = await getDistinctYears();
-    const embeds = buildEmbeds(stats, orders, "全部時間");
+    let currentState: OverviewState = { level: "all" };
+    let currentStats = await aggregateSales();
+    let currentOrders = await getOrders();
+    let currentLabel = "全部時間";
+    let currentPage = 0;
 
+    const years = await getDistinctYears();
     if (years.length === 0) {
-      await interaction.editReply({ embeds });
+      const embed = buildEmbed(currentStats, currentOrders, currentLabel, 0);
+      await interaction.editReply({ embeds: [embed] });
       return;
     }
 
-    const row = buildYearMenu(years);
-    const response = await interaction.editReply({
-      embeds,
-      components: [row],
-    });
+    const dateMenu = buildYearMenu(years);
+    const embed = buildEmbed(currentStats, currentOrders, currentLabel, 0);
+    const components = buildComponents(dateMenu, 0, currentOrders.length);
+    const response = await interaction.editReply({ embeds: [embed], components });
 
     const collector = response.createMessageComponentCollector({
-      componentType: ComponentType.StringSelect,
       filter: (i) => i.user.id === interaction.user.id,
       time: 300_000,
     });
 
     collector.on("collect", async (i) => {
-      const state = parseSelection(i.values[0]);
-      const range = parseDateRange(state);
-      const newStats = await aggregateSales(range.start, range.end);
-      const newOrders = await getOrders(range.start, range.end);
-      const newEmbeds = buildEmbeds(newStats, newOrders, range.label);
-
-      let newRow: ActionRowBuilder<StringSelectMenuBuilder>;
-      if (state.level === "all") {
-        newRow = buildYearMenu(await getDistinctYears());
-      } else if (state.level === "year") {
-        const months = await getDistinctMonths(state.year);
-        newRow =
-          months.length > 0
-            ? buildMonthMenu(state.year, months)
-            : buildYearMenu(await getDistinctYears());
-      } else if (state.level === "month") {
-        const days = await getDistinctDays(state.year, state.month);
-        newRow =
-          days.length > 0
-            ? buildDayMenu(state.year, state.month, days)
-            : buildMonthMenu(
-                state.year,
-                await getDistinctMonths(state.year),
-              );
-      } else {
-        const days = await getDistinctDays(state.year, state.month);
-        newRow = buildDayMenu(state.year, state.month, days);
+      if (i.isStringSelectMenu()) {
+        // Date filter changed — reset page
+        currentState = parseSelection(i.values[0]);
+        const range = parseDateRange(currentState);
+        currentLabel = range.label;
+        currentStats = await aggregateSales(range.start, range.end);
+        currentOrders = await getOrders(range.start, range.end);
+        currentPage = 0;
+      } else if (i.isButton()) {
+        if (i.customId === "sales_prev") currentPage = Math.max(0, currentPage - 1);
+        if (i.customId === "sales_next") currentPage++;
       }
 
-      await i.update({ embeds: newEmbeds, components: [newRow] });
+      const newEmbed = buildEmbed(currentStats, currentOrders, currentLabel, currentPage);
+      const newDateMenu = await buildDateMenu(currentState);
+      const newComponents = buildComponents(newDateMenu, currentPage, currentOrders.length);
+
+      await i.update({ embeds: [newEmbed], components: newComponents });
     });
 
     collector.on("end", async () => {
