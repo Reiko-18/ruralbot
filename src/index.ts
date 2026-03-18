@@ -3,6 +3,7 @@ import { Client, Events, GatewayIntentBits } from "discord.js";
 import { prisma } from "./core/db.js";
 import { registerCommand, handleInteraction, deployCommands, commands } from "./core/command_handler.js";
 import { loadLogConfigs } from "./services/logger/log_cache.js";
+import { loadBotConfig } from "./services/config/repo_bot_config.js";
 import { logger } from "./services/logger/logger.js";
 import { KeepAliveService } from "./services/keepalive/keep_alive.js";
 
@@ -61,6 +62,8 @@ client.once(Events.ClientReady, async (readyClient) => {
   // Load log configs from DB into memory cache
   await loadLogConfigs();
   logger.info("Log configs loaded from database");
+
+  await loadBotConfig();
 
   // Deploy slash commands
   await deployCommands();
