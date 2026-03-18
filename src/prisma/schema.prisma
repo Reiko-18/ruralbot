@@ -56,3 +56,54 @@ model SystemHealth {
 
   @@map("system_health")
 }
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  cost          Float
+  price         Float
+  source        String?
+  categoryId    String   @map("category_id")
+  faceValue     Float?   @map("face_value")
+  costDiscount  Float?   @map("cost_discount")
+  priceDiscount Float?   @map("price_discount")
+
+  category Category @relation(fields: [categoryId], references: [id])
+  orders   Order[]
+
+  @@map("products")
+}
+
+model Order {
+  id          String   @id
+  productId   String?  @map("product_id")
+  productName String   @map("product_name")
+  quantity    Int      @default(1)
+  actualPrice Float    @map("actual_price")
+  actualCost  Float    @map("actual_cost")
+  profit      Float
+  isCustom    Boolean  @default(false) @map("is_custom")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@map("orders")
+}
+
+model AccountingConfig {
+  id        String   @id @default(cuid())
+  guildId   String   @unique @map("guild_id")
+  channelId String   @map("channel_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("accounting_configs")
+}

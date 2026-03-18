@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { prisma } from "./core/db.js";
-import { registerCommand, handleInteraction, deployCommands } from "./core/command_handler.js";
+import { registerCommand, handleInteraction, deployCommands, commands } from "./core/command_handler.js";
 import { loadLogConfigs } from "./services/logger/log_cache.js";
 import { logger } from "./services/logger/logger.js";
 import { KeepAliveService } from "./services/keepalive/keep_alive.js";
@@ -11,10 +11,28 @@ import * as logAdd from "./commands/logger/log-add.cmd.js";
 import * as logList from "./commands/logger/log-list.cmd.js";
 import * as logRemove from "./commands/logger/log-remove.cmd.js";
 
+// Accounting commands
+import * as accountingSetup from "./commands/accounting/accounting-setup.cmd.js";
+import * as categoryAdd from "./commands/accounting/category-add.cmd.js";
+import * as productAdd from "./commands/accounting/product-add.cmd.js";
+import * as orderAdd from "./commands/accounting/order-add.cmd.js";
+import * as orderCustom from "./commands/accounting/order-custom.cmd.js";
+import * as orderDelete from "./commands/accounting/order-delete.cmd.js";
+import * as salesOverview from "./commands/accounting/sales-overview.cmd.js";
+import * as orderLookup from "./commands/accounting/order-lookup.cmd.js";
+
 // Register commands
 registerCommand(logAdd);
 registerCommand(logList);
 registerCommand(logRemove);
+registerCommand(accountingSetup);
+registerCommand(categoryAdd);
+registerCommand(productAdd);
+registerCommand(orderAdd);
+registerCommand(orderCustom);
+registerCommand(orderDelete);
+registerCommand(salesOverview);
+registerCommand(orderLookup);
 
 const client = new Client({
   intents: [
@@ -42,6 +60,13 @@ client.once(Events.ClientReady, async (readyClient) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isAutocomplete()) {
+    const command = commands.get(interaction.commandName) as any;
+    if (command?.autocomplete) {
+      await command.autocomplete(interaction);
+    }
+    return;
+  }
   if (!interaction.isChatInputCommand()) return;
   await handleInteraction(interaction);
 });
