@@ -90,41 +90,55 @@ function buildPageButtons(page: number, totalPages: number) {
 }
 
 function buildYearMenu(years: number[]) {
+  const options = [
+    { label: "全部時間", value: "all", description: "顯示所有時間的總計" },
+    ...years.slice(0, 24).map((y) => ({
+      label: String(y) + " 年",
+      value: "year:" + String(y),
+    })),
+  ];
   const menu = new StringSelectMenuBuilder()
     .setCustomId("sales_select")
     .setPlaceholder("選擇年份")
-    .addOptions(
-      { label: "全部時間", value: "all", description: "顯示所有時間的總計" },
-      ...years.map((y) => ({ label: `${y} 年`, value: `year:${y}` })),
-    );
+    .addOptions(options);
   return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
 }
 
 function buildMonthMenu(year: number, months: number[]) {
+  const y = String(year);
+  const options = [
+    { label: "← 返回年份選擇", value: "all" },
+    ...months.slice(0, 24).map((m) => ({
+      label: y + " 年 " + String(m) + " 月",
+      value: "month:" + y + ":" + String(m),
+    })),
+  ];
   const menu = new StringSelectMenuBuilder()
     .setCustomId("sales_select")
     .setPlaceholder("選擇月份")
-    .addOptions(
-      { label: "← 返回年份選擇", value: "all" },
-      ...months.map((m) => ({
-        label: `${year} 年 ${m} 月`,
-        value: `month:${year}:${m}`,
-      })),
-    );
+    .addOptions(options);
   return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
 }
 
 function buildDayMenu(year: number, month: number, days: number[]) {
+  const y = String(year);
+  const m = String(month);
+  const mPad = m.padStart(2, "0");
+  const options = [
+    { label: "← 返回 " + y + " 年 " + m + " 月", value: "year:" + y },
+    ...days.slice(0, 24).map((d) => {
+      const dStr = String(d);
+      const dPad = dStr.padStart(2, "0");
+      return {
+        label: y + "-" + mPad + "-" + dPad,
+        value: "day:" + y + ":" + m + ":" + dStr,
+      };
+    }),
+  ];
   const menu = new StringSelectMenuBuilder()
     .setCustomId("sales_select")
     .setPlaceholder("選擇日期")
-    .addOptions(
-      { label: `← 返回 ${year} 年 ${month} 月`, value: `year:${year}` },
-      ...days.map((d) => ({
-        label: `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
-        value: `day:${year}:${month}:${d}`,
-      })),
-    );
+    .addOptions(options);
   return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
 }
 
