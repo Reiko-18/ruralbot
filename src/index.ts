@@ -1,6 +1,19 @@
 import "dotenv/config";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { prisma } from "./core/db.js";
+import { registerCommand, handleInteraction, deployCommands } from "./core/command_handler.js";
+import { loadLogConfigs } from "./services/logger/log_cache.js";
+import { logger } from "./services/logger/logger.js";
+
+// Import commands
+import * as logAdd from "./commands/logger/log-add.cmd.js";
+import * as logList from "./commands/logger/log-list.cmd.js";
+import * as logRemove from "./commands/logger/log-remove.cmd.js";
+
+// Register commands
+registerCommand(logAdd);
+registerCommand(logList);
+registerCommand(logRemove);
 
 const client = new Client({
   intents: [
@@ -10,28 +23,43 @@ const client = new Client({
   ],
 });
 
-client.once(Events.ClientReady, (readyClient) => {
-  console.log(`[RuralBot] Ready! Logged in as ${readyClient.user.tag}`);
+client.once(Events.ClientReady, async (readyClient) => {
+  logger.info(`Ready! Logged in as ${readyClient.user.tag}`);
+
+  // Load log configs from DB into memory cache
+  await loadLogConfigs();
+  logger.info("Log configs loaded from database");
+
+  // Deploy slash commands
+  await deployCommands();
+  logger.info("Slash commands deployed");
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+  await handleInteraction(interaction);
+});
 
-  if (interaction.commandName === "ping") {
-    await interaction.reply("Pong!");
-  }
+// Global error handlers — send fatal logs before crashing
+process.on("uncaughtException", (err) => {
+  logger.fatal({ err }, "Uncaught Exception");
+  setTimeout(() => process.exit(1), 2000);
+});
+
+process.on("unhandledRejection", (reason) => {
+  logger.error({ err: reason }, "Unhandled Rejection");
 });
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
-  console.log("[RuralBot] Shutting down...");
+  logger.info("Shutting down...");
   await prisma.$disconnect();
   client.destroy();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  console.log("[RuralBot] Shutting down...");
+  logger.info("Shutting down...");
   await prisma.$disconnect();
   client.destroy();
   process.exit(0);

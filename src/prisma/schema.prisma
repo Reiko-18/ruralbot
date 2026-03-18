@@ -35,3 +35,16 @@ model Member {
   @@unique([discordId, guildId])
   @@map("members")
 }
+
+model LogConfig {
+  id         String   @id @default(cuid())
+  channelId  String   @unique @map("channel_id")
+  webhookUrl String   @map("webhook_url")
+  minLevel   Int      @default(30) @map("min_level")
+  label      String?
+  isEnabled  Boolean  @default(true) @map("is_enabled")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("log_configs")
+}
