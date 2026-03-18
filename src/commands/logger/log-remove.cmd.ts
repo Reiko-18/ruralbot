@@ -2,6 +2,7 @@ import {
   SlashCommandBuilder,
   PermissionFlagsBits,
   ChannelType,
+  MessageFlags,
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { removeConfig } from "../../services/logger/repo_log_config.js";
@@ -21,7 +22,7 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const channel = interaction.options.getChannel("channel", true);
 
