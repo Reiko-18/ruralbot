@@ -6,6 +6,7 @@ export interface LogConfigCache {
 }
 
 export const LEVEL_LABELS: Record<number, string> = {
+  1: "ALL",
   10: "TRACE",
   20: "DEBUG",
   30: "INFO",
@@ -15,6 +16,7 @@ export const LEVEL_LABELS: Record<number, string> = {
 };
 
 export const LEVEL_COLORS: Record<number, number> = {
+  1: 0xffffff, // white
   10: 0x808080, // grey
   20: 0x00bfff, // blue
   30: 0x00ff7f, // green
@@ -24,6 +26,7 @@ export const LEVEL_COLORS: Record<number, number> = {
 };
 
 export const LEVEL_CHOICES = [
+  { name: "ALL (1)", value: 1 },
   { name: "TRACE (10)", value: 10 },
   { name: "DEBUG (20)", value: 20 },
   { name: "INFO (30)", value: 30 },
