@@ -8,7 +8,7 @@ RUN npm ci
 
 COPY prisma.config.ts ./
 COPY src/prisma/schema.prisma ./src/prisma/schema.prisma
-RUN npx prisma generate
+RUN DIRECT_URL="postgresql://placeholder:5432/placeholder" npx prisma generate
 
 COPY . .
 
