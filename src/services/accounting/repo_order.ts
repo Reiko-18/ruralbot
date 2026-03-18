@@ -30,6 +30,14 @@ export async function getOrdersByDateRange(start: Date, end: Date) {
   });
 }
 
+export async function getOrders(start?: Date, end?: Date) {
+  const where = start && end ? { createdAt: { gte: start, lt: end } } : {};
+  return prisma.order.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function aggregateSales(
   start?: Date,
   end?: Date,

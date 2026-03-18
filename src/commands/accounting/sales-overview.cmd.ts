@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import {
   aggregateSales,
+  getOrders,
   getDistinctYears,
   getDistinctMonths,
   getDistinctDays,
@@ -17,29 +18,97 @@ import { logger } from "../../services/logger/logger.js";
 
 export const data = new SlashCommandBuilder()
   .setName("sales-overview")
-  .setDescription("View sales summary with date filtering");
+  .setDescription("View sales summary with order list and date filtering");
 
-function buildEmbed(
+function formatOrderLine(o: {
+  id: string;
+  productName: string;
+  quantity: number;
+  actualPrice: number;
+  profit: number;
+  createdAt: Date;
+}) {
+  const date = o.createdAt.toISOString().split("T")[0];
+  const qty = o.quantity > 1 ? ` x${o.quantity}` : "";
+  return `\`${o.id}\` | ${date} | ${o.productName}${qty} | $${o.actualPrice}${qty ? ` (總$${(o.actualPrice * o.quantity).toFixed(0)})` : ""} | 利潤 $${o.profit.toFixed(0)}`;
+}
+
+function buildEmbeds(
   stats: {
     totalRevenue: number;
     totalCost: number;
     totalProfit: number;
     orderCount: number;
   },
+  orders: {
+    id: string;
+    productName: string;
+    quantity: number;
+    actualPrice: number;
+    profit: number;
+    createdAt: Date;
+  }[],
   label: string,
-) {
+): EmbedBuilder[] {
   const profitColor = stats.totalProfit >= 0 ? 0x00c853 : 0xff1744;
-  return new EmbedBuilder()
+  const embeds: EmbedBuilder[] = [];
+
+  // Build order lines
+  const lines = orders.map(formatOrderLine);
+
+  // Discord embed description limit is 4096 chars
+  // Split into chunks if needed
+  const chunks: string[][] = [[]];
+  let currentLen = 0;
+
+  for (const line of lines) {
+    // Reserve space for header on first chunk
+    const overhead = chunks.length === 1 ? 200 : 50;
+    if (currentLen + line.length + 1 > 4096 - overhead && chunks[chunks.length - 1].length > 0) {
+      chunks.push([]);
+      currentLen = 0;
+    }
+    chunks[chunks.length - 1].push(line);
+    currentLen += line.length + 1;
+  }
+
+  // First embed: summary + first chunk of orders
+  const firstEmbed = new EmbedBuilder()
     .setTitle("📊 營業總覽")
-    .setDescription(`**${label}**`)
     .setColor(profitColor)
     .addFields(
+      { name: "期間", value: label, inline: true },
+      { name: "訂單數", value: `${stats.orderCount}`, inline: true },
+      { name: "\u200b", value: "\u200b", inline: true },
       { name: "總營收", value: `$${stats.totalRevenue.toFixed(2)}`, inline: true },
       { name: "總成本", value: `$${stats.totalCost.toFixed(2)}`, inline: true },
       { name: "總利潤", value: `$${stats.totalProfit.toFixed(2)}`, inline: true },
-      { name: "訂單數", value: `${stats.orderCount}`, inline: true },
     )
     .setTimestamp();
+
+  if (orders.length === 0) {
+    firstEmbed.setDescription("*此期間沒有訂單*");
+    return [firstEmbed];
+  }
+
+  firstEmbed.setDescription(chunks[0].join("\n"));
+  embeds.push(firstEmbed);
+
+  // Additional embeds for overflow
+  for (let i = 1; i < chunks.length; i++) {
+    embeds.push(
+      new EmbedBuilder()
+        .setColor(profitColor)
+        .setDescription(chunks[i].join("\n"))
+        .setFooter(i === chunks.length - 1 ? { text: `共 ${orders.length} 筆訂單` } : null),
+    );
+  }
+
+  if (chunks.length === 1) {
+    firstEmbed.setFooter({ text: `共 ${orders.length} 筆訂單` });
+  }
+
+  return embeds;
 }
 
 function buildYearMenu(years: number[]) {
@@ -130,31 +199,33 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   try {
     const stats = await aggregateSales();
+    const orders = await getOrders();
     const years = await getDistinctYears();
-    const embed = buildEmbed(stats, "全部時間");
+    const embeds = buildEmbeds(stats, orders, "全部時間");
 
     if (years.length === 0) {
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({ embeds });
       return;
     }
 
     const row = buildYearMenu(years);
     const response = await interaction.editReply({
-      embeds: [embed],
+      embeds,
       components: [row],
     });
 
     const collector = response.createMessageComponentCollector({
       componentType: ComponentType.StringSelect,
       filter: (i) => i.user.id === interaction.user.id,
-      time: 300_000, // 5 minutes
+      time: 300_000,
     });
 
     collector.on("collect", async (i) => {
       const state = parseSelection(i.values[0]);
       const range = parseDateRange(state);
       const newStats = await aggregateSales(range.start, range.end);
-      const newEmbed = buildEmbed(newStats, range.label);
+      const newOrders = await getOrders(range.start, range.end);
+      const newEmbeds = buildEmbeds(newStats, newOrders, range.label);
 
       let newRow: ActionRowBuilder<StringSelectMenuBuilder>;
       if (state.level === "all") {
@@ -179,7 +250,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         newRow = buildDayMenu(state.year, state.month, days);
       }
 
-      await i.update({ embeds: [newEmbed], components: [newRow] });
+      await i.update({ embeds: newEmbeds, components: [newRow] });
     });
 
     collector.on("end", async () => {
