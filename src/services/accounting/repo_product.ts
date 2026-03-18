@@ -34,6 +34,14 @@ export async function getProductByName(name: string) {
   });
 }
 
+export async function deleteProduct(id: string) {
+  return prisma.product.delete({ where: { id } });
+}
+
+export async function getProductOrderCount(id: string): Promise<number> {
+  return prisma.order.count({ where: { productId: id } });
+}
+
 export async function getProductsByCategoryId(categoryId: string) {
   return prisma.product.findMany({
     where: { categoryId },
