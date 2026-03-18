@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { getAccountingConfig } from "./repo_accounting_config.js";
 import { logger } from "../logger/logger.js";
+import { getCachedBotConfig } from "../config/repo_bot_config.js";
 
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0]; // YYYY-MM-DD
@@ -50,9 +51,13 @@ export async function logOrderToThread(
   },
 ): Promise<void> {
   try {
-    const config = await getAccountingConfig(guildId);
+    // Redirect to primary guild if configured
+    const botConfig = getCachedBotConfig();
+    const targetGuildId = botConfig?.primaryGuildId ?? guildId;
+
+    const config = await getAccountingConfig(targetGuildId);
     if (!config) {
-      logger.warn({ guildId }, "No accounting config found, skipping thread log");
+      logger.warn({ guildId: targetGuildId }, "No accounting config found, skipping thread log");
       return;
     }
 
