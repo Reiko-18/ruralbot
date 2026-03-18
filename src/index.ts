@@ -16,6 +16,7 @@ import * as accountingSetup from "./commands/accounting/accounting-setup.cmd.js"
 import * as categoryAdd from "./commands/accounting/category-add.cmd.js";
 import * as categoryDelete from "./commands/accounting/category-delete.cmd.js";
 import * as productAdd from "./commands/accounting/product-add.cmd.js";
+import * as productList from "./commands/accounting/product-list.cmd.js";
 import * as orderAdd from "./commands/accounting/order-add.cmd.js";
 import * as orderCustom from "./commands/accounting/order-custom.cmd.js";
 import * as orderDelete from "./commands/accounting/order-delete.cmd.js";
@@ -30,6 +31,7 @@ registerCommand(accountingSetup);
 registerCommand(categoryAdd);
 registerCommand(categoryDelete);
 registerCommand(productAdd);
+registerCommand(productList);
 registerCommand(orderAdd);
 registerCommand(orderCustom);
 registerCommand(orderDelete);

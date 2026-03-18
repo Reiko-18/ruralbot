@@ -33,3 +33,11 @@ export async function getProductByName(name: string) {
     include: { category: true },
   });
 }
+
+export async function getProductsByCategoryId(categoryId: string) {
+  return prisma.product.findMany({
+    where: { categoryId },
+    include: { category: true },
+    orderBy: { name: "asc" },
+  });
+}
