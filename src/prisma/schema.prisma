@@ -107,3 +107,13 @@ model AccountingConfig {
 
   @@map("accounting_configs")
 }
+
+model BotConfig {
+  id             Int      @id @default(1)
+  primaryGuildId String   @map("primary_guild_id")
+  syncChannelId  String   @map("sync_channel_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("bot_configs")
+}
