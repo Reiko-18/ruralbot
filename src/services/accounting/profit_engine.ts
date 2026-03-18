@@ -12,9 +12,11 @@ export function calculateProfit(
   product: ProductData,
   quantity: number,
   customPrice?: number,
+  inputFaceValue?: number,
 ): ProfitResult {
+  const faceValue = inputFaceValue ?? product.faceValue;
   const hasDiscount =
-    product.faceValue != null &&
+    faceValue != null &&
     product.costDiscount != null &&
     product.priceDiscount != null;
 
@@ -22,8 +24,8 @@ export function calculateProfit(
   let actualCost: number;
 
   if (hasDiscount) {
-    actualCost = product.faceValue! * product.costDiscount!;
-    actualPrice = customPrice ?? product.faceValue! * product.priceDiscount!;
+    actualCost = faceValue! * product.costDiscount!;
+    actualPrice = customPrice ?? faceValue! * product.priceDiscount!;
   } else {
     actualCost = product.cost;
     actualPrice = customPrice ?? product.price;
@@ -32,6 +34,10 @@ export function calculateProfit(
   const profit = (actualPrice - actualCost) * quantity;
 
   return { actualPrice, actualCost, profit };
+}
+
+export function isDiscountProduct(product: ProductData): boolean {
+  return product.costDiscount != null && product.priceDiscount != null;
 }
 
 export function calculateCustomProfit(

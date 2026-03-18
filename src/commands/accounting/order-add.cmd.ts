@@ -7,7 +7,7 @@ import {
 import { getAllProducts, getProductById } from "../../services/accounting/repo_product.js";
 import { createOrder } from "../../services/accounting/repo_order.js";
 import { generateOrderId } from "../../services/accounting/order_id.js";
-import { calculateProfit } from "../../services/accounting/profit_engine.js";
+import { calculateProfit, isDiscountProduct } from "../../services/accounting/profit_engine.js";
 import { logOrderToThread } from "../../services/accounting/thread_logger.js";
 import { logger } from "../../services/logger/logger.js";
 
@@ -23,6 +23,9 @@ export const data = new SlashCommandBuilder()
   )
   .addIntegerOption((o) =>
     o.setName("quantity").setDescription("Quantity (default: 1)"),
+  )
+  .addNumberOption((o) =>
+    o.setName("face_value").setDescription("面額（折數商品必填）"),
   )
   .addNumberOption((o) =>
     o.setName("custom_price").setDescription("Override selling price"),
@@ -51,6 +54,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   const productId = interaction.options.getString("product", true);
   const quantity = interaction.options.getInteger("quantity") ?? 1;
+  const faceValue = interaction.options.getNumber("face_value") ?? undefined;
   const customPrice = interaction.options.getNumber("custom_price") ?? undefined;
   const dateStr = interaction.options.getString("date");
 
@@ -61,7 +65,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       return;
     }
 
-    const result = calculateProfit(product, quantity, customPrice);
+    if (isDiscountProduct(product) && faceValue == null) {
+      await interaction.editReply("此商品為折數商品，請提供 `face_value`（面額）。");
+      return;
+    }
+
+    const result = calculateProfit(product, quantity, customPrice, faceValue);
     const orderId = await generateOrderId();
     const normalizedDate = dateStr?.replace(/\//g, "-");
     const createdAt = normalizedDate ? new Date(`${normalizedDate}T00:00:00`) : new Date();
