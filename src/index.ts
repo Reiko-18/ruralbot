@@ -4,6 +4,7 @@ import { prisma } from "./core/db.js";
 import { registerCommand, handleInteraction, deployCommands } from "./core/command_handler.js";
 import { loadLogConfigs } from "./services/logger/log_cache.js";
 import { logger } from "./services/logger/logger.js";
+import { KeepAliveService } from "./services/keepalive/keep_alive.js";
 
 // Import commands
 import * as logAdd from "./commands/logger/log-add.cmd.js";
@@ -33,6 +34,11 @@ client.once(Events.ClientReady, async (readyClient) => {
   // Deploy slash commands
   await deployCommands();
   logger.info("Slash commands deployed");
+
+  // Start keep-alive services
+  KeepAliveService.startDatabaseHeartbeat();
+  KeepAliveService.startSelfPing(process.env.RAILWAY_PUBLIC_URL ?? "");
+  logger.info("Keep-alive services started");
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

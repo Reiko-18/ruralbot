@@ -48,3 +48,11 @@ model LogConfig {
 
   @@map("log_configs")
 }
+
+model SystemHealth {
+  id       Int      @id @default(1)
+  lastPing DateTime @default(now()) @map("last_ping")
+  status   String   @default("OK")
+
+  @@map("system_health")
+}
