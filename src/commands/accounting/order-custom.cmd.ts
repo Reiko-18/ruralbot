@@ -41,6 +41,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const result = calculateCustomProfit(price, cost, quantity);
     const orderId = await generateOrderId();
     const createdAt = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+    if (isNaN(createdAt.getTime())) {
+      await interaction.editReply("日期格式無效，請使用 YYYY-MM-DD 格式。");
+      return;
+    }
 
     const order = await createOrder({
       id: orderId,
