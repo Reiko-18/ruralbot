@@ -5,6 +5,7 @@ import {
   type ChatInputCommandInteraction,
   type SharedNameAndDescription,
 } from "discord.js";
+import { mirrorToSyncChannel } from "../services/config/sync_mirror.js";
 
 interface Command {
   data: SharedNameAndDescription & { toJSON(): unknown };
@@ -23,6 +24,8 @@ export async function handleInteraction(
   const command = commands.get(interaction.commandName);
   if (!command) return;
   await command.execute(interaction);
+  // Mirror response to primary guild sync channel
+  await mirrorToSyncChannel(interaction);
 }
 
 export async function deployCommands(): Promise<void> {
