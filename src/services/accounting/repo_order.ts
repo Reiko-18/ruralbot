@@ -57,33 +57,33 @@ export async function aggregateSales(
 }
 
 export async function getDistinctYears(): Promise<number[]> {
-  const results = await prisma.$queryRaw<{ year: number }[]>`
+  const results = await prisma.$queryRaw<{ year: bigint }[]>`
     SELECT DISTINCT EXTRACT(YEAR FROM created_at)::int AS year
     FROM orders ORDER BY year DESC
   `;
-  return results.map((r) => r.year);
+  return results.map((r) => Number(r.year));
 }
 
 export async function getDistinctMonths(year: number): Promise<number[]> {
-  const results = await prisma.$queryRaw<{ month: number }[]>`
+  const results = await prisma.$queryRaw<{ month: bigint }[]>`
     SELECT DISTINCT EXTRACT(MONTH FROM created_at)::int AS month
     FROM orders
     WHERE EXTRACT(YEAR FROM created_at) = ${year}
     ORDER BY month ASC
   `;
-  return results.map((r) => r.month);
+  return results.map((r) => Number(r.month));
 }
 
 export async function getDistinctDays(
   year: number,
   month: number,
 ): Promise<number[]> {
-  const results = await prisma.$queryRaw<{ day: number }[]>`
+  const results = await prisma.$queryRaw<{ day: bigint }[]>`
     SELECT DISTINCT EXTRACT(DAY FROM created_at)::int AS day
     FROM orders
     WHERE EXTRACT(YEAR FROM created_at) = ${year}
       AND EXTRACT(MONTH FROM created_at) = ${month}
     ORDER BY day ASC
   `;
-  return results.map((r) => r.day);
+  return results.map((r) => Number(r.day));
 }
