@@ -244,8 +244,9 @@ export function startDashboard(): void {
 
   // ── Start server ──
   const port = parseInt(process.env.DASHBOARD_PORT || "3000", 10);
-  const server = app.listen(port, "127.0.0.1", () => {
-    logger.info({ port }, "Dashboard server started on http://127.0.0.1:" + port);
+  const host = process.env.DASHBOARD_HOST || "0.0.0.0";
+  const server = app.listen(port, host, () => {
+    logger.info({ port, host }, `Dashboard server started on http://${host}:${port}`);
   });
   server.on("error", (err) => {
     logger.error({ err }, "Failed to start dashboard server");
