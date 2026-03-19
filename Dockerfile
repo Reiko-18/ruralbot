@@ -12,4 +12,7 @@ RUN DIRECT_URL="postgresql://placeholder:5432/placeholder" npx prisma generate
 
 COPY . .
 
+# Build dashboard SPA
+RUN cd dashboard && npm install --include=dev && npm run build
+
 CMD ["npm", "start"]

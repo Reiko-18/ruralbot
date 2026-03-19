@@ -3,7 +3,7 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile",
-    "watchPatterns": ["src/**", "prisma/**", "package.json", "Dockerfile"]
+    "watchPatterns": ["src/**", "prisma/**", "dashboard/**", "package.json", "Dockerfile"]
   },
   "deploy": {
     "restartPolicyType": "ON_FAILURE",
