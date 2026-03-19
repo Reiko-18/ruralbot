@@ -6,6 +6,7 @@ import { loadLogConfigs } from "./services/logger/log_cache.js";
 import { loadBotConfig } from "./services/config/repo_bot_config.js";
 import { logger } from "./services/logger/logger.js";
 import { KeepAliveService } from "./services/keepalive/keep_alive.js";
+import { startDashboard } from "./services/dashboard/server.js";
 
 // Import commands
 import * as logAdd from "./commands/logger/log-add.cmd.js";
@@ -84,6 +85,9 @@ client.once(Events.ClientReady, async (readyClient) => {
   KeepAliveService.startDatabaseHeartbeat();
   KeepAliveService.startSelfPing(process.env.RAILWAY_PUBLIC_URL ?? "");
   logger.info("Keep-alive services started");
+
+  // Start dashboard
+  startDashboard();
 });
 
 registerGuildCreateEvent(client);

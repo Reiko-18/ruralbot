@@ -23,6 +23,7 @@
     "@prisma/client": "^7.5.0",
     "discord.js": "^14.25.1",
     "dotenv": "^17.3.1",
+    "express": "^5.2.1",
     "nanoid": "^5.1.7",
     "pg": "^8.20.0",
     "pino": "^10.3.1",
@@ -31,6 +32,7 @@
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
     "@types/pg": "^8.18.0",
     "@types/pino": "^7.0.4",
