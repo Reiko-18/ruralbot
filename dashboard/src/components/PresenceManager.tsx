@@ -72,11 +72,11 @@ export function PresenceManager() {
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Radio size={18} className="text-green-400" />
+          <Radio size={18} className="text-purple-400" />
           <h2 className="text-lg font-semibold">動態輪播管理</h2>
         </div>
         <button
-          className="flex items-center gap-1 px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 rounded text-sm disabled:opacity-50"
+          className="flex items-center gap-1 btn-accent-outline disabled:opacity-50"
           onClick={handleRefresh}
           disabled={refreshing}
         >
@@ -87,14 +87,14 @@ export function PresenceManager() {
       {/* Add new */}
       <div className="flex gap-2">
         <input
-          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+          className="flex-1 glow-input"
           value={newText}
           onChange={(e) => setNewText(e.target.value)}
           placeholder="輸入動態文字（支援 {users} 佔位符顯示使用者人數）"
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
         />
         <button
-          className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-500 rounded text-sm disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-2 btn-accent disabled:opacity-50"
           onClick={handleAdd}
           disabled={adding || !newText.trim()}
         >
@@ -112,7 +112,7 @@ export function PresenceManager() {
           {texts.map((item, index) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 bg-gray-700 rounded px-4 py-3"
+              className="flex items-center gap-3 glow-item px-4 py-3"
             >
               <span className="text-gray-400 font-mono text-sm w-6 text-right shrink-0">
                 {index + 1}.
@@ -130,11 +130,11 @@ export function PresenceManager() {
         </div>
       )}
 
-      <div className="bg-gray-800 rounded p-4 text-sm text-gray-400">
+      <div className="glow-card p-4 text-sm text-gray-400">
         <p className="font-semibold text-gray-300 mb-2">使用說明</p>
         <ul className="list-disc list-inside space-y-1">
           <li>動態文字會每 15 秒自動輪播切換</li>
-          <li>使用 <code className="bg-gray-700 px-1 rounded">{"{users}"}</code> 佔位符會自動替換為目前所有伺服器的使用者總數</li>
+          <li>使用 <code className="bg-purple-500/20 px-1 rounded">{"{users}"}</code> 佔位符會自動替換為目前所有伺服器的使用者總數</li>
           <li>按「立即刷新」可強制重新讀取資料庫並重置計時器</li>
         </ul>
       </div>
