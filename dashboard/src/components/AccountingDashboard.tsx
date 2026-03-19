@@ -354,7 +354,7 @@ function ProductList() {
       {/* Category filter */}
       <div className="flex gap-2 flex-wrap">
         <button
-          className={`px-3 py-1 rounded text-sm ${!filter ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
+          className={`px-3 py-1 rounded text-sm ${!filter ? "btn-accent" : "bg-gray-700 text-gray-300 hover:bg-purple-400/10"}`}
           onClick={() => setFilter("")}
         >
           全部 ({products.length})
@@ -362,7 +362,7 @@ function ProductList() {
         {categories.map((cat) => (
           <button
             key={cat}
-            className={`px-3 py-1 rounded text-sm ${filter === cat ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
+            className={`px-3 py-1 rounded text-sm ${filter === cat ? "btn-accent" : "bg-gray-700 text-gray-300 hover:bg-purple-400/10"}`}
             onClick={() => setFilter(cat)}
           >
             {cat} ({products.filter((p) => p.category.name === cat).length})
@@ -434,7 +434,7 @@ export function AccountingDashboard() {
         <div className="flex gap-1">
           <button
             className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-              view === "overview" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"
+              view === "overview" ? "btn-accent" : "text-gray-400 hover:text-purple-300 hover:bg-purple-400/10"
             }`}
             onClick={() => setView("overview")}
           >
@@ -442,7 +442,7 @@ export function AccountingDashboard() {
           </button>
           <button
             className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-              view === "products" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"
+              view === "products" ? "btn-accent" : "text-gray-400 hover:text-purple-300 hover:bg-purple-400/10"
             }`}
             onClick={() => setView("products")}
           >
