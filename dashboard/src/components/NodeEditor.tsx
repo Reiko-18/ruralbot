@@ -63,7 +63,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
         <h2 className="text-lg font-semibold">編輯節點</h2>
         <div className="flex gap-2">
           <button
-            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50"
+            className="flex items-center gap-1 btn-accent disabled:opacity-50"
             onClick={handleSave}
             disabled={saving}
           >
@@ -82,7 +82,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
         <div>
           <label className="block text-sm text-gray-400 mb-1">名稱 (Title)</label>
           <input
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full glow-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -90,7 +90,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
         <div>
           <label className="block text-sm text-gray-400 mb-1">說明文字 (Description)</label>
           <textarea
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 min-h-[80px]"
+            className="w-full glow-input min-h-[80px]"
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
@@ -99,7 +99,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
         <div>
           <label className="block text-sm text-gray-400 mb-1">圖片 (Image)</label>
           <input
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full glow-input"
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="https://..."
@@ -107,11 +107,11 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
         </div>
       </div>
 
-      <hr className="border-gray-700" />
+      <hr className="border-purple-500/20" />
 
       <EmbedSettingsEditor settings={embedSettings} onChange={setEmbedSettings} />
 
-      <hr className="border-gray-700" />
+      <hr className="border-purple-500/20" />
 
       <div>
         <h3 className="text-sm font-semibold text-gray-400 mb-3">價目項目 (Fields)</h3>
