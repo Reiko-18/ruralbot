@@ -150,6 +150,16 @@ model PriceItem {
   @@map("price_items")
 }
 
+model PresenceText {
+  id        String   @id @default(cuid())
+  text      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("presence_texts")
+}
+
 model PriceListConfig {
   id          Int      @id @default(1)
   title       String   @default("")

@@ -20,6 +20,12 @@ import {
   upsertPriceListConfig,
 } from "../price/repo_price_node.js";
 import { MAX_CHILDREN_PER_NODE } from "../../types/price.type.js";
+import {
+  getAllPresenceTexts,
+  createPresenceText,
+  deletePresenceText,
+} from "../presence/repo_presence.js";
+import { refreshPresenceTexts } from "../presence/presence_rotator.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -246,6 +252,64 @@ export function startDashboard(): void {
       res.json(config);
     } catch (err) {
       logger.error({ err }, "Failed to update price config");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ── Presence API Routes ──
+
+  // GET /api/presence-texts — list all
+  app.get("/api/presence-texts", async (_req, res) => {
+    try {
+      const texts = await getAllPresenceTexts();
+      res.json(texts);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch presence texts");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/presence-texts — create
+  app.post("/api/presence-texts", async (req, res) => {
+    try {
+      const { text } = req.body;
+      if (!text || typeof text !== "string" || text.trim() === "") {
+        return res.status(400).json({ error: "text is required" });
+      }
+      const item = await createPresenceText(text.trim());
+      await refreshPresenceTexts();
+      logger.info({ id: item.id, text: item.text }, "Presence text created");
+      res.status(201).json(item);
+    } catch (err) {
+      logger.error({ err }, "Failed to create presence text");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // DELETE /api/presence-texts/:id — delete
+  app.delete("/api/presence-texts/:id", async (req, res) => {
+    try {
+      await deletePresenceText(req.params.id);
+      await refreshPresenceTexts();
+      logger.info({ id: req.params.id }, "Presence text deleted");
+      res.status(204).end();
+    } catch (err: any) {
+      if (err?.code === "P2025") {
+        return res.status(404).json({ error: "Presence text not found" });
+      }
+      logger.error({ err }, "Failed to delete presence text");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/presence-refresh — force refresh
+  app.post("/api/presence-refresh", async (_req, res) => {
+    try {
+      await refreshPresenceTexts();
+      logger.info("Presence texts force refreshed");
+      res.json({ success: true });
+    } catch (err) {
+      logger.error({ err }, "Failed to refresh presence texts");
       res.status(500).json({ error: "Internal server error" });
     }
   });

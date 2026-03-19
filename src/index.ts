@@ -38,6 +38,9 @@ import { registerPriceMenuEvent } from "./events/price/price-menu.event.js";
 // Price cache
 import { loadPriceCache } from "./services/price/price_cache.js";
 
+// Presence rotator
+import { startPresenceRotator, stopPresenceRotator } from "./services/presence/presence_rotator.js";
+
 // Guild events
 import { registerGuildCreateEvent } from "./events/guild/guild-create.event.js";
 
@@ -86,6 +89,9 @@ client.once(Events.ClientReady, async (readyClient) => {
   KeepAliveService.startSelfPing(process.env.RAILWAY_PUBLIC_URL ?? "");
   logger.info("Keep-alive services started");
 
+  // Start presence rotator
+  startPresenceRotator(readyClient);
+
   // Start dashboard
   startDashboard();
 });
@@ -118,6 +124,7 @@ process.on("unhandledRejection", (reason) => {
 // Graceful shutdown
 process.on("SIGINT", async () => {
   logger.info("Shutting down...");
+  stopPresenceRotator();
   await prisma.$disconnect();
   client.destroy();
   process.exit(0);
@@ -125,6 +132,7 @@ process.on("SIGINT", async () => {
 
 process.on("SIGTERM", async () => {
   logger.info("Shutting down...");
+  stopPresenceRotator();
   await prisma.$disconnect();
   client.destroy();
   process.exit(0);

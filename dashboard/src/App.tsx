@@ -5,8 +5,12 @@ import { TreeView } from "./components/TreeView";
 import { NodeEditor } from "./components/NodeEditor";
 import { HomeEditor } from "./components/HomeEditor";
 import { DiscordPreview } from "./components/DiscordPreview";
+import { PresenceManager } from "./components/PresenceManager";
+
+type Tab = "price" | "presence";
 
 export default function App() {
+  const [tab, setTab] = useState<Tab>("price");
   const [tree, setTree] = useState<PriceNode[]>([]);
   const [config, setConfig] = useState<PriceListConfig | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -50,41 +54,70 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3">
-        <h1 className="text-xl font-bold">RuralBot 價目表管理</h1>
+      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center gap-6">
+        <h1 className="text-xl font-bold">RuralBot 管理面板</h1>
+        <nav className="flex gap-1">
+          <button
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              tab === "price"
+                ? "bg-blue-600 text-white"
+                : "text-gray-400 hover:text-white hover:bg-gray-700"
+            }`}
+            onClick={() => setTab("price")}
+          >
+            價目表
+          </button>
+          <button
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              tab === "presence"
+                ? "bg-blue-600 text-white"
+                : "text-gray-400 hover:text-white hover:bg-gray-700"
+            }`}
+            onClick={() => setTab("presence")}
+          >
+            動態輪播
+          </button>
+        </nav>
       </header>
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-72 border-r border-gray-700 overflow-y-auto">
-          <TreeView
-            tree={tree}
-            selectedId={selectedId}
-            onSelect={(id) => { setSelectedId(id); setEditingHome(false); }}
-            onReload={reload}
-            onEditHome={() => { setSelectedId(null); setEditingHome(true); }}
-          />
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {editingHome && config ? (
-            <HomeEditor config={config} onSave={reload} />
-          ) : selected ? (
-            <NodeEditor
-              node={selected}
-              onSave={reload}
-              onDelete={() => {
-                setSelectedId(null);
-                reload();
-              }}
+
+      {tab === "price" ? (
+        <div className="flex flex-1 overflow-hidden">
+          <div className="w-72 border-r border-gray-700 overflow-y-auto">
+            <TreeView
+              tree={tree}
+              selectedId={selectedId}
+              onSelect={(id) => { setSelectedId(id); setEditingHome(false); }}
+              onReload={reload}
+              onEditHome={() => { setSelectedId(null); setEditingHome(true); }}
             />
-          ) : (
-            <div className="text-gray-500 text-center mt-20">
-              ← 從左側選擇一個節點開始編輯
-            </div>
-          )}
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            {editingHome && config ? (
+              <HomeEditor config={config} onSave={reload} />
+            ) : selected ? (
+              <NodeEditor
+                node={selected}
+                onSave={reload}
+                onDelete={() => {
+                  setSelectedId(null);
+                  reload();
+                }}
+              />
+            ) : (
+              <div className="text-gray-500 text-center mt-20">
+                ← 從左側選擇一個節點開始編輯
+              </div>
+            )}
+          </div>
+          <div className="w-96 border-l border-gray-700 overflow-y-auto p-4 bg-gray-800">
+            <DiscordPreview node={selected} roots={tree} config={config} editingHome={editingHome} />
+          </div>
         </div>
-        <div className="w-96 border-l border-gray-700 overflow-y-auto p-4 bg-gray-800">
-          <DiscordPreview node={selected} roots={tree} config={config} editingHome={editingHome} />
+      ) : (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PresenceManager />
         </div>
-      </div>
+      )}
     </div>
   );
 }

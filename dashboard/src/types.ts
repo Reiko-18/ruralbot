@@ -28,6 +28,12 @@ export interface PriceNode {
   embedSettings: string | null;
 }
 
+export interface PresenceText {
+  id: string;
+  text: string;
+  order: number;
+}
+
 export interface PriceListConfig {
   id: number;
   title: string;

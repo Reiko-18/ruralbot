@@ -1,4 +1,4 @@
-import type { PriceNode, PriceItem, PriceListConfig } from "../types";
+import type { PriceNode, PriceItem, PriceListConfig, PresenceText } from "../types";
 
 const BASE = "/api";
 
@@ -70,3 +70,15 @@ export const updateConfig = (data: {
   imageUrl?: string | null;
   embedSettings?: string | null;
 }) => request<PriceListConfig>("/price-config", { method: "PUT", body: JSON.stringify(data) });
+
+// Presence
+export const fetchPresenceTexts = () => request<PresenceText[]>("/presence-texts");
+
+export const createPresenceTextApi = (text: string) =>
+  request<PresenceText>("/presence-texts", { method: "POST", body: JSON.stringify({ text }) });
+
+export const deletePresenceTextApi = (id: string) =>
+  request<void>(`/presence-texts/${id}`, { method: "DELETE" });
+
+export const refreshPresence = () =>
+  request<{ success: boolean }>("/presence-refresh", { method: "POST" });
