@@ -243,8 +243,8 @@ export function startDashboard(): void {
   });
 
   // ── Start server ──
-  const port = parseInt(process.env.DASHBOARD_PORT || "3000", 10);
-  const host = process.env.DASHBOARD_HOST || "0.0.0.0";
+  const port = parseInt(process.env.PORT || process.env.DASHBOARD_PORT || "3000", 10);
+  const host = "0.0.0.0";
   const server = app.listen(port, host, () => {
     logger.info({ port, host }, `Dashboard server started on http://${host}:${port}`);
   });
