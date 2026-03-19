@@ -69,7 +69,8 @@ export function PresenceManager() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Radio size={18} className="text-purple-400" />
@@ -102,41 +103,91 @@ export function PresenceManager() {
         </button>
       </div>
 
-      {/* List */}
-      {texts.length === 0 ? (
-        <div className="text-gray-500 text-center py-8">
-          尚未設定任何動態文字
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {texts.map((item, index) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 glow-item px-4 py-3"
-            >
-              <span className="text-gray-400 font-mono text-sm w-6 text-right shrink-0">
-                {index + 1}.
-              </span>
-              <span className="flex-1 text-sm break-all">{item.text}</span>
-              <button
-                className="text-red-400 hover:text-red-300 p-1"
-                onClick={() => handleDelete(item.id)}
-                title="刪除"
-              >
-                <Trash2 size={14} />
-              </button>
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* List — takes 2/3 width on large screens */}
+        <div className="lg:col-span-2">
+          {texts.length === 0 ? (
+            <div className="text-gray-500 text-center py-8 glow-card">
+              尚未設定任何動態文字
             </div>
-          ))}
+          ) : (
+            <div className="glow-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-purple-500/20 text-left text-gray-400">
+                    <th className="px-4 py-3 w-12">#</th>
+                    <th className="px-4 py-3">動態文字內容</th>
+                    <th className="px-4 py-3 w-16 text-center">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {texts.map((item, index) => (
+                    <tr
+                      key={item.id}
+                      className="border-b border-purple-500/10 hover:bg-purple-500/5 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-gray-400 font-mono">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-3 break-all">{item.text}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          className="text-red-400 hover:text-red-300 p-1"
+                          onClick={() => handleDelete(item.id)}
+                          title="刪除"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
 
-      <div className="glow-card p-4 text-sm text-gray-400">
-        <p className="font-semibold text-gray-300 mb-2">使用說明</p>
-        <ul className="list-disc list-inside space-y-1">
-          <li>動態文字會每 15 秒自動輪播切換</li>
-          <li>使用 <code className="bg-purple-500/20 px-1 rounded">{"{users}"}</code> 佔位符會自動替換為目前所有伺服器的使用者總數</li>
-          <li>按「立即刷新」可強制重新讀取資料庫並重置計時器</li>
-        </ul>
+        {/* Sidebar info — takes 1/3 width on large screens */}
+        <div className="space-y-4">
+          {/* Stats card */}
+          <div className="glow-card p-5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">目前輪播數量</p>
+            <p className="text-3xl font-bold text-purple-300">{texts.length}</p>
+            <p className="text-gray-500 text-xs mt-1">每 15 秒自動切換一則</p>
+          </div>
+
+          {/* Preview card */}
+          {texts.length > 0 && (
+            <div className="glow-card p-5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">輪播預覽</p>
+              <div className="space-y-2">
+                {texts.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className={`text-xs px-3 py-2 rounded-md transition-colors ${
+                      index === 0
+                        ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                        : "bg-gray-800/50 text-gray-500"
+                    }`}
+                  >
+                    🎮 {item.text.replace("{users}", "1,234")}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Usage info */}
+          <div className="glow-card p-5 text-sm text-gray-400">
+            <p className="font-semibold text-gray-300 mb-2">使用說明</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>動態文字會每 15 秒自動輪播切換</li>
+              <li>使用 <code className="bg-purple-500/20 px-1 rounded">{"{users}"}</code> 佔位符會自動替換為目前所有伺服器的使用者總數</li>
+              <li>按「立即刷新」可強制重新讀取資料庫並重置計時器</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   );
