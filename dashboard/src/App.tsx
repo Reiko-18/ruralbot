@@ -53,39 +53,25 @@ export default function App() {
     );
   }
 
+  const tabClass = (t: Tab) =>
+    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+      tab === t
+        ? "btn-accent"
+        : "text-gray-400 hover:text-purple-300 hover:bg-purple-400/10"
+    }`;
+
   return (
     <div className="h-screen flex flex-col">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center gap-6">
+      <header className="bg-gray-900 border-b border-purple-500/20 px-6 py-3 flex items-center gap-6">
         <h1 className="text-xl font-bold">RuralBot 管理面板</h1>
         <nav className="flex gap-1">
-          <button
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-              tab === "price"
-                ? "bg-blue-600 text-white"
-                : "text-gray-400 hover:text-white hover:bg-gray-700"
-            }`}
-            onClick={() => setTab("price")}
-          >
+          <button className={tabClass("price")} onClick={() => setTab("price")}>
             價目表
           </button>
-          <button
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-              tab === "accounting"
-                ? "bg-blue-600 text-white"
-                : "text-gray-400 hover:text-white hover:bg-gray-700"
-            }`}
-            onClick={() => setTab("accounting")}
-          >
+          <button className={tabClass("accounting")} onClick={() => setTab("accounting")}>
             記帳
           </button>
-          <button
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-              tab === "presence"
-                ? "bg-blue-600 text-white"
-                : "text-gray-400 hover:text-white hover:bg-gray-700"
-            }`}
-            onClick={() => setTab("presence")}
-          >
+          <button className={tabClass("presence")} onClick={() => setTab("presence")}>
             動態輪播
           </button>
         </nav>
@@ -93,7 +79,7 @@ export default function App() {
 
       {tab === "price" ? (
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-72 border-r border-gray-700 overflow-y-auto">
+          <div className="w-72 border-r border-purple-500/20 overflow-y-auto">
             <TreeView
               tree={tree}
               selectedId={selectedId}
@@ -120,7 +106,7 @@ export default function App() {
               </div>
             )}
           </div>
-          <div className="w-96 border-l border-gray-700 overflow-y-auto p-4 bg-gray-800">
+          <div className="w-96 border-l border-purple-500/20 overflow-y-auto p-4">
             <DiscordPreview node={selected} roots={tree} config={config} editingHome={editingHome} />
           </div>
         </div>

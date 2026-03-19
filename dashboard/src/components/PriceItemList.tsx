@@ -78,7 +78,7 @@ export function PriceItemList({ nodeId, items, onReload }: PriceItemListProps) {
         </SortableContext>
       </DndContext>
       <button
-        className="flex items-center gap-1 mt-3 px-3 py-1.5 text-sm text-green-400 hover:text-green-300 border border-gray-600 rounded hover:border-green-400"
+        className="flex items-center gap-1 mt-3 px-3 py-1.5 text-sm text-purple-400 hover:text-purple-300 border border-purple-500/30 rounded hover:border-purple-400"
         onClick={handleAdd}
       >
         <Plus size={14} /> 新增項目
@@ -130,7 +130,7 @@ function SortableItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 bg-gray-700 rounded px-2 py-1.5 group"
+      className="flex items-center gap-2 glow-item px-2 py-1.5 group"
     >
       <span {...attributes} {...listeners} className="cursor-grab text-gray-500 hover:text-gray-300">
         <GripVertical size={14} />
@@ -138,18 +138,18 @@ function SortableItem({
       {editing ? (
         <>
           <input
-            className="flex-1 bg-gray-600 border border-gray-500 rounded px-2 py-1 text-sm"
+            className="flex-1 glow-input px-2 py-1"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
           />
           <input
-            className="w-24 bg-gray-600 border border-gray-500 rounded px-2 py-1 text-sm"
+            className="w-24 glow-input px-2 py-1"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
           />
-          <button className="text-blue-400 text-sm hover:text-blue-300" onClick={handleSave}>
+          <button className="text-purple-400 text-sm hover:text-purple-300" onClick={handleSave}>
             保存
           </button>
           <button className="text-gray-400 text-sm hover:text-gray-300" onClick={() => setEditing(false)}>
@@ -164,7 +164,7 @@ function SortableItem({
           >
             <DiscordText text={item.label} />
           </span>
-          <span className="text-sm text-green-400"><DiscordText text={item.price} /></span>
+          <span className="text-sm text-purple-400"><DiscordText text={item.price} /></span>
           <button
             className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300"
             onClick={handleDelete}

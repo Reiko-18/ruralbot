@@ -138,14 +138,14 @@ function SalesOverview() {
   };
 
   const profitColor = (profit: number) =>
-    profit >= 0 ? "text-green-400" : "text-red-400";
+    profit >= 0 ? "text-purple-400" : "text-red-400";
 
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
         {(datePath.year != null) && (
-          <button onClick={goBack} className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
+          <button onClick={goBack} className="text-purple-400 hover:text-purple-300 flex items-center gap-1">
             <ChevronLeft size={14} /> 返回
           </button>
         )}
@@ -157,7 +157,7 @@ function SalesOverview() {
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
-            className="w-full bg-gray-700 border border-gray-600 rounded pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full glow-input pl-9"
             placeholder="搜尋訂單 ID..."
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
@@ -165,7 +165,7 @@ function SalesOverview() {
           />
         </div>
         <button
-          className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+          className="px-3 py-2 btn-accent"
           onClick={handleSearch}
         >
           查詢
@@ -174,9 +174,9 @@ function SalesOverview() {
 
       {/* Search result */}
       {searchResult && (
-        <div className="bg-gray-700 rounded p-4 space-y-1 text-sm">
+        <div className="glow-card p-4 space-y-1 text-sm">
           <div className="flex items-center justify-between">
-            <span className="font-mono font-bold text-blue-400">{searchResult.id}</span>
+            <span className="font-mono font-bold text-purple-400">{searchResult.id}</span>
             {searchResult.isCustom && (
               <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded">自訂</span>
             )}
@@ -200,27 +200,27 @@ function SalesOverview() {
           {/* Summary cards */}
           {sales && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gray-700 rounded p-4">
+              <div className="glow-card p-4">
                 <div className="text-gray-400 text-xs mb-1 flex items-center gap-1">
                   <DollarSign size={12} /> 總營收
                 </div>
                 <div className="text-xl font-bold">${fmt(sales.totalRevenue)}</div>
               </div>
-              <div className="bg-gray-700 rounded p-4">
+              <div className="glow-card p-4">
                 <div className="text-gray-400 text-xs mb-1 flex items-center gap-1">
                   <TrendingDown size={12} /> 總成本
                 </div>
                 <div className="text-xl font-bold">${fmt(sales.totalCost)}</div>
               </div>
-              <div className="bg-gray-700 rounded p-4">
-                <div className={`text-xs mb-1 flex items-center gap-1 ${sales.totalProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <div className="glow-card p-4">
+                <div className={`text-xs mb-1 flex items-center gap-1 ${sales.totalProfit >= 0 ? "text-purple-400" : "text-red-400"}`}>
                   <TrendingUp size={12} /> 總利潤
                 </div>
                 <div className={`text-xl font-bold ${profitColor(sales.totalProfit)}`}>
                   ${fmt(sales.totalProfit)}
                 </div>
               </div>
-              <div className="bg-gray-700 rounded p-4">
+              <div className="glow-card p-4">
                 <div className="text-gray-400 text-xs mb-1 flex items-center gap-1">
                   <ShoppingCart size={12} /> 訂單數
                 </div>
@@ -240,7 +240,7 @@ function SalesOverview() {
                   ? days.map((d) => (
                       <button
                         key={d}
-                        className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm flex items-center gap-1"
+                        className="px-3 py-1.5 glow-item hover:bg-purple-400/10 text-sm flex items-center gap-1"
                         onClick={() => navigateTo({ ...datePath, day: d })}
                       >
                         {d} 日 <ChevronRight size={12} />
@@ -250,7 +250,7 @@ function SalesOverview() {
                   ? months.map((m) => (
                       <button
                         key={m}
-                        className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm flex items-center gap-1"
+                        className="px-3 py-1.5 glow-item hover:bg-purple-400/10 text-sm flex items-center gap-1"
                         onClick={() => navigateTo({ year: datePath.year, month: m })}
                       >
                         {m} 月 <ChevronRight size={12} />
@@ -259,7 +259,7 @@ function SalesOverview() {
                   : years.map((y) => (
                       <button
                         key={y}
-                        className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm flex items-center gap-1"
+                        className="px-3 py-1.5 glow-item hover:bg-purple-400/10 text-sm flex items-center gap-1"
                         onClick={() => navigateTo({ year: y })}
                       >
                         {y} <ChevronRight size={12} />
@@ -278,7 +278,7 @@ function SalesOverview() {
               <h3 className="text-sm text-gray-400 mb-2">
                 訂單列表（{orders.length} 筆）
               </h3>
-              <div className="bg-gray-800 rounded overflow-hidden">
+              <div className="glow-card overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700 text-gray-400 text-left">
@@ -295,7 +295,7 @@ function SalesOverview() {
                   <tbody>
                     {orders.map((o) => (
                       <tr key={o.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                        <td className="px-4 py-2 font-mono text-blue-400">{o.id}</td>
+                        <td className="px-4 py-2 font-mono text-purple-400">{o.id}</td>
                         <td className="px-4 py-2 text-gray-400">
                           {new Date(o.createdAt).toLocaleDateString("zh-TW")}
                         </td>
@@ -310,7 +310,7 @@ function SalesOverview() {
                           {o.isCustom ? (
                             <span className="text-xs bg-yellow-600/30 text-yellow-400 px-1.5 py-0.5 rounded">自訂</span>
                           ) : (
-                            <span className="text-xs bg-blue-600/30 text-blue-400 px-1.5 py-0.5 rounded">一般</span>
+                            <span className="text-xs bg-purple-600/30 text-purple-400 px-1.5 py-0.5 rounded">一般</span>
                           )}
                         </td>
                       </tr>
@@ -373,7 +373,7 @@ function ProductList() {
       {filtered.length === 0 ? (
         <div className="text-gray-500 text-center py-8">尚無商品</div>
       ) : (
-        <div className="bg-gray-800 rounded overflow-hidden">
+        <div className="glow-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-700 text-gray-400 text-left">
@@ -396,7 +396,7 @@ function ProductList() {
                     <td className="px-4 py-2 text-gray-400">{p.category.name}</td>
                     <td className="px-4 py-2 text-right">${fmt(p.cost)}</td>
                     <td className="px-4 py-2 text-right">${fmt(p.price)}</td>
-                    <td className={`px-4 py-2 text-right ${margin >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    <td className={`px-4 py-2 text-right ${margin >= 0 ? "text-purple-400" : "text-red-400"}`}>
                       {fmt(margin)}%
                     </td>
                     <td className="px-4 py-2 text-gray-400">{p.source || "-"}</td>
@@ -428,7 +428,7 @@ export function AccountingDashboard() {
     <div className="max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart3 size={18} className="text-emerald-400" />
+          <BarChart3 size={18} className="text-purple-400" />
           <h2 className="text-lg font-semibold">記帳系統</h2>
         </div>
         <div className="flex gap-1">

@@ -5,7 +5,7 @@ interface EmbedSettingsEditorProps {
   onChange: (settings: EmbedSettings) => void;
 }
 
-const inputClass = "w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500";
+const inputClass = "w-full glow-input";
 
 export function EmbedSettingsEditor({ settings, onChange }: EmbedSettingsEditorProps) {
   const update = (key: keyof EmbedSettings, value: any) => {
@@ -22,15 +22,15 @@ export function EmbedSettingsEditor({ settings, onChange }: EmbedSettingsEditorP
           <div className="flex gap-2">
             <input
               type="color"
-              className="w-10 h-9 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-              value={settings.color || "#5865f2"}
+              className="w-10 h-9 bg-gray-900 border border-purple-500/30 rounded cursor-pointer"
+              value={settings.color || "#f9b4fe"}
               onChange={(e) => update("color", e.target.value)}
             />
             <input
               className={inputClass}
               value={settings.color || ""}
               onChange={(e) => update("color", e.target.value)}
-              placeholder="#5865f2"
+              placeholder="#f9b4fe"
             />
           </div>
         </div>
