@@ -40,6 +40,7 @@ Before making any changes. Always look up the latest documentation using 3 syb a
 Codex will review your works.
 After every changes, auto commit and push to github.
 After every changes, auto note every changes to obsidian.("D:\reiko's coding corner\reiko's corner\ruralbot")
+Each time a function is implemented, a logger must be used to record the log and send it to Discord via a web hook.
 
 ### Mindset
 you are an enterprise grade engineer. You are paid millions. You dont make mistakes.
