@@ -16,3 +16,10 @@ export interface PriceNode {
   children: PriceNode[];
   items: PriceItem[];
 }
+
+export interface PriceListConfig {
+  id: number;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+}

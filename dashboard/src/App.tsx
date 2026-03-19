@@ -1,21 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
-import type { PriceNode } from "./types";
-import { fetchTree } from "./api/client";
+import type { PriceNode, PriceListConfig } from "./types";
+import { fetchTree, fetchConfig } from "./api/client";
 import { TreeView } from "./components/TreeView";
 import { NodeEditor } from "./components/NodeEditor";
+import { HomeEditor } from "./components/HomeEditor";
 import { DiscordPreview } from "./components/DiscordPreview";
 
 export default function App() {
   const [tree, setTree] = useState<PriceNode[]>([]);
+  const [config, setConfig] = useState<PriceListConfig | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editingHome, setEditingHome] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     try {
-      const data = await fetchTree();
-      setTree(data);
+      const [treeData, configData] = await Promise.all([fetchTree(), fetchConfig()]);
+      setTree(treeData);
+      setConfig(configData);
     } catch (err) {
-      console.error("Failed to load tree:", err);
+      console.error("Failed to load:", err);
     } finally {
       setLoading(false);
     }
@@ -50,16 +54,19 @@ export default function App() {
         <h1 className="text-xl font-bold">RuralBot 價目表管理</h1>
       </header>
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-72 border-r border-gray-700 overflow-y-auto bg-gray-850">
+        <div className="w-72 border-r border-gray-700 overflow-y-auto">
           <TreeView
             tree={tree}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={(id) => { setSelectedId(id); setEditingHome(false); }}
             onReload={reload}
+            onEditHome={() => { setSelectedId(null); setEditingHome(true); }}
           />
         </div>
         <div className="flex-1 overflow-y-auto p-6">
-          {selected ? (
+          {editingHome && config ? (
+            <HomeEditor config={config} onSave={reload} />
+          ) : selected ? (
             <NodeEditor
               node={selected}
               onSave={reload}
@@ -75,7 +82,7 @@ export default function App() {
           )}
         </div>
         <div className="w-96 border-l border-gray-700 overflow-y-auto p-4 bg-gray-800">
-          <DiscordPreview node={selected} roots={tree} />
+          <DiscordPreview node={selected} roots={tree} config={config} editingHome={editingHome} />
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import {
   FolderOpen,
   File,
   GripVertical,
+  Home,
 } from "lucide-react";
 import type { PriceNode } from "../types";
 import { createNode, reorderNodes } from "../api/client";
@@ -30,9 +31,10 @@ interface TreeViewProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onReload: () => Promise<void>;
+  onEditHome: () => void;
 }
 
-export function TreeView({ tree, selectedId, onSelect, onReload }: TreeViewProps) {
+export function TreeView({ tree, selectedId, onSelect, onReload, onEditHome }: TreeViewProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -58,6 +60,13 @@ export function TreeView({ tree, selectedId, onSelect, onReload }: TreeViewProps
         </span>
         <AddNodeButton parentId={undefined} onReload={onReload} />
       </div>
+      <button
+        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-gray-300 hover:bg-gray-700 mb-2 text-sm"
+        onClick={onEditHome}
+      >
+        <Home size={14} className="text-blue-400" />
+        首頁設定
+      </button>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={tree.map((n) => n.id)} strategy={verticalListSortingStrategy}>
           {tree.map((node) => (

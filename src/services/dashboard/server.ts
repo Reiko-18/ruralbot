@@ -16,6 +16,8 @@ import {
   reorderNodes,
   reorderItems,
   getChildrenCount,
+  getPriceListConfig,
+  upsertPriceListConfig,
 } from "../price/repo_price_node.js";
 import { MAX_CHILDREN_PER_NODE } from "../../types/price.type.js";
 
@@ -218,6 +220,38 @@ export function startDashboard(): void {
       res.json({ success: true });
     } catch (err) {
       logger.error({ err }, "Failed to reorder items");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/price-config — get homepage config
+  app.get("/api/price-config", async (_req, res) => {
+    try {
+      const config = await getPriceListConfig();
+      res.json(config || { id: 1, title: "📋 價目表", description: null, imageUrl: null });
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch price config");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // PUT /api/price-config — update homepage config
+  app.put("/api/price-config", async (req, res) => {
+    try {
+      const { title, description, imageUrl } = req.body;
+      if (!title || typeof title !== "string" || title.trim() === "") {
+        return res.status(400).json({ error: "title is required" });
+      }
+      const config = await upsertPriceListConfig({
+        title: title.trim(),
+        description: description || null,
+        imageUrl: imageUrl || null,
+      });
+      await refreshPriceCache();
+      logger.info("Price list config updated");
+      res.json(config);
+    } catch (err) {
+      logger.error({ err }, "Failed to update price config");
       res.status(500).json({ error: "Internal server error" });
     }
   });

@@ -1,21 +1,23 @@
-import type { PriceNode } from "../types";
+import type { PriceNode, PriceListConfig } from "../types";
 
 interface DiscordPreviewProps {
   node: PriceNode | null;
   roots: PriceNode[];
+  config: PriceListConfig | null;
+  editingHome?: boolean;
 }
 
-export function DiscordPreview({ node, roots }: DiscordPreviewProps) {
-  const title = node ? node.name : "📋 價目表";
-  const description = node
-    ? node.content || undefined
-    : roots.length > 0
-      ? "請從下方選單選擇分類："
-      : "目前沒有任何價目表，請至管理面板新增。";
-  const imageUrl = node?.imageUrl || undefined;
-  const items = node?.items ?? [];
-  const children = node ? node.children : roots;
-  const hasMenu = children.length > 0 || (node !== null);
+export function DiscordPreview({ node, roots, config, editingHome }: DiscordPreviewProps) {
+  const showHome = editingHome || (!node);
+
+  const title = showHome ? (config?.title || "📋 價目表") : node!.name;
+  const description = showHome
+    ? (config?.description || (roots.length > 0 ? "請從下方選單選擇分類：" : "目前沒有任何價目表，請至管理面板新增。"))
+    : (node!.content || undefined);
+  const imageUrl = showHome ? (config?.imageUrl || undefined) : (node?.imageUrl || undefined);
+  const items = node && !showHome ? node.items : [];
+  const children = showHome ? roots : (node ? node.children : []);
+  const hasMenu = children.length > 0 || (node !== null && !showHome);
 
   return (
     <div>
@@ -66,7 +68,7 @@ export function DiscordPreview({ node, roots }: DiscordPreviewProps) {
                 {child.name}
               </div>
             ))}
-            {node && (
+            {node && !showHome && (
               <div className="text-xs text-[#dbdee1] bg-[#2b2d31] rounded px-3 py-1.5">
                 ⬅ 返回
               </div>

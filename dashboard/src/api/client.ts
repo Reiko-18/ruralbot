@@ -1,4 +1,4 @@
-import type { PriceNode, PriceItem } from "../types";
+import type { PriceNode, PriceItem, PriceListConfig } from "../types";
 
 const BASE = "/api";
 
@@ -58,3 +58,12 @@ export const reorderItems = (nodeId: string, ids: string[]) =>
     method: "PUT",
     body: JSON.stringify({ nodeId, ids }),
   });
+
+// Config
+export const fetchConfig = () => request<PriceListConfig>("/price-config");
+
+export const updateConfig = (data: {
+  title: string;
+  description?: string | null;
+  imageUrl?: string | null;
+}) => request<PriceListConfig>("/price-config", { method: "PUT", body: JSON.stringify(data) });

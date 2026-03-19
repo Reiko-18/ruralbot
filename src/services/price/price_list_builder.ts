@@ -3,7 +3,7 @@ import {
   ActionRowBuilder,
   StringSelectMenuBuilder,
 } from "discord.js";
-import { getCachedNode, getCachedRoots } from "./price_cache.js";
+import { getCachedNode, getCachedRoots, getCachedConfig } from "./price_cache.js";
 import {
   PRICE_MENU_ID,
   MAX_CHILDREN_PER_NODE,
@@ -30,16 +30,20 @@ export function buildPriceView(nodeId: string | null): PriceView {
 
 function buildRootView(): PriceView {
   const roots = getCachedRoots();
+  const config = getCachedConfig();
+
   const embed = new EmbedBuilder()
-    .setTitle("📋 價目表")
+    .setTitle(config?.title || "📋 價目表")
     .setColor(0x5865f2);
 
+  if (config?.imageUrl) embed.setImage(config.imageUrl);
+
   if (roots.length === 0) {
-    embed.setDescription("目前沒有任何價目表，請至管理面板新增。");
+    embed.setDescription(config?.description || "目前沒有任何價目表，請至管理面板新增。");
     return { embeds: [embed], components: [] };
   }
 
-  embed.setDescription("請從下方選單選擇分類：");
+  embed.setDescription(config?.description || "請從下方選單選擇分類：");
 
   const options = roots.slice(0, MAX_CHILDREN_PER_NODE).map((r) => ({
     label: r.name,

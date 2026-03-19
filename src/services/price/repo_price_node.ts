@@ -154,3 +154,21 @@ export async function reorderItems(nodeId: string, ids: string[]) {
     ),
   );
 }
+
+// ── Price List Config ──
+
+export async function getPriceListConfig() {
+  return prisma.priceListConfig.findUnique({ where: { id: 1 } });
+}
+
+export async function upsertPriceListConfig(data: {
+  title: string;
+  description?: string | null;
+  imageUrl?: string | null;
+}) {
+  return prisma.priceListConfig.upsert({
+    where: { id: 1 },
+    update: data,
+    create: { title: data.title, description: data.description, imageUrl: data.imageUrl },
+  });
+}

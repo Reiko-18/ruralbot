@@ -86,6 +86,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
+          <p className="text-xs text-gray-500 mt-1">支援 Discord 自訂貼圖語法 &lt;:name:id&gt; 及一般 Emoji</p>
         </div>
 
         <div>

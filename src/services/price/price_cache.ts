@@ -2,7 +2,15 @@ import { prisma } from "../../core/db.js";
 import { logger } from "../logger/logger.js";
 import type { PriceNodeWithRelations } from "../../types/price.type.js";
 
+// Add config cache type
+type PriceListConfigCache = {
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+} | null;
+
 let cache = new Map<string, PriceNodeWithRelations>();
+let configCache: PriceListConfigCache = null;
 let refreshing = false;
 
 export async function loadPriceCache(): Promise<void> {
@@ -19,6 +27,10 @@ export async function loadPriceCache(): Promise<void> {
     newCache.set(node.id, node);
   }
   cache = newCache;
+
+  const config = await prisma.priceListConfig.findUnique({ where: { id: 1 } });
+  configCache = config ? { title: config.title, description: config.description, imageUrl: config.imageUrl } : null;
+
   logger.info({ nodeCount: nodes.length }, "Price cache loaded");
 }
 
@@ -36,6 +48,10 @@ export function getCachedNode(
   id: string,
 ): PriceNodeWithRelations | undefined {
   return cache.get(id);
+}
+
+export function getCachedConfig(): PriceListConfigCache {
+  return configCache;
 }
 
 export function getCachedRoots(): PriceNodeWithRelations[] {
