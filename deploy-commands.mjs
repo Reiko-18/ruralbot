@@ -1,5 +1,5 @@
 /**
- * Standalone script to deploy all 15 slash commands globally.
+ * Standalone script to deploy all 16 slash commands globally.
  * Does NOT import any project source code (avoids Prisma issues).
  *
  * Usage: node deploy-commands.mjs

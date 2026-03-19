@@ -230,6 +230,12 @@ export function startDashboard(): void {
   }
 
   app.use(express.static(dashboardDist));
+
+  // API catch-all 404 — prevent SPA fallback from intercepting mistyped API routes
+  app.all("/api/{*splat}", (_req, res) => {
+    res.status(404).json({ error: "Not found" });
+  });
+
   app.get("/{*splat}", (_req, res) => {
     res.sendFile(path.join(dashboardDist, "index.html"), (err) => {
       if (err) res.status(404).send("Dashboard not built. Run: cd dashboard && npm run build");
