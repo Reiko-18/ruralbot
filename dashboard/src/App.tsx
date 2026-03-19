@@ -6,8 +6,9 @@ import { NodeEditor } from "./components/NodeEditor";
 import { HomeEditor } from "./components/HomeEditor";
 import { DiscordPreview } from "./components/DiscordPreview";
 import { PresenceManager } from "./components/PresenceManager";
+import { AccountingDashboard } from "./components/AccountingDashboard";
 
-type Tab = "price" | "presence";
+type Tab = "price" | "presence" | "accounting";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("price");
@@ -69,6 +70,16 @@ export default function App() {
           </button>
           <button
             className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              tab === "accounting"
+                ? "bg-blue-600 text-white"
+                : "text-gray-400 hover:text-white hover:bg-gray-700"
+            }`}
+            onClick={() => setTab("accounting")}
+          >
+            記帳
+          </button>
+          <button
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
               tab === "presence"
                 ? "bg-blue-600 text-white"
                 : "text-gray-400 hover:text-white hover:bg-gray-700"
@@ -112,6 +123,10 @@ export default function App() {
           <div className="w-96 border-l border-gray-700 overflow-y-auto p-4 bg-gray-800">
             <DiscordPreview node={selected} roots={tree} config={config} editingHome={editingHome} />
           </div>
+        </div>
+      ) : tab === "accounting" ? (
+        <div className="flex-1 overflow-y-auto p-6">
+          <AccountingDashboard />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-6">

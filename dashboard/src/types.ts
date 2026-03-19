@@ -34,6 +34,43 @@ export interface PresenceText {
   order: number;
 }
 
+export interface AccountingCategory {
+  id: string;
+  name: string;
+}
+
+export interface AccountingProduct {
+  id: string;
+  name: string;
+  cost: number;
+  price: number;
+  source: string | null;
+  categoryId: string;
+  faceValue: number | null;
+  costDiscount: number | null;
+  priceDiscount: number | null;
+  category: AccountingCategory;
+}
+
+export interface AccountingOrder {
+  id: string;
+  productId: string | null;
+  productName: string;
+  quantity: number;
+  actualPrice: number;
+  actualCost: number;
+  profit: number;
+  isCustom: boolean;
+  createdAt: string;
+}
+
+export interface SalesAggregation {
+  totalRevenue: number;
+  totalCost: number;
+  totalProfit: number;
+  orderCount: number;
+}
+
 export interface PriceListConfig {
   id: number;
   title: string;

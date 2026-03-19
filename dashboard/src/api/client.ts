@@ -1,4 +1,13 @@
-import type { PriceNode, PriceItem, PriceListConfig, PresenceText } from "../types";
+import type {
+  PriceNode,
+  PriceItem,
+  PriceListConfig,
+  PresenceText,
+  AccountingCategory,
+  AccountingProduct,
+  AccountingOrder,
+  SalesAggregation,
+} from "../types";
 
 const BASE = "/api";
 
@@ -82,3 +91,31 @@ export const deletePresenceTextApi = (id: string) =>
 
 export const refreshPresence = () =>
   request<{ success: boolean }>("/presence-refresh", { method: "POST" });
+
+// Accounting
+export const fetchCategories = () => request<AccountingCategory[]>("/accounting/categories");
+
+export const fetchProducts = () => request<AccountingProduct[]>("/accounting/products");
+
+export const fetchOrders = (start?: string, end?: string) => {
+  const params = new URLSearchParams();
+  if (start) params.set("start", start);
+  if (end) params.set("end", end);
+  const qs = params.toString();
+  return request<AccountingOrder[]>(`/accounting/orders${qs ? `?${qs}` : ""}`);
+};
+
+export const fetchSales = (start?: string, end?: string) => {
+  const params = new URLSearchParams();
+  if (start) params.set("start", start);
+  if (end) params.set("end", end);
+  const qs = params.toString();
+  return request<SalesAggregation>(`/accounting/sales${qs ? `?${qs}` : ""}`);
+};
+
+export const fetchDistinctYears = () => request<number[]>("/accounting/years");
+
+export const fetchDistinctMonths = (year: number) => request<number[]>(`/accounting/months/${year}`);
+
+export const fetchDistinctDays = (year: number, month: number) =>
+  request<number[]>(`/accounting/days/${year}/${month}`);

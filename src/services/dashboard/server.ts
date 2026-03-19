@@ -26,6 +26,16 @@ import {
   deletePresenceText,
 } from "../presence/repo_presence.js";
 import { refreshPresenceTexts } from "../presence/presence_rotator.js";
+import { getAllCategories } from "../accounting/repo_category.js";
+import { getAllProducts } from "../accounting/repo_product.js";
+import {
+  getOrders,
+  aggregateSales,
+  getDistinctYears,
+  getDistinctMonths,
+  getDistinctDays,
+  getOrderById,
+} from "../accounting/repo_order.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -310,6 +320,101 @@ export function startDashboard(): void {
       res.json({ success: true });
     } catch (err) {
       logger.error({ err }, "Failed to refresh presence texts");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ── Accounting API Routes ──
+
+  // GET /api/accounting/categories — all categories
+  app.get("/api/accounting/categories", async (_req, res) => {
+    try {
+      const categories = await getAllCategories();
+      res.json(categories);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch categories");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/accounting/products — all products with category
+  app.get("/api/accounting/products", async (_req, res) => {
+    try {
+      const products = await getAllProducts();
+      res.json(products);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch products");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/accounting/orders?start=ISO&end=ISO — orders with optional date range
+  app.get("/api/accounting/orders", async (req, res) => {
+    try {
+      const start = req.query.start ? new Date(req.query.start as string) : undefined;
+      const end = req.query.end ? new Date(req.query.end as string) : undefined;
+      const orders = await getOrders(start, end);
+      res.json(orders);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch orders");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/accounting/orders/:id — single order by ID
+  app.get("/api/accounting/orders/:id", async (req, res) => {
+    try {
+      const order = await getOrderById(req.params.id);
+      if (!order) return res.status(404).json({ error: "Order not found" });
+      res.json(order);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch order");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/accounting/sales?start=ISO&end=ISO — aggregated sales
+  app.get("/api/accounting/sales", async (req, res) => {
+    try {
+      const start = req.query.start ? new Date(req.query.start as string) : undefined;
+      const end = req.query.end ? new Date(req.query.end as string) : undefined;
+      const sales = await aggregateSales(start, end);
+      res.json(sales);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch sales aggregation");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/accounting/years — distinct years
+  app.get("/api/accounting/years", async (_req, res) => {
+    try {
+      const years = await getDistinctYears();
+      res.json(years);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch distinct years");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/accounting/months/:year — distinct months for year
+  app.get("/api/accounting/months/:year", async (req, res) => {
+    try {
+      const months = await getDistinctMonths(Number(req.params.year));
+      res.json(months);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch distinct months");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/accounting/days/:year/:month — distinct days for year/month
+  app.get("/api/accounting/days/:year/:month", async (req, res) => {
+    try {
+      const days = await getDistinctDays(Number(req.params.year), Number(req.params.month));
+      res.json(days);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch distinct days");
       res.status(500).json({ error: "Internal server error" });
     }
   });
