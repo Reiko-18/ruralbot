@@ -28,6 +28,15 @@ import * as orderLookup from "./commands/accounting/order-lookup.cmd.js";
 // Config commands
 import * as botConfig from "./commands/config/bot-config.cmd.js";
 
+// Price commands
+import * as priceList from "./commands/price/price-list.cmd.js";
+
+// Price events
+import { registerPriceMenuEvent } from "./events/price/price-menu.event.js";
+
+// Price cache
+import { loadPriceCache } from "./services/price/price_cache.js";
+
 // Guild events
 import { registerGuildCreateEvent } from "./events/guild/guild-create.event.js";
 
@@ -47,6 +56,7 @@ registerCommand(orderDelete);
 registerCommand(salesOverview);
 registerCommand(orderLookup);
 registerCommand(botConfig);
+registerCommand(priceList);
 
 const client = new Client({
   intents: [
@@ -64,6 +74,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   logger.info("Log configs loaded from database");
 
   await loadBotConfig();
+  await loadPriceCache();
 
   // Deploy slash commands
   await deployCommands();
@@ -76,6 +87,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 });
 
 registerGuildCreateEvent(client);
+registerPriceMenuEvent(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isAutocomplete()) {

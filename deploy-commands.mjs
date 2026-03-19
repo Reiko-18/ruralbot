@@ -252,6 +252,18 @@ const botConfig = new SlashCommandBuilder()
       .setDescription("View current primary guild and sync channel config"),
   );
 
+// ── 16. price-list ──
+const priceList = new SlashCommandBuilder()
+  .setName("price-list")
+  .setDescription("Deploy the interactive price list to a channel")
+  .addChannelOption((o) =>
+    o
+      .setName("channel")
+      .setDescription("Channel to send the price list to")
+      .addChannelTypes(ChannelType.GuildText)
+      .setRequired(true),
+  );
+
 // ── Deploy ──
 const commands = [
   logAdd,
@@ -269,6 +281,7 @@ const commands = [
   salesOverview,
   orderLookup,
   botConfig,
+  priceList,
 ].map((cmd) => cmd.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);
