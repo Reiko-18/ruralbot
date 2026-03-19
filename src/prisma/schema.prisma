@@ -117,3 +117,34 @@ model BotConfig {
 
   @@map("bot_configs")
 }
+
+model PriceNode {
+  id        String      @id @default(cuid())
+  name      String
+  content   String?     @db.Text
+  imageUrl  String?     @map("image_url")
+  parentId  String?     @map("parent_id")
+  order     Int         @default(0)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  parent    PriceNode?  @relation("MenuHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  PriceNode[] @relation("MenuHierarchy")
+  items     PriceItem[]
+
+  @@map("price_nodes")
+}
+
+model PriceItem {
+  id        String    @id @default(cuid())
+  label     String
+  price     String
+  nodeId    String    @map("node_id")
+  order     Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  node      PriceNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@map("price_items")
+}
