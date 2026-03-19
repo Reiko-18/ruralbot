@@ -65,7 +65,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
           <button
             className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50"
             onClick={handleSave}
-            disabled={saving || !name.trim()}
+            disabled={saving}
           >
             <Save size={14} /> 儲存
           </button>

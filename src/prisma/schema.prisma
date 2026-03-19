@@ -152,7 +152,7 @@ model PriceItem {
 
 model PriceListConfig {
   id          Int      @id @default(1)
-  title       String   @default("📋 價目表")
+  title       String   @default("")
   description String?  @db.Text
   imageUrl       String?  @map("image_url")
   embedSettings  String?  @map("embed_settings") @db.Text

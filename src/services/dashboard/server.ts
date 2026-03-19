@@ -56,9 +56,6 @@ export function startDashboard(): void {
   app.post("/api/price-nodes", async (req, res) => {
     try {
       const { name, content, imageUrl, parentId, embedSettings } = req.body;
-      if (!name || typeof name !== "string" || name.trim() === "") {
-        return res.status(400).json({ error: "name is required" });
-      }
       if (parentId) {
         const parent = await getNodeById(parentId);
         if (!parent) return res.status(400).json({ error: "parentId not found" });
@@ -68,7 +65,7 @@ export function startDashboard(): void {
         return res.status(400).json({ error: `Maximum ${MAX_CHILDREN_PER_NODE} children per node` });
       }
       const node = await createNode({
-        name: name.trim(),
+        name: (name || "").trim(),
         content: content || undefined,
         imageUrl: imageUrl || undefined,
         parentId: parentId || undefined,
@@ -89,11 +86,8 @@ export function startDashboard(): void {
       const existing = await getNodeById(req.params.id);
       if (!existing) return res.status(404).json({ error: "Node not found" });
       const { name, content, imageUrl, embedSettings } = req.body;
-      if (name !== undefined && (typeof name !== "string" || name.trim() === "")) {
-        return res.status(400).json({ error: "name cannot be empty" });
-      }
       const node = await updateNode(req.params.id, {
-        name: name?.trim(),
+        name: name !== undefined ? (name || "").trim() : undefined,
         content: content !== undefined ? content : undefined,
         imageUrl: imageUrl !== undefined ? imageUrl : undefined,
         embedSettings: embedSettings !== undefined ? embedSettings : undefined,
@@ -241,11 +235,8 @@ export function startDashboard(): void {
   app.put("/api/price-config", async (req, res) => {
     try {
       const { title, description, imageUrl, embedSettings } = req.body;
-      if (!title || typeof title !== "string" || title.trim() === "") {
-        return res.status(400).json({ error: "title is required" });
-      }
       const config = await upsertPriceListConfig({
-        title: title.trim(),
+        title: (title || "").trim(),
         description: description || null,
         imageUrl: imageUrl || null,
         embedSettings: embedSettings || null,

@@ -68,9 +68,9 @@ function parseDiscordEmoji(text: string): { label: string; emoji?: { id: string;
 }
 
 function buildMenuOption(name: string, value: string) {
-  const parsed = parseDiscordEmoji(name);
+  const parsed = parseDiscordEmoji(name || "—");
   const option: { label: string; value: string; emoji?: { id: string; name: string; animated?: boolean } } = {
-    label: parsed.label,
+    label: parsed.label || "—",
     value,
   };
   if (parsed.emoji) option.emoji = parsed.emoji;
@@ -96,8 +96,9 @@ function buildRootView(): PriceView {
   const config = getCachedConfig();
   const settings = parseEmbedSettings(config?.embedSettings);
 
-  const embed = new EmbedBuilder()
-    .setTitle(config?.title || "📋 價目表");
+  const embed = new EmbedBuilder();
+
+  if (config?.title) embed.setTitle(config.title);
 
   applyEmbedSettings(embed, settings);
 
@@ -108,7 +109,7 @@ function buildRootView(): PriceView {
     return { embeds: [embed], components: [] };
   }
 
-  embed.setDescription(config?.description || "請從下方選單選擇分類：");
+  if (config?.description) embed.setDescription(config.description);
 
   const options = roots.slice(0, MAX_CHILDREN_PER_NODE).map((r) =>
     buildMenuOption(r.name, r.id)
@@ -132,8 +133,9 @@ function buildRootView(): PriceView {
 function buildCategoryView(node: any): PriceView {
   const settings = parseEmbedSettings(node.embedSettings);
 
-  const embed = new EmbedBuilder()
-    .setTitle(node.name);
+  const embed = new EmbedBuilder();
+
+  if (node.name) embed.setTitle(node.name);
 
   applyEmbedSettings(embed, settings);
 
@@ -165,8 +167,9 @@ function buildCategoryView(node: any): PriceView {
 function buildLeafView(node: any): PriceView {
   const settings = parseEmbedSettings(node.embedSettings);
 
-  const embed = new EmbedBuilder()
-    .setTitle(node.name);
+  const embed = new EmbedBuilder();
+
+  if (node.name) embed.setTitle(node.name);
 
   applyEmbedSettings(embed, settings);
 
