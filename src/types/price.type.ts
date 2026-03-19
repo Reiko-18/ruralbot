@@ -1,6 +1,16 @@
 export const PRICE_MENU_ID = "price_menu";
 export const MAX_CHILDREN_PER_NODE = 24;
 
+export interface EmbedSettings {
+  color?: string;          // hex color like "#5865f2"
+  authorName?: string;
+  authorIconUrl?: string;
+  thumbnailUrl?: string;
+  showTimestamp?: boolean;
+  footerText?: string;
+  footerIconUrl?: string;
+}
+
 export interface PriceNodeFlat {
   id: string;
   name: string;

@@ -55,7 +55,7 @@ export function startDashboard(): void {
   // POST /api/price-nodes — create node
   app.post("/api/price-nodes", async (req, res) => {
     try {
-      const { name, content, imageUrl, parentId } = req.body;
+      const { name, content, imageUrl, parentId, embedSettings } = req.body;
       if (!name || typeof name !== "string" || name.trim() === "") {
         return res.status(400).json({ error: "name is required" });
       }
@@ -72,6 +72,7 @@ export function startDashboard(): void {
         content: content || undefined,
         imageUrl: imageUrl || undefined,
         parentId: parentId || undefined,
+        embedSettings: embedSettings || undefined,
       });
       await refreshPriceCache();
       logger.info({ nodeId: node.id, name: node.name }, "Price node created");
@@ -87,7 +88,7 @@ export function startDashboard(): void {
     try {
       const existing = await getNodeById(req.params.id);
       if (!existing) return res.status(404).json({ error: "Node not found" });
-      const { name, content, imageUrl } = req.body;
+      const { name, content, imageUrl, embedSettings } = req.body;
       if (name !== undefined && (typeof name !== "string" || name.trim() === "")) {
         return res.status(400).json({ error: "name cannot be empty" });
       }
@@ -95,6 +96,7 @@ export function startDashboard(): void {
         name: name?.trim(),
         content: content !== undefined ? content : undefined,
         imageUrl: imageUrl !== undefined ? imageUrl : undefined,
+        embedSettings: embedSettings !== undefined ? embedSettings : undefined,
       });
       await refreshPriceCache();
       logger.info({ nodeId: node.id }, "Price node updated");
@@ -228,7 +230,7 @@ export function startDashboard(): void {
   app.get("/api/price-config", async (_req, res) => {
     try {
       const config = await getPriceListConfig();
-      res.json(config || { id: 1, title: "📋 價目表", description: null, imageUrl: null });
+      res.json(config || { id: 1, title: "📋 價目表", description: null, imageUrl: null, embedSettings: null });
     } catch (err) {
       logger.error({ err }, "Failed to fetch price config");
       res.status(500).json({ error: "Internal server error" });
@@ -238,7 +240,7 @@ export function startDashboard(): void {
   // PUT /api/price-config — update homepage config
   app.put("/api/price-config", async (req, res) => {
     try {
-      const { title, description, imageUrl } = req.body;
+      const { title, description, imageUrl, embedSettings } = req.body;
       if (!title || typeof title !== "string" || title.trim() === "") {
         return res.status(400).json({ error: "title is required" });
       }
@@ -246,6 +248,7 @@ export function startDashboard(): void {
         title: title.trim(),
         description: description || null,
         imageUrl: imageUrl || null,
+        embedSettings: embedSettings || null,
       });
       await refreshPriceCache();
       logger.info("Price list config updated");

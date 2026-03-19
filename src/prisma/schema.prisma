@@ -122,11 +122,12 @@ model PriceNode {
   id        String      @id @default(cuid())
   name      String
   content   String?     @db.Text
-  imageUrl  String?     @map("image_url")
-  parentId  String?     @map("parent_id")
-  order     Int         @default(0)
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  imageUrl       String?     @map("image_url")
+  embedSettings  String?     @map("embed_settings") @db.Text
+  parentId       String?     @map("parent_id")
+  order          Int         @default(0)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
 
   parent    PriceNode?  @relation("MenuHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children  PriceNode[] @relation("MenuHierarchy")
@@ -153,9 +154,10 @@ model PriceListConfig {
   id          Int      @id @default(1)
   title       String   @default("📋 價目表")
   description String?  @db.Text
-  imageUrl    String?  @map("image_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  imageUrl       String?  @map("image_url")
+  embedSettings  String?  @map("embed_settings") @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("price_list_configs")
 }

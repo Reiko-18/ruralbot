@@ -6,6 +6,16 @@ export interface PriceItem {
   order: number;
 }
 
+export interface EmbedSettings {
+  color?: string;
+  authorName?: string;
+  authorIconUrl?: string;
+  thumbnailUrl?: string;
+  showTimestamp?: boolean;
+  footerText?: string;
+  footerIconUrl?: string;
+}
+
 export interface PriceNode {
   id: string;
   name: string;
@@ -15,6 +25,7 @@ export interface PriceNode {
   order: number;
   children: PriceNode[];
   items: PriceItem[];
+  embedSettings: string | null;
 }
 
 export interface PriceListConfig {
@@ -22,4 +33,5 @@ export interface PriceListConfig {
   title: string;
   description: string | null;
   imageUrl: string | null;
+  embedSettings: string | null;
 }

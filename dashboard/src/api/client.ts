@@ -25,12 +25,14 @@ export const createNode = (data: {
   content?: string;
   imageUrl?: string;
   parentId?: string;
+  embedSettings?: string;
 }) => request<PriceNode>("/price-nodes", { method: "POST", body: JSON.stringify(data) });
 
 export const updateNode = (id: string, data: {
   name?: string;
   content?: string | null;
   imageUrl?: string | null;
+  embedSettings?: string | null;
 }) => request<PriceNode>(`/price-nodes/${id}`, { method: "PUT", body: JSON.stringify(data) });
 
 export const deleteNode = (id: string) =>
@@ -66,4 +68,5 @@ export const updateConfig = (data: {
   title: string;
   description?: string | null;
   imageUrl?: string | null;
+  embedSettings?: string | null;
 }) => request<PriceListConfig>("/price-config", { method: "PUT", body: JSON.stringify(data) });

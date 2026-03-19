@@ -61,6 +61,7 @@ export async function createNode(data: {
   content?: string;
   imageUrl?: string;
   parentId?: string;
+  embedSettings?: string;
 }) {
   const maxOrder = await prisma.priceNode.aggregate({
     where: { parentId: data.parentId ?? null },
@@ -72,6 +73,7 @@ export async function createNode(data: {
       content: data.content,
       imageUrl: data.imageUrl,
       parentId: data.parentId ?? null,
+      embedSettings: data.embedSettings,
       order: (maxOrder._max.order ?? -1) + 1,
     },
     include: {
@@ -83,7 +85,7 @@ export async function createNode(data: {
 
 export async function updateNode(
   id: string,
-  data: { name?: string; content?: string | null; imageUrl?: string | null },
+  data: { name?: string; content?: string | null; imageUrl?: string | null; embedSettings?: string | null },
 ) {
   return prisma.priceNode.update({
     where: { id },
@@ -165,10 +167,11 @@ export async function upsertPriceListConfig(data: {
   title: string;
   description?: string | null;
   imageUrl?: string | null;
+  embedSettings?: string | null;
 }) {
   return prisma.priceListConfig.upsert({
     where: { id: 1 },
     update: data,
-    create: { title: data.title, description: data.description, imageUrl: data.imageUrl },
+    create: { title: data.title, description: data.description, imageUrl: data.imageUrl, embedSettings: data.embedSettings },
   });
 }

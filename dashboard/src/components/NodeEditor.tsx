@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Save, Trash2 } from "lucide-react";
-import type { PriceNode } from "../types";
+import type { PriceNode, EmbedSettings } from "../types";
 import { updateNode, deleteNode } from "../api/client";
 import { PriceItemList } from "./PriceItemList";
+import { EmbedSettingsEditor } from "./EmbedSettingsEditor";
 
 interface NodeEditorProps {
   node: PriceNode;
@@ -10,17 +11,24 @@ interface NodeEditorProps {
   onDelete: () => void;
 }
 
+function parseSettings(raw: string | null): EmbedSettings {
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
 export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
   const [name, setName] = useState(node.name);
   const [content, setContent] = useState(node.content ?? "");
   const [imageUrl, setImageUrl] = useState(node.imageUrl ?? "");
+  const [embedSettings, setEmbedSettings] = useState<EmbedSettings>(parseSettings(node.embedSettings));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setName(node.name);
     setContent(node.content ?? "");
     setImageUrl(node.imageUrl ?? "");
-  }, [node.id, node.name, node.content, node.imageUrl]);
+    setEmbedSettings(parseSettings(node.embedSettings));
+  }, [node.id, node.name, node.content, node.imageUrl, node.embedSettings]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -29,6 +37,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
         name: name.trim(),
         content: content || null,
         imageUrl: imageUrl || null,
+        embedSettings: JSON.stringify(embedSettings),
       });
       await onSave();
     } catch (err: any) {
@@ -71,16 +80,15 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">名稱</label>
+          <label className="block text-sm text-gray-400 mb-1">名稱 (Title)</label>
           <input
             className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
-
         <div>
-          <label className="block text-sm text-gray-400 mb-1">說明文字</label>
+          <label className="block text-sm text-gray-400 mb-1">說明文字 (Description)</label>
           <textarea
             className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 min-h-[80px]"
             value={content}
@@ -88,9 +96,8 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
           />
           <p className="text-xs text-gray-500 mt-1">支援 Discord 自訂貼圖語法 &lt;:name:id&gt; 及一般 Emoji</p>
         </div>
-
         <div>
-          <label className="block text-sm text-gray-400 mb-1">圖片連結</label>
+          <label className="block text-sm text-gray-400 mb-1">圖片 (Image)</label>
           <input
             className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             value={imageUrl}
@@ -102,8 +109,12 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
 
       <hr className="border-gray-700" />
 
+      <EmbedSettingsEditor settings={embedSettings} onChange={setEmbedSettings} />
+
+      <hr className="border-gray-700" />
+
       <div>
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">價目項目</h3>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">價目項目 (Fields)</h3>
         <PriceItemList nodeId={node.id} items={node.items} onReload={onSave} />
       </div>
     </div>

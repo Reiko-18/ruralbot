@@ -7,11 +7,48 @@ import { getCachedNode, getCachedRoots, getCachedConfig } from "./price_cache.js
 import {
   PRICE_MENU_ID,
   MAX_CHILDREN_PER_NODE,
+  type EmbedSettings,
 } from "../../types/price.type.js";
 
 interface PriceView {
   embeds: EmbedBuilder[];
   components: ActionRowBuilder<StringSelectMenuBuilder>[];
+}
+
+function parseEmbedSettings(raw: string | null | undefined): EmbedSettings {
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function applyEmbedSettings(embed: EmbedBuilder, settings: EmbedSettings): void {
+  const color = settings.color ? parseInt(settings.color.replace("#", ""), 16) : 0x5865f2;
+  embed.setColor(color);
+
+  if (settings.authorName) {
+    embed.setAuthor({
+      name: settings.authorName,
+      iconURL: settings.authorIconUrl || undefined,
+    });
+  }
+
+  if (settings.thumbnailUrl) {
+    embed.setThumbnail(settings.thumbnailUrl);
+  }
+
+  if (settings.showTimestamp) {
+    embed.setTimestamp();
+  }
+
+  if (settings.footerText) {
+    embed.setFooter({
+      text: settings.footerText,
+      iconURL: settings.footerIconUrl || undefined,
+    });
+  }
 }
 
 export function buildPriceView(nodeId: string | null): PriceView {
@@ -31,10 +68,12 @@ export function buildPriceView(nodeId: string | null): PriceView {
 function buildRootView(): PriceView {
   const roots = getCachedRoots();
   const config = getCachedConfig();
+  const settings = parseEmbedSettings(config?.embedSettings);
 
   const embed = new EmbedBuilder()
-    .setTitle(config?.title || "📋 價目表")
-    .setColor(0x5865f2);
+    .setTitle(config?.title || "📋 價目表");
+
+  applyEmbedSettings(embed, settings);
 
   if (config?.imageUrl) embed.setImage(config.imageUrl);
 
@@ -56,38 +95,39 @@ function buildRootView(): PriceView {
     .addOptions(options);
 
   if (roots.length > MAX_CHILDREN_PER_NODE) {
-    embed.setFooter({ text: `⚠️ 僅顯示前 ${MAX_CHILDREN_PER_NODE} 個分類` });
+    // Append warning to footer if footer already set
+    const existing = settings.footerText || "";
+    const warn = `⚠️ 僅顯示前 ${MAX_CHILDREN_PER_NODE} 個分類`;
+    embed.setFooter({ text: existing ? `${existing} | ${warn}` : warn, iconURL: settings.footerIconUrl || undefined });
   }
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
   return { embeds: [embed], components: [row] };
 }
 
-function buildCategoryView(node: {
-  id: string;
-  name: string;
-  content: string | null;
-  imageUrl: string | null;
-  parentId: string | null;
-  children: { id: string; name: string }[];
-}): PriceView {
+function buildCategoryView(node: any): PriceView {
+  const settings = parseEmbedSettings(node.embedSettings);
+
   const embed = new EmbedBuilder()
-    .setTitle(node.name)
-    .setColor(0x5865f2);
+    .setTitle(node.name);
+
+  applyEmbedSettings(embed, settings);
 
   if (node.content) embed.setDescription(node.content);
   if (node.imageUrl) embed.setImage(node.imageUrl);
 
   const backValue = node.parentId ? `back:${node.parentId}` : "back:root";
 
-  const options = node.children.slice(0, MAX_CHILDREN_PER_NODE).map((c) => ({
+  const options = node.children.slice(0, MAX_CHILDREN_PER_NODE).map((c: any) => ({
     label: c.name,
     value: c.id,
   }));
   options.push({ label: "⬅ 返回", value: backValue });
 
   if (node.children.length > MAX_CHILDREN_PER_NODE) {
-    embed.setFooter({ text: `⚠️ 僅顯示前 ${MAX_CHILDREN_PER_NODE} 個子項目` });
+    const existing = settings.footerText || "";
+    const warn = `⚠️ 僅顯示前 ${MAX_CHILDREN_PER_NODE} 個子項目`;
+    embed.setFooter({ text: existing ? `${existing} | ${warn}` : warn, iconURL: settings.footerIconUrl || undefined });
   }
 
   const menu = new StringSelectMenuBuilder()
@@ -99,17 +139,13 @@ function buildCategoryView(node: {
   return { embeds: [embed], components: [row] };
 }
 
-function buildLeafView(node: {
-  id: string;
-  name: string;
-  content: string | null;
-  imageUrl: string | null;
-  parentId: string | null;
-  items: { label: string; price: string }[];
-}): PriceView {
+function buildLeafView(node: any): PriceView {
+  const settings = parseEmbedSettings(node.embedSettings);
+
   const embed = new EmbedBuilder()
-    .setTitle(node.name)
-    .setColor(0x5865f2);
+    .setTitle(node.name);
+
+  applyEmbedSettings(embed, settings);
 
   if (node.content) embed.setDescription(node.content);
   if (node.imageUrl) embed.setImage(node.imageUrl);

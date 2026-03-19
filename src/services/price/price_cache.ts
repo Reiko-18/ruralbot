@@ -7,6 +7,7 @@ type PriceListConfigCache = {
   title: string;
   description: string | null;
   imageUrl: string | null;
+  embedSettings: string | null;
 } | null;
 
 let cache = new Map<string, PriceNodeWithRelations>();
@@ -29,7 +30,7 @@ export async function loadPriceCache(): Promise<void> {
   cache = newCache;
 
   const config = await prisma.priceListConfig.findUnique({ where: { id: 1 } });
-  configCache = config ? { title: config.title, description: config.description, imageUrl: config.imageUrl } : null;
+  configCache = config ? { title: config.title, description: config.description, imageUrl: config.imageUrl, embedSettings: config.embedSettings } : null;
 
   logger.info({ nodeCount: nodes.length }, "Price cache loaded");
 }

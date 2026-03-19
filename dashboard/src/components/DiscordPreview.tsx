@@ -1,4 +1,4 @@
-import type { PriceNode, PriceListConfig } from "../types";
+import type { PriceNode, PriceListConfig, EmbedSettings } from "../types";
 
 interface DiscordPreviewProps {
   node: PriceNode | null;
@@ -7,10 +7,15 @@ interface DiscordPreviewProps {
   editingHome?: boolean;
 }
 
+function parseSettings(raw: string | null | undefined): EmbedSettings {
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
 export function DiscordPreview({ node, roots, config, editingHome }: DiscordPreviewProps) {
   const showHome = editingHome || (!node);
 
-  const title = showHome ? (config?.title || "📋 價目表") : node!.name;
+  const title = showHome ? (config?.title || "價目表") : node!.name;
   const description = showHome
     ? (config?.description || (roots.length > 0 ? "請從下方選單選擇分類：" : "目前沒有任何價目表，請至管理面板新增。"))
     : (node!.content || undefined);
@@ -19,17 +24,42 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
   const children = showHome ? roots : (node ? node.children : []);
   const hasMenu = children.length > 0 || (node !== null && !showHome);
 
+  const settings = showHome
+    ? parseSettings(config?.embedSettings)
+    : parseSettings(node?.embedSettings);
+
+  const borderColor = settings.color || "#5865f2";
+
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-400 mb-3">Discord 預覽</h3>
 
       {/* Embed */}
-      <div className="bg-[#2b2d31] rounded-lg overflow-hidden border-l-4 border-[#5865f2]">
+      <div
+        className="bg-[#2b2d31] rounded-lg overflow-hidden border-l-4"
+        style={{ borderLeftColor: borderColor }}
+      >
         <div className="p-4 space-y-2">
-          <div className="font-semibold text-white">{title}</div>
-          {description && (
-            <div className="text-sm text-[#dbdee1]">{description}</div>
+          {/* Author */}
+          {settings.authorName && (
+            <div className="flex items-center gap-1.5">
+              {settings.authorIconUrl && (
+                <img src={settings.authorIconUrl} alt="" className="w-5 h-5 rounded-full"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              )}
+              <span className="text-xs text-[#dbdee1]">{settings.authorName}</span>
+            </div>
           )}
+
+          {/* Title */}
+          <div className="font-semibold text-white">{title}</div>
+
+          {/* Description */}
+          {description && (
+            <div className="text-sm text-[#dbdee1] whitespace-pre-wrap">{description}</div>
+          )}
+
+          {/* Fields */}
           {items.length > 0 && (
             <div className="grid grid-cols-3 gap-2 mt-2">
               {items.map((item) => (
@@ -40,15 +70,34 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
               ))}
             </div>
           )}
+
+          {/* Image */}
           {imageUrl && (
-            <img
-              src={imageUrl}
-              alt="preview"
-              className="rounded mt-2 max-w-full"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
+            <img src={imageUrl} alt="preview" className="rounded mt-2 max-w-full"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          )}
+
+          {/* Thumbnail - positioned top right */}
+          {settings.thumbnailUrl && (
+            <img src={settings.thumbnailUrl} alt="thumbnail"
+              className="absolute top-4 right-4 w-20 h-20 rounded object-cover"
+              style={{ position: "relative", float: "right", marginTop: "-80px" }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          )}
+
+          {/* Footer */}
+          {(settings.footerText || settings.showTimestamp) && (
+            <div className="flex items-center gap-1.5 pt-1 border-t border-[#3f4147]">
+              {settings.footerIconUrl && (
+                <img src={settings.footerIconUrl} alt="" className="w-4 h-4 rounded-full"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              )}
+              <span className="text-xs text-[#949ba4]">
+                {settings.footerText}
+                {settings.footerText && settings.showTimestamp && " • "}
+                {settings.showTimestamp && new Date().toLocaleString("zh-TW")}
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -61,10 +110,7 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
           </div>
           <div className="mt-1 space-y-0.5">
             {children.map((child) => (
-              <div
-                key={child.id}
-                className="text-xs text-[#dbdee1] bg-[#2b2d31] rounded px-3 py-1.5"
-              >
+              <div key={child.id} className="text-xs text-[#dbdee1] bg-[#2b2d31] rounded px-3 py-1.5">
                 {child.name}
               </div>
             ))}
