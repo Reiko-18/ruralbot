@@ -62,10 +62,10 @@ export function TreeView({ tree, selectedId, onSelect, onReload, onEditHome }: T
         <AddNodeButton parentId={undefined} onReload={onReload} />
       </div>
       <button
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-gray-300 hover:bg-gray-700 mb-2 text-sm"
+        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-gray-300 hover:bg-purple-400/10 mb-2 text-sm"
         onClick={onEditHome}
       >
-        <Home size={14} className="text-blue-400" />
+        <Home size={14} className="text-purple-400" />
         首頁設定
       </button>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -133,8 +133,8 @@ function SortableTreeNode({
   return (
     <div ref={setNodeRef} style={style}>
       <div
-        className={`flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer group hover:bg-gray-700 ${
-          isSelected ? "bg-gray-700 text-white" : "text-gray-300"
+        className={`flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer group hover:bg-purple-400/10 ${
+          isSelected ? "bg-purple-400 text-accent-dark shadow-glow-btn" : "text-gray-300"
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={() => onSelect(node.id)}
@@ -156,9 +156,9 @@ function SortableTreeNode({
           <span className="w-5" />
         )}
         {hasChildren ? (
-          <FolderOpen size={14} className="text-yellow-400" />
+          <FolderOpen size={14} className="text-purple-400" />
         ) : (
-          <File size={14} className="text-blue-400" />
+          <File size={14} className="text-purple-400" />
         )}
         <span className="flex-1 text-sm truncate"><DiscordText text={node.name} /></span>
         <span className="opacity-0 group-hover:opacity-100">
@@ -206,7 +206,7 @@ function AddNodeButton({
 
   return (
     <button
-      className="p-0.5 hover:text-green-400 text-gray-500"
+      className="p-0.5 hover:text-purple-400 text-gray-500"
       onClick={handleAdd}
       title="新增子項目"
     >
