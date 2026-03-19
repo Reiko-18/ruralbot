@@ -1,4 +1,4 @@
-import { type Client, Events } from "discord.js";
+import { type Client, Events, MessageFlags } from "discord.js";
 import { buildPriceView } from "../../services/price/price_list_builder.js";
 import { PRICE_MENU_ID } from "../../types/price.type.js";
 import { logger } from "../../services/logger/logger.js";
@@ -21,14 +21,27 @@ export function registerPriceMenuEvent(client: Client): void {
         view = buildPriceView(value);
       }
 
-      await interaction.update({
-        embeds: view.embeds,
-        components: view.components,
-      });
+      const isEphemeral = interaction.message.flags.has(MessageFlags.Ephemeral);
+
+      if (isEphemeral) {
+        // Already in ephemeral context — update in place
+        await interaction.update({
+          embeds: view.embeds,
+          components: view.components,
+        });
+      } else {
+        // Public homepage message — reply ephemeral, keep homepage visible
+        await interaction.reply({
+          embeds: view.embeds,
+          components: view.components,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
     } catch (err) {
       logger.error({ err }, "Price menu interaction failed");
       try {
-        await interaction.update({
+        const isEphemeral = interaction.message.flags.has(MessageFlags.Ephemeral);
+        const errorPayload = {
           embeds: [
             {
               title: "❌ 載入失敗",
@@ -37,7 +50,16 @@ export function registerPriceMenuEvent(client: Client): void {
             },
           ],
           components: [],
-        });
+        };
+
+        if (isEphemeral) {
+          await interaction.update(errorPayload);
+        } else {
+          await interaction.reply({
+            ...errorPayload,
+            flags: MessageFlags.Ephemeral,
+          });
+        }
       } catch {
         // interaction already responded
       }
