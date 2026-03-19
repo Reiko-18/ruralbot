@@ -9,6 +9,7 @@ import {
   Home,
 } from "lucide-react";
 import type { PriceNode } from "../types";
+import { DiscordText } from "./DiscordText";
 import { createNode, reorderNodes } from "../api/client";
 import {
   DndContext,
@@ -159,7 +160,7 @@ function SortableTreeNode({
         ) : (
           <File size={14} className="text-blue-400" />
         )}
-        <span className="flex-1 text-sm truncate">{node.name}</span>
+        <span className="flex-1 text-sm truncate"><DiscordText text={node.name} /></span>
         <span className="opacity-0 group-hover:opacity-100">
           <AddNodeButton parentId={node.id} onReload={onReload} />
         </span>

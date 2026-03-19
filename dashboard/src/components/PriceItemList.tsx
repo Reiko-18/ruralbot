@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { PriceItem } from "../types";
+import { DiscordText } from "./DiscordText";
 import {
   createItem,
   updateItem,
@@ -161,9 +162,9 @@ function SortableItem({
             className="flex-1 text-sm cursor-pointer hover:text-white"
             onClick={() => setEditing(true)}
           >
-            {item.label}
+            <DiscordText text={item.label} />
           </span>
-          <span className="text-sm text-green-400">{item.price}</span>
+          <span className="text-sm text-green-400"><DiscordText text={item.price} /></span>
           <button
             className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300"
             onClick={handleDelete}

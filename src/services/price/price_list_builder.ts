@@ -51,6 +51,32 @@ function applyEmbedSettings(embed: EmbedBuilder, settings: EmbedSettings): void 
   }
 }
 
+function parseDiscordEmoji(text: string): { label: string; emoji?: { id: string; name: string; animated?: boolean } } {
+  const match = text.match(/<(a)?:(\w+):(\d+)>/);
+  if (match) {
+    const label = text.replace(match[0], "").trim();
+    return {
+      label: label || match[2],
+      emoji: {
+        id: match[3],
+        name: match[2],
+        animated: match[1] === "a" || undefined,
+      },
+    };
+  }
+  return { label: text };
+}
+
+function buildMenuOption(name: string, value: string) {
+  const parsed = parseDiscordEmoji(name);
+  const option: { label: string; value: string; emoji?: { id: string; name: string; animated?: boolean } } = {
+    label: parsed.label,
+    value,
+  };
+  if (parsed.emoji) option.emoji = parsed.emoji;
+  return option;
+}
+
 export function buildPriceView(nodeId: string | null): PriceView {
   if (nodeId === null) {
     return buildRootView();
@@ -84,10 +110,9 @@ function buildRootView(): PriceView {
 
   embed.setDescription(config?.description || "請從下方選單選擇分類：");
 
-  const options = roots.slice(0, MAX_CHILDREN_PER_NODE).map((r) => ({
-    label: r.name,
-    value: r.id,
-  }));
+  const options = roots.slice(0, MAX_CHILDREN_PER_NODE).map((r) =>
+    buildMenuOption(r.name, r.id)
+  );
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId(PRICE_MENU_ID)
@@ -95,7 +120,6 @@ function buildRootView(): PriceView {
     .addOptions(options);
 
   if (roots.length > MAX_CHILDREN_PER_NODE) {
-    // Append warning to footer if footer already set
     const existing = settings.footerText || "";
     const warn = `⚠️ 僅顯示前 ${MAX_CHILDREN_PER_NODE} 個分類`;
     embed.setFooter({ text: existing ? `${existing} | ${warn}` : warn, iconURL: settings.footerIconUrl || undefined });
@@ -118,10 +142,9 @@ function buildCategoryView(node: any): PriceView {
 
   const backValue = node.parentId ? `back:${node.parentId}` : "back:root";
 
-  const options = node.children.slice(0, MAX_CHILDREN_PER_NODE).map((c: any) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const options = node.children.slice(0, MAX_CHILDREN_PER_NODE).map((c: any) =>
+    buildMenuOption(c.name, c.id)
+  );
   options.push({ label: "⬅ 返回", value: backValue });
 
   if (node.children.length > MAX_CHILDREN_PER_NODE) {

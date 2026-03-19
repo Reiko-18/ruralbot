@@ -1,4 +1,5 @@
 import type { PriceNode, PriceListConfig, EmbedSettings } from "../types";
+import { DiscordText } from "./DiscordText";
 
 interface DiscordPreviewProps {
   node: PriceNode | null;
@@ -15,7 +16,7 @@ function parseSettings(raw: string | null | undefined): EmbedSettings {
 export function DiscordPreview({ node, roots, config, editingHome }: DiscordPreviewProps) {
   const showHome = editingHome || (!node);
 
-  const title = showHome ? (config?.title || "價目表") : node!.name;
+  const title = showHome ? (config?.title || "📋 價目表") : node!.name;
   const description = showHome
     ? (config?.description || (roots.length > 0 ? "請從下方選單選擇分類：" : "目前沒有任何價目表，請至管理面板新增。"))
     : (node!.content || undefined);
@@ -47,16 +48,20 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
                 <img src={settings.authorIconUrl} alt="" className="w-5 h-5 rounded-full"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               )}
-              <span className="text-xs text-[#dbdee1]">{settings.authorName}</span>
+              <DiscordText text={settings.authorName} className="text-xs text-[#dbdee1]" />
             </div>
           )}
 
           {/* Title */}
-          <div className="font-semibold text-white">{title}</div>
+          <div className="font-semibold text-white">
+            <DiscordText text={title} />
+          </div>
 
           {/* Description */}
           {description && (
-            <div className="text-sm text-[#dbdee1] whitespace-pre-wrap">{description}</div>
+            <div className="text-sm text-[#dbdee1] whitespace-pre-wrap">
+              <DiscordText text={description} />
+            </div>
           )}
 
           {/* Fields */}
@@ -64,8 +69,12 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
             <div className="grid grid-cols-3 gap-2 mt-2">
               {items.map((item) => (
                 <div key={item.id}>
-                  <div className="text-xs font-semibold text-white">{item.label}</div>
-                  <div className="text-xs text-[#dbdee1]">{item.price}</div>
+                  <div className="text-xs font-semibold text-white">
+                    <DiscordText text={item.label} />
+                  </div>
+                  <div className="text-xs text-[#dbdee1]">
+                    <DiscordText text={item.price} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -77,7 +86,7 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           )}
 
-          {/* Thumbnail - positioned top right */}
+          {/* Thumbnail */}
           {settings.thumbnailUrl && (
             <img src={settings.thumbnailUrl} alt="thumbnail"
               className="absolute top-4 right-4 w-20 h-20 rounded object-cover"
@@ -93,7 +102,7 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               )}
               <span className="text-xs text-[#949ba4]">
-                {settings.footerText}
+                {settings.footerText && <DiscordText text={settings.footerText} />}
                 {settings.footerText && settings.showTimestamp && " • "}
                 {settings.showTimestamp && new Date().toLocaleString("zh-TW")}
               </span>
@@ -110,8 +119,8 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
           </div>
           <div className="mt-1 space-y-0.5">
             {children.map((child) => (
-              <div key={child.id} className="text-xs text-[#dbdee1] bg-[#2b2d31] rounded px-3 py-1.5">
-                {child.name}
+              <div key={child.id} className="text-xs text-[#dbdee1] bg-[#2b2d31] rounded px-3 py-1.5 flex items-center gap-1">
+                <DiscordText text={child.name} />
               </div>
             ))}
             {node && !showHome && (
