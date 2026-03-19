@@ -29,7 +29,7 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
     ? parseSettings(config?.embedSettings)
     : parseSettings(node?.embedSettings);
 
-  const borderColor = settings.color || "#5865f2";
+  const borderColor = settings.color || "#f9b4fe";
 
   return (
     <div>
@@ -37,7 +37,7 @@ export function DiscordPreview({ node, roots, config, editingHome }: DiscordPrev
 
       {/* Embed */}
       <div
-        className="bg-[#2b2d31] rounded-lg overflow-hidden border-l-4"
+        className="bg-[#2b2d31] rounded-lg overflow-hidden border-l-4 shadow-glow-md"
         style={{ borderLeftColor: borderColor }}
       >
         <div className="p-4 space-y-2">
