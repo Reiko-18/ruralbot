@@ -425,7 +425,7 @@ export function AccountingDashboard() {
   const [view, setView] = useState<View>("overview");
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BarChart3 size={18} className="text-purple-400" />
