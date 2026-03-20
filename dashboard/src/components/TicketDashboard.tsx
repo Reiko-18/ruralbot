@@ -106,7 +106,7 @@ export function TicketDashboard() {
               onSave={() => loadConfig(guildId)}
             />
           )}
-          {subTab === "buttons" && config && <TicketButtonTypes configId={config.id} />}
+          {subTab === "buttons" && config && <TicketButtonTypes configId={config.id} guildId={guildId} />}
           {subTab === "blacklist" && config && <TicketBlacklistView configId={config.id} />}
           {subTab === "overview" && config && <TicketOverview configId={config.id} />}
 

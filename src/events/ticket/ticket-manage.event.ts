@@ -98,8 +98,9 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
       if (creatorPerms) await creatorPerms.delete();
 
       // Move to close category
-      if (instance.config.categoryCloseId) {
-        await channel.setParent(instance.config.categoryCloseId, { lockPermissions: false });
+      const closeCategoryId = instance.buttonType?.categoryCloseId;
+      if (closeCategoryId) {
+        await channel.setParent(closeCategoryId, { lockPermissions: false });
       }
 
       await updateInstanceStatus(channelId, "CLOSED", new Date());
@@ -136,7 +137,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
       });
 
       // Move back to open category
-      const openCategoryId = instance.buttonType?.categoryOpenId ?? instance.config.categoryOpenId;
+      const openCategoryId = instance.buttonType?.categoryOpenId;
       if (openCategoryId) {
         await channel.setParent(openCategoryId, { lockPermissions: false });
       }

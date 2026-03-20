@@ -17,8 +17,6 @@ interface Props {
 export function TicketSettings({ guildId, config, onSave }: Props) {
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
   const [panelChannelId, setPanelChannelId] = useState(config?.panelChannelId ?? "");
-  const [categoryOpenId, setCategoryOpenId] = useState(config?.categoryOpenId ?? "");
-  const [categoryCloseId, setCategoryCloseId] = useState(config?.categoryCloseId ?? "");
   const [logChannelId, setLogChannelId] = useState(config?.logChannelId ?? "");
   const [defaultMessage, setDefaultMessage] = useState(config?.defaultMessage ?? "");
   const [autoRemindHours, setAutoRemindHours] = useState(config?.autoRemindHours?.toString() ?? "");
@@ -42,8 +40,6 @@ export function TicketSettings({ guildId, config, onSave }: Props) {
   // Sync form when config changes (e.g., guild switch)
   useEffect(() => {
     setPanelChannelId(config?.panelChannelId ?? "");
-    setCategoryOpenId(config?.categoryOpenId ?? "");
-    setCategoryCloseId(config?.categoryCloseId ?? "");
     setLogChannelId(config?.logChannelId ?? "");
     setDefaultMessage(config?.defaultMessage ?? "");
     setAutoRemindHours(config?.autoRemindHours?.toString() ?? "");
@@ -59,8 +55,6 @@ export function TicketSettings({ guildId, config, onSave }: Props) {
     try {
       await updateTicketConfig(guildId, {
         panelChannelId: panelChannelId || null,
-        categoryOpenId: categoryOpenId || null,
-        categoryCloseId: categoryCloseId || null,
         logChannelId: logChannelId || null,
         defaultMessage: defaultMessage || null,
         autoRemindHours: autoRemindHours ? parseInt(autoRemindHours, 10) : null,
@@ -110,24 +104,6 @@ export function TicketSettings({ guildId, config, onSave }: Props) {
               <option value="">— 選擇頻道 —</option>
               {textChannels.map((c) => (
                 <option key={c.id} value={c.id}>#{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm text-gray-400">開啟票口分類</label>
-            <select className="glow-input w-full" value={categoryOpenId} onChange={(e) => setCategoryOpenId(e.target.value)}>
-              <option value="">— 選擇分類 —</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm text-gray-400">關閉票口分類</label>
-            <select className="glow-input w-full" value={categoryCloseId} onChange={(e) => setCategoryCloseId(e.target.value)}>
-              <option value="">— 選擇分類 —</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>

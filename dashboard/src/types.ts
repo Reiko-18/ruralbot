@@ -98,8 +98,6 @@ export interface TicketConfig {
   guildId: string;
   panelChannelId: string | null;
   panelMessageId: string | null;
-  categoryOpenId: string | null;
-  categoryCloseId: string | null;
   logChannelId: string | null;
   panelEmbed: string | null;
   defaultMessage: string | null;
@@ -118,6 +116,7 @@ export interface TicketButtonType {
   emoji: string | null;
   style: string;
   categoryOpenId: string | null;
+  categoryCloseId: string | null;
   welcomeMessage: string | null;
   embedSettings: string | null;
   notifyRoleIds: string | null;

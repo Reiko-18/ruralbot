@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
-import type { TicketButtonType } from "../types";
+import type { TicketButtonType, DiscordChannel } from "../types";
 import {
   fetchButtonTypes,
   createButtonTypeApi,
   updateButtonTypeApi,
   deleteButtonTypeApi,
+  fetchGuildChannels,
 } from "../api/client";
 import { Trash2, Edit2, Plus } from "lucide-react";
 
 interface Props {
   configId: string;
+  guildId: string;
 }
 
 const STYLE_COLORS: Record<string, string> = {
@@ -19,11 +21,14 @@ const STYLE_COLORS: Record<string, string> = {
   DANGER: "#ED4245",
 };
 
-export function TicketButtonTypes({ configId }: Props) {
+export function TicketButtonTypes({ configId, guildId }: Props) {
   const [types, setTypes] = useState<TicketButtonType[]>([]);
+  const [channels, setChannels] = useState<DiscordChannel[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<TicketButtonType>>({});
   const [adding, setAdding] = useState(false);
+
+  const categories = channels.filter((c) => c.type === "category");
 
   const reload = useCallback(async () => {
     const data = await fetchButtonTypes(configId);
@@ -31,6 +36,15 @@ export function TicketButtonTypes({ configId }: Props) {
   }, [configId]);
 
   useEffect(() => { reload(); }, [reload]);
+
+  useEffect(() => {
+    fetchGuildChannels(guildId).then(setChannels).catch(() => {});
+  }, [guildId]);
+
+  const getCategoryName = (id: string | null) => {
+    if (!id) return "未設定";
+    return categories.find((c) => c.id === id)?.name ?? id;
+  };
 
   const handleSave = async () => {
     try {
@@ -62,6 +76,7 @@ export function TicketButtonTypes({ configId }: Props) {
       emoji: bt.emoji,
       style: bt.style,
       categoryOpenId: bt.categoryOpenId,
+      categoryCloseId: bt.categoryCloseId,
       welcomeMessage: bt.welcomeMessage,
       notifyRoleIds: bt.notifyRoleIds,
       autoRemindHours: bt.autoRemindHours,
@@ -92,17 +107,33 @@ export function TicketButtonTypes({ configId }: Props) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-sm text-gray-400">專屬分類 ID（留空=用全局）</label>
-          <input className="glow-input w-full" value={form.categoryOpenId ?? ""} onChange={(e) => setForm({ ...form, categoryOpenId: e.target.value || null })} />
+          <label className="text-sm text-gray-400">開啟票口分類</label>
+          <select className="glow-input w-full" value={form.categoryOpenId ?? ""} onChange={(e) => setForm({ ...form, categoryOpenId: e.target.value || null })}>
+            <option value="">— 選擇分類 —</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
+        <div>
+          <label className="text-sm text-gray-400">關閉票口分類</label>
+          <select className="glow-input w-full" value={form.categoryCloseId ?? ""} onChange={(e) => setForm({ ...form, categoryCloseId: e.target.value || null })}>
+            <option value="">— 選擇分類 —</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-sm text-gray-400">通知角色 IDs (JSON array)</label>
           <input className="glow-input w-full" value={form.notifyRoleIds ?? ""} onChange={(e) => setForm({ ...form, notifyRoleIds: e.target.value || null })} placeholder='["role_id_1"]' />
         </div>
-      </div>
-      <div>
-        <label className="text-sm text-gray-400">專屬歡迎詞（留空=用全局）</label>
-        <textarea className="glow-input w-full h-16" value={form.welcomeMessage ?? ""} onChange={(e) => setForm({ ...form, welcomeMessage: e.target.value || null })} />
+        <div>
+          <label className="text-sm text-gray-400">歡迎詞（留空=用全局）</label>
+          <input className="glow-input w-full" value={form.welcomeMessage ?? ""} onChange={(e) => setForm({ ...form, welcomeMessage: e.target.value || null })} />
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -110,7 +141,7 @@ export function TicketButtonTypes({ configId }: Props) {
           <input className="glow-input w-full" type="number" value={form.autoRemindHours ?? ""} onChange={(e) => setForm({ ...form, autoRemindHours: e.target.value ? parseInt(e.target.value, 10) : null })} />
         </div>
         <div>
-          <label className="text-sm text-gray-400">自動關閉時數（留空=用全局）</label>
+          <label className="text-sm text-gray-400">自動關閉時數（留空=不關閉）</label>
           <input className="glow-input w-full" type="number" value={form.autoCloseHours ?? ""} onChange={(e) => setForm({ ...form, autoCloseHours: e.target.value ? parseInt(e.target.value, 10) : null })} />
         </div>
       </div>
@@ -130,7 +161,7 @@ export function TicketButtonTypes({ configId }: Props) {
               <div>
                 <div className="text-white font-medium">{bt.emoji ? `${bt.emoji} ` : ""}{bt.label}</div>
                 <div className="text-sm text-gray-400">
-                  分類: {bt.categoryOpenId ?? "全局"} · 提醒: {bt.autoRemindHours ?? "全局"}h · 關閉: {bt.autoCloseHours ?? "全局"}h
+                  開啟: {getCategoryName(bt.categoryOpenId)} · 關閉: {getCategoryName(bt.categoryCloseId)} · 超時: {bt.autoRemindHours ?? "全局"}h / {bt.autoCloseHours ?? "—"}h
                 </div>
               </div>
               <div className="flex gap-2">

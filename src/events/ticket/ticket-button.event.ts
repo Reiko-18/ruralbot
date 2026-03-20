@@ -49,7 +49,7 @@ export function registerTicketButtonEvent(client: Client): void {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       const buttonType = await getButtonTypeById(buttonTypeId);
-      const categoryId = buttonType?.categoryOpenId ?? config.categoryOpenId;
+      const categoryId = buttonType?.categoryOpenId;
       if (!categoryId) {
         await interaction.editReply("❌ 尚未設定票口分類。");
         return;

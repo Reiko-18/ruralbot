@@ -18,6 +18,7 @@ export async function createButtonType(data: {
   emoji?: string;
   style?: string;
   categoryOpenId?: string;
+  categoryCloseId?: string;
   welcomeMessage?: string;
   embedSettings?: string;
   notifyRoleIds?: string;
@@ -42,6 +43,7 @@ export async function updateButtonType(
     emoji?: string | null;
     style?: string;
     categoryOpenId?: string | null;
+    categoryCloseId?: string | null;
     welcomeMessage?: string | null;
     embedSettings?: string | null;
     notifyRoleIds?: string | null;

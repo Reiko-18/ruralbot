@@ -179,8 +179,6 @@ model TicketConfig {
   guildId          String   @unique @map("guild_id")
   panelChannelId   String?  @map("panel_channel_id")
   panelMessageId   String?  @map("panel_message_id")
-  categoryOpenId   String?  @map("category_open_id")
-  categoryCloseId  String?  @map("category_close_id")
   logChannelId     String?  @map("log_channel_id")
   panelEmbed       String?  @db.Text @map("panel_embed")
   defaultMessage   String?  @db.Text @map("default_message")
@@ -207,6 +205,7 @@ model TicketButtonType {
   emoji           String?
   style           String   @default("PRIMARY")
   categoryOpenId  String?  @map("category_open_id")
+  categoryCloseId String?  @map("category_close_id")
   welcomeMessage  String?  @db.Text @map("welcome_message")
   embedSettings   String?  @db.Text @map("embed_settings")
   notifyRoleIds   String?  @db.Text @map("notify_role_ids")

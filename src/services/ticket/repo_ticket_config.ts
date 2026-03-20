@@ -10,8 +10,6 @@ export async function upsertTicketConfig(
   data: {
     panelChannelId?: string | null;
     panelMessageId?: string | null;
-    categoryOpenId?: string | null;
-    categoryCloseId?: string | null;
     logChannelId?: string | null;
     panelEmbed?: string | null;
     defaultMessage?: string | null;

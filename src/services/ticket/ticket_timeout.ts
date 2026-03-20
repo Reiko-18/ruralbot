@@ -58,8 +58,9 @@ async function checkTimeouts(): Promise<void> {
           if (creatorPerms) await creatorPerms.delete();
 
           // Move to close category
-          if (instance.config.categoryCloseId) {
-            await channel.setParent(instance.config.categoryCloseId, { lockPermissions: false });
+          const closeCategoryId = instance.buttonType?.categoryCloseId;
+          if (closeCategoryId) {
+            await channel.setParent(closeCategoryId, { lockPermissions: false });
           }
 
           await updateInstanceStatus(instance.channelId, "CLOSED", new Date());
