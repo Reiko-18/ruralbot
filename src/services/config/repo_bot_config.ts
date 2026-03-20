@@ -4,6 +4,7 @@ import { logger } from "../logger/logger.js";
 type BotConfigCache = {
   primaryGuildId: string;
   syncChannelId: string;
+  ticketLogChannelId: string | null;
 } | null;
 
 let cache: BotConfigCache = null;
@@ -11,7 +12,7 @@ let cache: BotConfigCache = null;
 export async function loadBotConfig(): Promise<void> {
   const config = await prisma.botConfig.findUnique({ where: { id: 1 } });
   cache = config
-    ? { primaryGuildId: config.primaryGuildId, syncChannelId: config.syncChannelId }
+    ? { primaryGuildId: config.primaryGuildId, syncChannelId: config.syncChannelId, ticketLogChannelId: config.ticketLogChannelId ?? null }
     : null;
   logger.info({ config: cache }, "BotConfig loaded");
 }
@@ -29,6 +30,6 @@ export async function upsertBotConfig(
     update: { primaryGuildId, syncChannelId },
     create: { primaryGuildId, syncChannelId },
   });
-  cache = { primaryGuildId, syncChannelId };
+  cache = { primaryGuildId, syncChannelId, ticketLogChannelId: cache?.ticketLogChannelId ?? null };
   return result;
 }
