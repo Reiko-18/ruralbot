@@ -44,6 +44,18 @@ import { startPresenceRotator, stopPresenceRotator } from "./services/presence/p
 // Guild events
 import { registerGuildCreateEvent } from "./events/guild/guild-create.event.js";
 
+// Ticket commands
+import * as ticketSetup from "./commands/ticket/ticket-setup.cmd.js";
+import * as ticketPanel from "./commands/ticket/ticket-panel.cmd.js";
+
+// Ticket events
+import { registerTicketButtonEvent } from "./events/ticket/ticket-button.event.js";
+import { registerTicketManageEvent } from "./events/ticket/ticket-manage.event.js";
+import { registerTicketActivityEvent } from "./events/ticket/ticket-activity.event.js";
+
+// Ticket timeout
+import { startTicketTimeout, stopTicketTimeout } from "./services/ticket/ticket_timeout.js";
+
 // Register commands
 registerCommand(logAdd);
 registerCommand(logList);
@@ -61,6 +73,8 @@ registerCommand(salesOverview);
 registerCommand(orderLookup);
 registerCommand(botConfig);
 registerCommand(priceList);
+registerCommand(ticketSetup);
+registerCommand(ticketPanel);
 
 const client = new Client({
   intents: [
@@ -92,12 +106,18 @@ client.once(Events.ClientReady, async (readyClient) => {
   // Start presence rotator
   startPresenceRotator(readyClient);
 
+  // Start ticket timeout service
+  startTicketTimeout(readyClient);
+
   // Start dashboard
   startDashboard();
 });
 
 registerGuildCreateEvent(client);
 registerPriceMenuEvent(client);
+registerTicketButtonEvent(client);
+registerTicketManageEvent(client);
+registerTicketActivityEvent(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isAutocomplete()) {
@@ -125,6 +145,7 @@ process.on("unhandledRejection", (reason) => {
 process.on("SIGINT", async () => {
   logger.info("Shutting down...");
   stopPresenceRotator();
+  stopTicketTimeout();
   await prisma.$disconnect();
   client.destroy();
   process.exit(0);
@@ -133,6 +154,7 @@ process.on("SIGINT", async () => {
 process.on("SIGTERM", async () => {
   logger.info("Shutting down...");
   stopPresenceRotator();
+  stopTicketTimeout();
   await prisma.$disconnect();
   client.destroy();
   process.exit(0);
