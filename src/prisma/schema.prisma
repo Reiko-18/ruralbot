@@ -93,7 +93,8 @@ model Order {
   isCustom    Boolean  @default(false) @map("is_custom")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  product Product? @relation(fields: [productId], references: [id])
+  product Product?         @relation(fields: [productId], references: [id])
+  tickets TicketInstance[]
 
   @@map("orders")
 }
@@ -109,11 +110,12 @@ model AccountingConfig {
 }
 
 model BotConfig {
-  id             Int      @id @default(1)
-  primaryGuildId String   @map("primary_guild_id")
-  syncChannelId  String   @map("sync_channel_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                   Int      @id @default(1)
+  primaryGuildId       String   @map("primary_guild_id")
+  syncChannelId        String   @map("sync_channel_id")
+  ticketLogChannelId   String?  @map("ticket_log_channel_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   @@map("bot_configs")
 }
@@ -170,4 +172,89 @@ model PriceListConfig {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("price_list_configs")
+}
+
+model TicketConfig {
+  id               String   @id @default(cuid())
+  guildId          String   @unique @map("guild_id")
+  panelChannelId   String?  @map("panel_channel_id")
+  panelMessageId   String?  @map("panel_message_id")
+  categoryOpenId   String?  @map("category_open_id")
+  categoryCloseId  String?  @map("category_close_id")
+  logChannelId     String?  @map("log_channel_id")
+  panelEmbed       String?  @db.Text @map("panel_embed")
+  defaultMessage   String?  @db.Text @map("default_message")
+  lastTicketNum    Int      @default(0) @map("last_ticket_num")
+  autoRemindHours  Int?     @map("auto_remind_hours")
+  autoCloseHours   Int?     @map("auto_close_hours")
+  blacklistMode    String   @default("ephemeral") @map("blacklist_mode")
+  blacklistMessage String?  @db.Text @map("blacklist_message")
+  transcriptTarget String   @default("both") @map("transcript_target")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  buttonTypes TicketButtonType[]
+  blacklist   TicketBlacklist[]
+  instances   TicketInstance[]
+
+  @@map("ticket_configs")
+}
+
+model TicketButtonType {
+  id              String   @id @default(cuid())
+  configId        String   @map("config_id")
+  label           String
+  emoji           String?
+  style           String   @default("PRIMARY")
+  categoryOpenId  String?  @map("category_open_id")
+  welcomeMessage  String?  @db.Text @map("welcome_message")
+  embedSettings   String?  @db.Text @map("embed_settings")
+  notifyRoleIds   String?  @db.Text @map("notify_role_ids")
+  autoRemindHours Int?     @map("auto_remind_hours")
+  autoCloseHours  Int?     @map("auto_close_hours")
+  order           Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  config    TicketConfig     @relation(fields: [configId], references: [id], onDelete: Cascade)
+  instances TicketInstance[]
+
+  @@map("ticket_button_types")
+}
+
+model TicketBlacklist {
+  id        String   @id @default(cuid())
+  configId  String   @map("config_id")
+  userId    String   @map("user_id")
+  reason    String?
+  addedBy   String   @map("added_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  config TicketConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, userId])
+  @@map("ticket_blacklists")
+}
+
+model TicketInstance {
+  id             String    @id @default(cuid())
+  configId       String    @map("config_id")
+  buttonTypeId   String?   @map("button_type_id")
+  channelId      String    @unique @map("channel_id")
+  creatorId      String    @map("creator_id")
+  ticketNum      Int       @map("ticket_num")
+  status         String    @default("OPEN")
+  orderId        String?   @map("order_id")
+  lastActivityAt DateTime  @default(now()) @map("last_activity_at")
+  reminded       Boolean   @default(false)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  closedAt       DateTime? @map("closed_at")
+
+  config     TicketConfig      @relation(fields: [configId], references: [id])
+  buttonType TicketButtonType? @relation(fields: [buttonTypeId], references: [id], onDelete: SetNull)
+  order      Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([configId, status])
+  @@index([creatorId])
+  @@map("ticket_instances")
 }
