@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { type Client, ChannelType, type TextChannel } from "discord.js";
 import { logger } from "../logger/logger.js";
 import { refreshPriceCache } from "../price/price_cache.js";
 import {
@@ -59,12 +60,100 @@ import {
   updateInstanceStatus,
   getTicketStats,
 } from "../ticket/repo_ticket_instance.js";
+import {
+  buildPanelEmbed,
+  buildPanelButtons,
+} from "../ticket/ticket_panel_builder.js";
+import { updatePanelMessageId } from "../ticket/repo_ticket_config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export function startDashboard(): void {
+export function startDashboard(client: Client): void {
   const app = express();
   app.use(express.json());
+
+  // ── Discord Guild API Routes ──
+
+  // GET /api/guilds — list all guilds the bot is in
+  app.get("/api/guilds", (_req, res) => {
+    try {
+      const guilds = client.guilds.cache.map((g) => ({
+        id: g.id,
+        name: g.name,
+        icon: g.iconURL({ size: 64 }),
+        memberCount: g.memberCount,
+      }));
+      res.json(guilds);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch guilds");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/guilds/:id/channels — list channels for a guild
+  app.get("/api/guilds/:id/channels", async (req, res) => {
+    try {
+      const guild = client.guilds.cache.get(req.params.id);
+      if (!guild) return res.status(404).json({ error: "Guild not found" });
+      const channels = guild.channels.cache
+        .filter((c) => c.type === ChannelType.GuildText || c.type === ChannelType.GuildCategory)
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          type: c.type === ChannelType.GuildCategory ? "category" : "text",
+          parentId: c.parentId,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      res.json(channels);
+    } catch (err) {
+      logger.error({ err }, "Failed to fetch guild channels");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/ticket/deploy-panel/:guildId — deploy or update ticket panel
+  app.post("/api/ticket/deploy-panel/:guildId", async (req, res) => {
+    try {
+      const config = await getTicketConfig(req.params.guildId);
+      if (!config || !config.panelChannelId) {
+        return res.status(400).json({ error: "請先設定面板頻道" });
+      }
+
+      const btnTypes = await getButtonTypes(config.id);
+      if (btnTypes.length === 0) {
+        return res.status(400).json({ error: "請先新增至少一個按鈕類型" });
+      }
+
+      const channel = await client.channels.fetch(config.panelChannelId);
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        return res.status(400).json({ error: "面板頻道不存在或非文字頻道" });
+      }
+
+      const embed = buildPanelEmbed(config);
+      const buttons = buildPanelButtons(btnTypes);
+
+      // Try to edit existing panel message
+      if (config.panelMessageId) {
+        try {
+          const existingMsg = await (channel as TextChannel).messages.fetch(config.panelMessageId);
+          await existingMsg.edit({ embeds: [embed], components: buttons });
+          logger.info({ guildId: req.params.guildId }, "Ticket panel updated via dashboard");
+          return res.json({ success: true, action: "updated" });
+        } catch {
+          // Message deleted, send new one
+        }
+      }
+
+      // Send new panel message
+      const msg = await (channel as TextChannel).send({ embeds: [embed], components: buttons });
+      await updatePanelMessageId(req.params.guildId, msg.id);
+      logger.info({ guildId: req.params.guildId, messageId: msg.id }, "Ticket panel deployed via dashboard");
+      res.json({ success: true, action: "deployed" });
+    } catch (err) {
+      logger.error({ err }, "Failed to deploy ticket panel");
+      res.status(500).json({ error: "部署面板失敗，請確認機器人權限" });
+    }
+  });
 
   // ── API Routes ──
 

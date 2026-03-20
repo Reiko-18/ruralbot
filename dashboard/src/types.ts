@@ -79,6 +79,20 @@ export interface PriceListConfig {
   embedSettings: string | null;
 }
 
+export interface DiscordGuild {
+  id: string;
+  name: string;
+  icon: string | null;
+  memberCount: number;
+}
+
+export interface DiscordChannel {
+  id: string;
+  name: string;
+  type: "text" | "category";
+  parentId: string | null;
+}
+
 export interface TicketConfig {
   id: string;
   guildId: string;

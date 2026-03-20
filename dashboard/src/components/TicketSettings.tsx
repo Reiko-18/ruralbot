@@ -1,6 +1,6 @@
-import { useState } from "react";
-import type { TicketConfig, EmbedSettings } from "../types";
-import { updateTicketConfig } from "../api/client";
+import { useState, useEffect } from "react";
+import type { TicketConfig, EmbedSettings, DiscordChannel } from "../types";
+import { updateTicketConfig, fetchGuildChannels, deployTicketPanel } from "../api/client";
 import { EmbedSettingsEditor } from "./EmbedSettingsEditor";
 
 function parseEmbedSettings(json: string | null): EmbedSettings {
@@ -9,28 +9,55 @@ function parseEmbedSettings(json: string | null): EmbedSettings {
 }
 
 interface Props {
-  config: TicketConfig;
+  guildId: string;
+  config: TicketConfig | null;
   onSave: () => void;
 }
 
-export function TicketSettings({ config, onSave }: Props) {
-  const [panelChannelId, setPanelChannelId] = useState(config.panelChannelId ?? "");
-  const [categoryOpenId, setCategoryOpenId] = useState(config.categoryOpenId ?? "");
-  const [categoryCloseId, setCategoryCloseId] = useState(config.categoryCloseId ?? "");
-  const [logChannelId, setLogChannelId] = useState(config.logChannelId ?? "");
-  const [defaultMessage, setDefaultMessage] = useState(config.defaultMessage ?? "");
-  const [autoRemindHours, setAutoRemindHours] = useState(config.autoRemindHours?.toString() ?? "");
-  const [autoCloseHours, setAutoCloseHours] = useState(config.autoCloseHours?.toString() ?? "");
-  const [blacklistMode, setBlacklistMode] = useState(config.blacklistMode);
-  const [blacklistMessage, setBlacklistMessage] = useState(config.blacklistMessage ?? "");
-  const [transcriptTarget, setTranscriptTarget] = useState(config.transcriptTarget);
-  const [panelEmbed, setPanelEmbed] = useState<EmbedSettings>(parseEmbedSettings(config.panelEmbed));
+export function TicketSettings({ guildId, config, onSave }: Props) {
+  const [channels, setChannels] = useState<DiscordChannel[]>([]);
+  const [panelChannelId, setPanelChannelId] = useState(config?.panelChannelId ?? "");
+  const [categoryOpenId, setCategoryOpenId] = useState(config?.categoryOpenId ?? "");
+  const [categoryCloseId, setCategoryCloseId] = useState(config?.categoryCloseId ?? "");
+  const [logChannelId, setLogChannelId] = useState(config?.logChannelId ?? "");
+  const [defaultMessage, setDefaultMessage] = useState(config?.defaultMessage ?? "");
+  const [autoRemindHours, setAutoRemindHours] = useState(config?.autoRemindHours?.toString() ?? "");
+  const [autoCloseHours, setAutoCloseHours] = useState(config?.autoCloseHours?.toString() ?? "");
+  const [blacklistMode, setBlacklistMode] = useState(config?.blacklistMode ?? "ephemeral");
+  const [blacklistMessage, setBlacklistMessage] = useState(config?.blacklistMessage ?? "");
+  const [transcriptTarget, setTranscriptTarget] = useState(config?.transcriptTarget ?? "both");
+  const [panelEmbed, setPanelEmbed] = useState<EmbedSettings>(parseEmbedSettings(config?.panelEmbed ?? null));
   const [saving, setSaving] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+
+  const textChannels = channels.filter((c) => c.type === "text");
+  const categories = channels.filter((c) => c.type === "category");
+
+  useEffect(() => {
+    fetchGuildChannels(guildId)
+      .then(setChannels)
+      .catch((err) => console.error("Failed to load channels:", err));
+  }, [guildId]);
+
+  // Sync form when config changes (e.g., guild switch)
+  useEffect(() => {
+    setPanelChannelId(config?.panelChannelId ?? "");
+    setCategoryOpenId(config?.categoryOpenId ?? "");
+    setCategoryCloseId(config?.categoryCloseId ?? "");
+    setLogChannelId(config?.logChannelId ?? "");
+    setDefaultMessage(config?.defaultMessage ?? "");
+    setAutoRemindHours(config?.autoRemindHours?.toString() ?? "");
+    setAutoCloseHours(config?.autoCloseHours?.toString() ?? "");
+    setBlacklistMode(config?.blacklistMode ?? "ephemeral");
+    setBlacklistMessage(config?.blacklistMessage ?? "");
+    setTranscriptTarget(config?.transcriptTarget ?? "both");
+    setPanelEmbed(parseEmbedSettings(config?.panelEmbed ?? null));
+  }, [config]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateTicketConfig(config.guildId, {
+      await updateTicketConfig(guildId, {
         panelChannelId: panelChannelId || null,
         categoryOpenId: categoryOpenId || null,
         categoryCloseId: categoryCloseId || null,
@@ -51,26 +78,58 @@ export function TicketSettings({ config, onSave }: Props) {
     }
   };
 
+  const handleDeploy = async () => {
+    setDeploying(true);
+    try {
+      const result = await deployTicketPanel(guildId);
+      alert(result.action === "updated" ? "面板已更新！" : "面板已部署！");
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setDeploying(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="glow-card p-4">
         <h3 className="text-purple-300 font-semibold mb-3">頻道設定</h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm text-gray-400">面板頻道 ID</label>
-            <input className="glow-input w-full" value={panelChannelId} onChange={(e) => setPanelChannelId(e.target.value)} />
+            <label className="text-sm text-gray-400">面板頻道</label>
+            <select className="glow-input w-full" value={panelChannelId} onChange={(e) => setPanelChannelId(e.target.value)}>
+              <option value="">— 選擇頻道 —</option>
+              {textChannels.map((c) => (
+                <option key={c.id} value={c.id}>#{c.name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="text-sm text-gray-400">存檔頻道 ID</label>
-            <input className="glow-input w-full" value={logChannelId} onChange={(e) => setLogChannelId(e.target.value)} />
+            <label className="text-sm text-gray-400">存檔頻道</label>
+            <select className="glow-input w-full" value={logChannelId} onChange={(e) => setLogChannelId(e.target.value)}>
+              <option value="">— 選擇頻道 —</option>
+              {textChannels.map((c) => (
+                <option key={c.id} value={c.id}>#{c.name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="text-sm text-gray-400">開啟票口分類 ID</label>
-            <input className="glow-input w-full" value={categoryOpenId} onChange={(e) => setCategoryOpenId(e.target.value)} />
+            <label className="text-sm text-gray-400">開啟票口分類</label>
+            <select className="glow-input w-full" value={categoryOpenId} onChange={(e) => setCategoryOpenId(e.target.value)}>
+              <option value="">— 選擇分類 —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="text-sm text-gray-400">關閉票口分類 ID</label>
-            <input className="glow-input w-full" value={categoryCloseId} onChange={(e) => setCategoryCloseId(e.target.value)} />
+            <label className="text-sm text-gray-400">關閉票口分類</label>
+            <select className="glow-input w-full" value={categoryCloseId} onChange={(e) => setCategoryCloseId(e.target.value)}>
+              <option value="">— 選擇分類 —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -126,9 +185,19 @@ export function TicketSettings({ config, onSave }: Props) {
         <EmbedSettingsEditor settings={panelEmbed} onChange={setPanelEmbed} />
       </div>
 
-      <button className="btn-accent w-full" onClick={handleSave} disabled={saving}>
-        {saving ? "儲存中..." : "儲存設定"}
-      </button>
+      <div className="flex gap-3">
+        <button className="btn-accent flex-1" onClick={handleSave} disabled={saving}>
+          {saving ? "儲存中..." : "儲存設定"}
+        </button>
+        <button
+          className="btn-accent-outline flex-1"
+          onClick={handleDeploy}
+          disabled={deploying || !config}
+          title={!config ? "請先儲存設定" : ""}
+        >
+          {deploying ? "部署中..." : "部署 / 更新面板"}
+        </button>
+      </div>
     </div>
   );
 }

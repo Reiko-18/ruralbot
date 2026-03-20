@@ -44,10 +44,6 @@ import { startPresenceRotator, stopPresenceRotator } from "./services/presence/p
 // Guild events
 import { registerGuildCreateEvent } from "./events/guild/guild-create.event.js";
 
-// Ticket commands
-import * as ticketSetup from "./commands/ticket/ticket-setup.cmd.js";
-import * as ticketPanel from "./commands/ticket/ticket-panel.cmd.js";
-
 // Ticket events
 import { registerTicketButtonEvent } from "./events/ticket/ticket-button.event.js";
 import { registerTicketManageEvent } from "./events/ticket/ticket-manage.event.js";
@@ -73,8 +69,6 @@ registerCommand(salesOverview);
 registerCommand(orderLookup);
 registerCommand(botConfig);
 registerCommand(priceList);
-registerCommand(ticketSetup);
-registerCommand(ticketPanel);
 
 const client = new Client({
   intents: [
@@ -110,7 +104,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   startTicketTimeout(readyClient);
 
   // Start dashboard
-  startDashboard();
+  startDashboard(readyClient);
 });
 
 registerGuildCreateEvent(client);

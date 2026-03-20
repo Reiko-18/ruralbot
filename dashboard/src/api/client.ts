@@ -12,6 +12,8 @@ import type {
   TicketBlacklistEntry,
   TicketInstance,
   TicketStats,
+  DiscordGuild,
+  DiscordChannel,
 } from "../types";
 
 const BASE = "/api";
@@ -178,3 +180,12 @@ export const deleteTicketApi = (id: string) =>
 
 export const fetchTicketStats = (configId: string) =>
   request<TicketStats>(`/ticket/stats/${configId}`);
+
+// Discord guilds & channels
+export const fetchGuilds = () => request<DiscordGuild[]>("/guilds");
+
+export const fetchGuildChannels = (guildId: string) =>
+  request<DiscordChannel[]>(`/guilds/${guildId}/channels`);
+
+export const deployTicketPanel = (guildId: string) =>
+  request<{ success: boolean; action: string }>(`/ticket/deploy-panel/${guildId}`, { method: "POST" });
