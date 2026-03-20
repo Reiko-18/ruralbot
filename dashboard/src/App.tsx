@@ -7,8 +7,9 @@ import { HomeEditor } from "./components/HomeEditor";
 import { DiscordPreview } from "./components/DiscordPreview";
 import { PresenceManager } from "./components/PresenceManager";
 import { AccountingDashboard } from "./components/AccountingDashboard";
+import { TicketDashboard } from "./components/TicketDashboard";
 
-type Tab = "price" | "presence" | "accounting";
+type Tab = "price" | "presence" | "accounting" | "ticket";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("price");
@@ -74,6 +75,9 @@ export default function App() {
           <button className={tabClass("presence")} onClick={() => setTab("presence")}>
             動態輪播
           </button>
+          <button className={tabClass("ticket")} onClick={() => setTab("ticket")}>
+            票口
+          </button>
         </nav>
       </header>
 
@@ -113,6 +117,10 @@ export default function App() {
       ) : tab === "accounting" ? (
         <div className="flex-1 overflow-y-auto p-6">
           <AccountingDashboard />
+        </div>
+      ) : tab === "ticket" ? (
+        <div className="flex-1 overflow-y-auto p-6">
+          <TicketDashboard />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-6">

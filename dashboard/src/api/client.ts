@@ -7,6 +7,11 @@ import type {
   AccountingProduct,
   AccountingOrder,
   SalesAggregation,
+  TicketConfig,
+  TicketButtonType,
+  TicketBlacklistEntry,
+  TicketInstance,
+  TicketStats,
 } from "../types";
 
 const BASE = "/api";
@@ -119,3 +124,57 @@ export const fetchDistinctMonths = (year: number) => request<number[]>(`/account
 
 export const fetchDistinctDays = (year: number, month: number) =>
   request<number[]>(`/accounting/days/${year}/${month}`);
+
+// Ticket
+export const fetchTicketConfig = (guildId: string) =>
+  request<TicketConfig>(`/ticket/config/${guildId}`);
+
+export const updateTicketConfig = (guildId: string, data: Partial<TicketConfig>) =>
+  request<TicketConfig>(`/ticket/config/${guildId}`, { method: "PUT", body: JSON.stringify(data) });
+
+export const fetchButtonTypes = (configId: string) =>
+  request<TicketButtonType[]>(`/ticket/button-types?configId=${configId}`);
+
+export const createButtonTypeApi = (data: Partial<TicketButtonType> & { configId: string; label: string }) =>
+  request<TicketButtonType>("/ticket/button-types", { method: "POST", body: JSON.stringify(data) });
+
+export const updateButtonTypeApi = (id: string, data: Partial<TicketButtonType>) =>
+  request<TicketButtonType>(`/ticket/button-types/${id}`, { method: "PUT", body: JSON.stringify(data) });
+
+export const deleteButtonTypeApi = (id: string) =>
+  request<void>(`/ticket/button-types/${id}`, { method: "DELETE" });
+
+export const reorderButtonTypesApi = (ids: string[]) =>
+  request<{ success: boolean }>("/ticket/reorder-button-types", { method: "PUT", body: JSON.stringify({ ids }) });
+
+export const fetchBlacklist = (configId: string) =>
+  request<TicketBlacklistEntry[]>(`/ticket/blacklist?configId=${configId}`);
+
+export const addToBlacklistApi = (data: { configId: string; userId: string; reason?: string; addedBy: string }) =>
+  request<TicketBlacklistEntry>("/ticket/blacklist", { method: "POST", body: JSON.stringify(data) });
+
+export const removeFromBlacklistApi = (id: string) =>
+  request<void>(`/ticket/blacklist/${id}`, { method: "DELETE" });
+
+export const fetchTicketInstances = (params: { configId?: string; status?: string; search?: string; limit?: number; offset?: number }) => {
+  const qs = new URLSearchParams();
+  if (params.configId) qs.set("configId", params.configId);
+  if (params.status) qs.set("status", params.status);
+  if (params.search) qs.set("search", params.search);
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.offset) qs.set("offset", String(params.offset));
+  const q = qs.toString();
+  return request<TicketInstance[]>(`/ticket/instances${q ? `?${q}` : ""}`);
+};
+
+export const closeTicketApi = (id: string) =>
+  request<{ success: boolean }>(`/ticket/instances/${id}/close`, { method: "POST" });
+
+export const reopenTicketApi = (id: string) =>
+  request<{ success: boolean }>(`/ticket/instances/${id}/reopen`, { method: "POST" });
+
+export const deleteTicketApi = (id: string) =>
+  request<void>(`/ticket/instances/${id}`, { method: "DELETE" });
+
+export const fetchTicketStats = (configId: string) =>
+  request<TicketStats>(`/ticket/stats/${configId}`);

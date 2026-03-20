@@ -78,3 +78,71 @@ export interface PriceListConfig {
   imageUrl: string | null;
   embedSettings: string | null;
 }
+
+export interface TicketConfig {
+  id: string;
+  guildId: string;
+  panelChannelId: string | null;
+  panelMessageId: string | null;
+  categoryOpenId: string | null;
+  categoryCloseId: string | null;
+  logChannelId: string | null;
+  panelEmbed: string | null;
+  defaultMessage: string | null;
+  lastTicketNum: number;
+  autoRemindHours: number | null;
+  autoCloseHours: number | null;
+  blacklistMode: string;
+  blacklistMessage: string | null;
+  transcriptTarget: string;
+}
+
+export interface TicketButtonType {
+  id: string;
+  configId: string;
+  label: string;
+  emoji: string | null;
+  style: string;
+  categoryOpenId: string | null;
+  welcomeMessage: string | null;
+  embedSettings: string | null;
+  notifyRoleIds: string | null;
+  autoRemindHours: number | null;
+  autoCloseHours: number | null;
+  order: number;
+}
+
+export interface TicketBlacklistEntry {
+  id: string;
+  configId: string;
+  userId: string;
+  reason: string | null;
+  addedBy: string;
+  createdAt: string;
+}
+
+export interface TicketInstance {
+  id: string;
+  configId: string;
+  buttonTypeId: string | null;
+  channelId: string;
+  creatorId: string;
+  ticketNum: number;
+  status: string;
+  orderId: string | null;
+  lastActivityAt: string;
+  reminded: boolean;
+  createdAt: string;
+  closedAt: string | null;
+  buttonType: TicketButtonType | null;
+  order: AccountingOrder | null;
+}
+
+export interface TicketStats {
+  openCount: number;
+  closedCount: number;
+  archivedCount: number;
+  avgResolutionHours: number;
+  byType: { label: string; count: number }[];
+  dailyTrend: { date: string; count: number }[];
+}
