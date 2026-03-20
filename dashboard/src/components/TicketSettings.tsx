@@ -1,7 +1,12 @@
 import { useState } from "react";
-import type { TicketConfig } from "../types";
+import type { TicketConfig, EmbedSettings } from "../types";
 import { updateTicketConfig } from "../api/client";
 import { EmbedSettingsEditor } from "./EmbedSettingsEditor";
+
+function parseEmbedSettings(json: string | null): EmbedSettings {
+  if (!json) return {};
+  try { return JSON.parse(json); } catch { return {}; }
+}
 
 interface Props {
   config: TicketConfig;
@@ -19,7 +24,7 @@ export function TicketSettings({ config, onSave }: Props) {
   const [blacklistMode, setBlacklistMode] = useState(config.blacklistMode);
   const [blacklistMessage, setBlacklistMessage] = useState(config.blacklistMessage ?? "");
   const [transcriptTarget, setTranscriptTarget] = useState(config.transcriptTarget);
-  const [panelEmbed, setPanelEmbed] = useState(config.panelEmbed ?? "");
+  const [panelEmbed, setPanelEmbed] = useState<EmbedSettings>(parseEmbedSettings(config.panelEmbed));
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -36,7 +41,7 @@ export function TicketSettings({ config, onSave }: Props) {
         blacklistMode,
         blacklistMessage: blacklistMessage || null,
         transcriptTarget,
-        panelEmbed: panelEmbed || null,
+        panelEmbed: Object.keys(panelEmbed).length > 0 ? JSON.stringify(panelEmbed) : null,
       });
       onSave();
     } catch (err: any) {
@@ -118,7 +123,7 @@ export function TicketSettings({ config, onSave }: Props) {
 
       <div className="glow-card p-4">
         <h3 className="text-purple-300 font-semibold mb-3">面板 Embed 設定</h3>
-        <EmbedSettingsEditor value={panelEmbed} onChange={setPanelEmbed} />
+        <EmbedSettingsEditor settings={panelEmbed} onChange={setPanelEmbed} />
       </div>
 
       <button className="btn-accent w-full" onClick={handleSave} disabled={saving}>
