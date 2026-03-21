@@ -266,9 +266,13 @@ model PaymentConfig {
   dcvc      String?
   rvg2c     String?
   verifyKey String?  @map("verify_key") @db.Text
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  enabled          Boolean  @default(true)
+  feeFamily        Int?     @map("fee_family")
+  fee711           Int?     @map("fee_711")
+  fee711Over       Int?     @map("fee_711_over")
+  fee711Threshold  Int?     @map("fee_711_threshold")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("payment_configs")
 }
@@ -287,7 +291,10 @@ model PaymentTransaction {
   paymentCode     String?  @map("payment_code")
   paymentDeadline DateTime? @map("payment_deadline")
   completedAt     DateTime? @map("completed_at")
-  createdAt       DateTime @default(now()) @map("created_at")
+  originalAmount  Int?      @map("original_amount")
+  feeAmount       Int?      @map("fee_amount")
+  paymentStore    String?   @map("payment_store")
+  createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   callbackLogs    PaymentCallbackLog[]
 
