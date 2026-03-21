@@ -21,14 +21,7 @@ export function registerRpInteractEvent(client: Client): void {
     if (!interaction.customId.startsWith("rp:")) return;
 
     const parts = interaction.customId.split(":");
-    const userId = parts[1];
     const ts = parseInt(parts[2], 10);
-
-    // User scoping
-    if (interaction.user.id !== userId) {
-      await interaction.reply({ content: "只有發起者可以操作此付款" });
-      return;
-    }
 
     // Timeout check (15 min = 900 seconds)
     if (Math.floor(Date.now() / 1000) - ts > 900) {
@@ -57,39 +50,46 @@ export function registerRpInteractEvent(client: Client): void {
 }
 
 async function handleStoreSelect(interaction: any, parts: string[]) {
-  const userId = parts[1];
   const ts = parts[2];
   const store = parts[4]; // "fami" or "711"
   const amount = parseInt(parts[5], 10);
   const encodedRemark = parts[6] ?? "";
   const guildId = interaction.guildId;
+  const clickerId = interaction.user.id;
 
   const config = await getPaymentConfig(guildId);
   const fee = calculateFee(config, store as "fami" | "711", amount);
   const total = amount + fee;
 
-  const embed = new EmbedBuilder()
-    .setTitle("確認付款資訊")
-    .setColor(0xeab308)
-    .addFields(
-      { name: "繳費超商", value: STORE_LABELS[store] ?? store, inline: true },
-      { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
-      { name: "手續費", value: `$${fee.toLocaleString()}`, inline: true },
-      { name: "總付款金額", value: `**$${total.toLocaleString()}**`, inline: false },
-    );
+  const storeEmoji = store === "711" ? "🏪" : "🏬";
+  const storeName = STORE_LABELS[store] ?? store;
+  const descLines = [
+    `${storeEmoji} **${storeName}**`,
+    "",
+    `> 💰 訂單金額　　\`$${amount.toLocaleString()}\``,
+    `> 📋 手續費　　　\`$${fee.toLocaleString()}\``,
+    `> ━━━━━━━━━━━━━━━━━`,
+    `> 💵 **總付款　　\`$${total.toLocaleString()}\`**`,
+  ];
+  if (encodedRemark) descLines.push("", `> 📝 ${decodeURIComponent(encodedRemark)}`);
 
-  if (encodedRemark) {
-    embed.addFields({ name: "備註", value: decodeURIComponent(encodedRemark), inline: false });
-  }
+  const embed = new EmbedBuilder()
+    .setTitle("📋 確認付款資訊")
+    .setColor(0xeab308)
+    .setDescription(descLines.join("\n"))
+    .setFooter({ text: `操作者：${interaction.user.displayName ?? interaction.user.username}` })
+    .setTimestamp();
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(`rp:${userId}:${ts}:confirm:${store}:${amount}:${encodedRemark}`)
+      .setCustomId(`rp:${clickerId}:${ts}:confirm:${store}:${amount}:${encodedRemark}`)
       .setLabel("確認付款")
+      .setEmoji("✅")
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
-      .setCustomId(`rp:${userId}:${ts}:cancel`)
+      .setCustomId(`rp:${clickerId}:${ts}:cancel`)
       .setLabel("取消")
+      .setEmoji("❌")
       .setStyle(ButtonStyle.Danger),
   );
 
@@ -105,7 +105,7 @@ async function handleConfirm(interaction: any, parts: string[]) {
 
   // Show loading state
   await interaction.update({
-    embeds: [new EmbedBuilder().setTitle("取號中...").setDescription("正在向 SmilePay 取得繳費代碼").setColor(0x7c3aed)],
+    embeds: [new EmbedBuilder().setTitle("⏳ 取號中...").setDescription("正在向 SmilePay 取得繳費代碼").setColor(0x7c3aed)],
     components: [],
   });
 
@@ -223,9 +223,10 @@ async function handleConfirm(interaction: any, parts: string[]) {
 
 async function handleCancel(interaction: any) {
   const embed = new EmbedBuilder()
-    .setTitle("付款已取消")
+    .setTitle("❌ 付款已取消")
     .setColor(0xef4444)
-    .setDescription("此付款已取消，如需重新付款請使用 /rp");
+    .setDescription("此付款已取消，如需重新付款請使用 `/rp`")
+    .setTimestamp();
 
   await interaction.update({ embeds: [embed], components: [] });
 }

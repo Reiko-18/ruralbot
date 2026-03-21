@@ -24,21 +24,33 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const ts = Math.floor(Date.now() / 1000);
   const encodedRemark = encodeURIComponent(remark);
 
+  const descLines = [
+    `<@${userId}> 發起了一筆繳費單`,
+    "",
+    `### 💰 繳費金額`,
+    `# \`$${amount.toLocaleString()}\``,
+  ];
+  if (remark) descLines.push("", `> 📝 ${remark}`);
+  descLines.push("", "━━━━━━━━━━━━━━━━━━━", "**請選擇繳費超商 👇**");
+
   const embed = new EmbedBuilder()
-    .setTitle("選擇繳費超商")
+    .setTitle("🧾 超商代碼繳費")
     .setColor(0x7c3aed)
-    .addFields({ name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true })
-    .setFooter({ text: "請在 15 分鐘內完成操作" });
+    .setDescription(descLines.join("\n"))
+    .setFooter({ text: "⏱ 15 分鐘內有效 · 所有人皆可操作" })
+    .setTimestamp();
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`rp:${userId}:${ts}:store:fami:${amount}:${encodedRemark}`)
       .setLabel("全家 FamilyMart")
+      .setEmoji("🏬")
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`rp:${userId}:${ts}:store:711:${amount}:${encodedRemark}`)
       .setLabel("7-11 ibon")
-      .setStyle(ButtonStyle.Primary),
+      .setEmoji("🏪")
+      .setStyle(ButtonStyle.Secondary),
   );
 
   await interaction.reply({ embeds: [embed], components: [row] });
