@@ -208,6 +208,8 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
         },
         instance.config.transcriptTarget,
         instance.config.logChannelId,
+        instance.config.transcriptLogMessage,
+        instance.config.transcriptDmMessage,
       );
       await interaction.editReply("✅ 存檔紀錄已生成並發送。");
       break;

@@ -3,6 +3,7 @@ import type { TicketConfig, DiscordGuild } from "../types";
 import { fetchTicketConfig, fetchGuilds } from "../api/client";
 import { TicketPanelSettings } from "./TicketPanelSettings";
 import { TicketSubTickets } from "./TicketSubTickets";
+import { TicketTranscriptSettings } from "./TicketTranscriptSettings";
 
 export function TicketDashboard() {
   const [guilds, setGuilds] = useState<DiscordGuild[]>([]);
@@ -83,6 +84,16 @@ export function TicketDashboard() {
           {config && (
             <div className="mt-6">
               <TicketSubTickets configId={config.id} guildId={guildId} />
+            </div>
+          )}
+
+          {config && (
+            <div className="mt-6">
+              <TicketTranscriptSettings
+                guildId={guildId}
+                config={config}
+                onSave={() => loadConfig(guildId)}
+              />
             </div>
           )}
 

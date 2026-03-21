@@ -187,8 +187,10 @@ model TicketConfig {
   autoCloseHours   Int?     @map("auto_close_hours")
   blacklistMode    String   @default("ephemeral") @map("blacklist_mode")
   blacklistMessage String?  @db.Text @map("blacklist_message")
-  transcriptTarget String   @default("both") @map("transcript_target")
-  createdAt        DateTime @default(now()) @map("created_at")
+  transcriptTarget     String   @default("both") @map("transcript_target")
+  transcriptLogMessage String?  @db.Text @map("transcript_log_message")
+  transcriptDmMessage  String?  @db.Text @map("transcript_dm_message")
+  createdAt            DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   buttonTypes TicketButtonType[]

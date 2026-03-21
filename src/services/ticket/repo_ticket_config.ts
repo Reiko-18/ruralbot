@@ -18,6 +18,8 @@ export async function upsertTicketConfig(
     blacklistMode?: string;
     blacklistMessage?: string | null;
     transcriptTarget?: string;
+    transcriptLogMessage?: string | null;
+    transcriptDmMessage?: string | null;
   },
 ) {
   const config = await prisma.ticketConfig.upsert({

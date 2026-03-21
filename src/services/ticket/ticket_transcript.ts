@@ -346,6 +346,8 @@ export async function generateAndSendTranscript(
   },
   transcriptTarget: string,
   localLogChannelId: string | null,
+  transcriptLogMessage?: string | null,
+  transcriptDmMessage?: string | null,
 ): Promise<void> {
   const messages = await fetchAllMessages(channel);
   if (messages.length === 0) {
@@ -363,9 +365,10 @@ export async function generateAndSendTranscript(
   // ── DM to creator: embed + HTML file + view button ──
   try {
     const user = await client.users.fetch(ticket.creatorId);
+    const dmDesc = transcriptDmMessage || "以下是您的票口對話紀錄，點擊下方按鈕即可在瀏覽器中查看完整內容（含圖片、貼圖、連結等）。";
     const dmEmbed = new EmbedBuilder()
       .setTitle(`📜 ${ticketLabel} 對話紀錄`)
-      .setDescription("以下是您的票口對話紀錄，點擊下方按鈕即可在瀏覽器中查看完整內容（含圖片、貼圖、連結等）。")
+      .setDescription(dmDesc)
       .setColor(0xf9b4fe)
       .setTimestamp();
     const dmMsg = await user.send({
@@ -392,10 +395,12 @@ export async function generateAndSendTranscript(
 
       const thread = await getOrCreateThread(logChannel as TextChannel, threadName);
 
+      const logDesc = transcriptLogMessage || null;
       const summaryEmbed = new EmbedBuilder()
         .setTitle(`📜 ${ticketLabel} 對話紀錄`)
-        .setColor(0xf9b4fe)
-        .addFields(
+        .setColor(0xf9b4fe);
+      if (logDesc) summaryEmbed.setDescription(logDesc);
+      summaryEmbed.addFields(
           { name: "創建者", value: `<@${ticket.creatorId}>`, inline: true },
           { name: "訊息數", value: `${messages.length}`, inline: true },
           { name: "狀態", value: ticket.status, inline: true },

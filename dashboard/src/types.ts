@@ -107,6 +107,8 @@ export interface TicketConfig {
   blacklistMode: string;
   blacklistMessage: string | null;
   transcriptTarget: string;
+  transcriptLogMessage: string | null;
+  transcriptDmMessage: string | null;
 }
 
 export interface TicketButtonType {
