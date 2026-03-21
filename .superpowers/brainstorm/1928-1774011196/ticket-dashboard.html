@@ -1,0 +1,237 @@
+<h2>票口系統 Dashboard 設計</h2>
+<p class="subtitle">管理面板新增「票口」分頁，包含以下三個子頁面</p>
+
+<div class="cards">
+  <!-- Card 1: Settings -->
+  <div class="card" data-choice="settings">
+    <div class="card-image">
+      <div style="background:#1a1f2e;padding:20px;border-radius:8px;font-family:monospace;font-size:13px;">
+        <div style="color:#f9b4fe;font-weight:bold;margin-bottom:12px;">⚙️ 票口設定</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:4px;">面板頻道</div>
+            <div style="color:#dbdee1;">#ticket-panel</div>
+          </div>
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:4px;">存檔頻道</div>
+            <div style="color:#dbdee1;">#ticket-logs</div>
+          </div>
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:4px;">開啟分類</div>
+            <div style="color:#dbdee1;">📂 Active Tickets</div>
+          </div>
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:4px;">關閉分類</div>
+            <div style="color:#dbdee1;">📂 Closed Tickets</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+          <div style="color:#9ca3af;font-size:11px;margin-bottom:4px;">預設歡迎詞</div>
+          <div style="color:#dbdee1;font-size:12px;">感謝您的來信！請描述您的問題...</div>
+        </div>
+
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:4px;">提醒時數</div>
+            <div style="color:#f9b4fe;">48h</div>
+          </div>
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:4px;">自動關閉</div>
+            <div style="color:#f9b4fe;">72h</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;background:#2b2d31;padding:10px;border-radius:6px;border:1px solid rgba(249,180,254,0.15);">
+          <div style="color:#9ca3af;font-size:11px;margin-bottom:8px;">黑名單設定</div>
+          <div style="display:flex;gap:8px;">
+            <span style="background:rgba(249,180,254,0.2);color:#f9b4fe;padding:2px 8px;border-radius:4px;font-size:11px;">回應方式: ephemeral</span>
+            <span style="background:rgba(249,180,254,0.1);color:#d1d5db;padding:2px 8px;border-radius:4px;font-size:11px;">自訂訊息: ✓</span>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;color:#f9b4fe;font-weight:bold;font-size:12px;">面板 Embed 編輯器 ▼</div>
+        <div style="background:#2b2d31;padding:10px;border-radius:6px;margin-top:4px;border:1px solid rgba(249,180,254,0.15);">
+          <div style="color:#dbdee1;font-size:12px;">（復用現有 EmbedSettingsEditor 元件）</div>
+          <div style="color:#9ca3af;font-size:11px;">標題、描述、顏色、作者、縮圖、腳標...</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>設定頁</h3>
+      <p>全局設定：頻道、分類、歡迎詞、超時、黑名單回應、面板 Embed 外觀</p>
+    </div>
+  </div>
+
+  <!-- Card 2: Button Types -->
+  <div class="card" data-choice="buttons">
+    <div class="card-image">
+      <div style="background:#1a1f2e;padding:20px;border-radius:8px;font-family:monospace;font-size:13px;">
+        <div style="color:#f9b4fe;font-weight:bold;margin-bottom:12px;">🔘 按鈕類型管理</div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#2b2d31;padding:12px;border-radius:6px;border-left:3px solid #5865F2;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="color:#dbdee1;font-weight:bold;">📩 一般詢問</div>
+              <div style="color:#9ca3af;font-size:11px;">分類: Active Tickets → 提醒: 48h → 關閉: 72h</div>
+              <div style="color:#9ca3af;font-size:11px;">通知: @客服組</div>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <span style="color:#f9b4fe;cursor:pointer;">✏️</span>
+              <span style="color:#ed4245;cursor:pointer;">🗑️</span>
+            </div>
+          </div>
+
+          <div style="background:#2b2d31;padding:12px;border-radius:6px;border-left:3px solid #57F287;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="color:#dbdee1;font-weight:bold;">🛒 售後服務</div>
+              <div style="color:#9ca3af;font-size:11px;">分類: Support Tickets → 提醒: 24h → 關閉: 48h</div>
+              <div style="color:#9ca3af;font-size:11px;">通知: @售後組</div>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <span style="color:#f9b4fe;cursor:pointer;">✏️</span>
+              <span style="color:#ed4245;cursor:pointer;">🗑️</span>
+            </div>
+          </div>
+
+          <div style="background:#2b2d31;padding:12px;border-radius:6px;border-left:3px solid #FEE75C;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="color:#dbdee1;font-weight:bold;">🤝 異業合作</div>
+              <div style="color:#9ca3af;font-size:11px;">分類: Business → 提醒: 72h → 關閉: 不關閉</div>
+              <div style="color:#9ca3af;font-size:11px;">通知: @業務組</div>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <span style="color:#f9b4fe;cursor:pointer;">✏️</span>
+              <span style="color:#ed4245;cursor:pointer;">🗑️</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;text-align:center;">
+          <span style="background:rgba(249,180,254,0.2);color:#f9b4fe;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;">+ 新增按鈕類型</span>
+        </div>
+
+        <div style="margin-top:16px;background:#2b2d31;padding:12px;border-radius:6px;border:1px solid rgba(249,180,254,0.3);">
+          <div style="color:#f9b4fe;font-size:12px;font-weight:bold;margin-bottom:8px;">面板預覽</div>
+          <div style="background:#36393f;padding:12px;border-radius:6px;border-left:3px solid #f9b4fe;">
+            <div style="color:#dbdee1;font-weight:bold;">🎫 客服中心</div>
+            <div style="color:#9ca3af;font-size:12px;margin-top:4px;">請選擇下方按鈕開啟票口</div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <span style="background:#5865F2;color:white;padding:4px 10px;border-radius:3px;font-size:11px;">📩 一般詢問</span>
+              <span style="background:#57F287;color:white;padding:4px 10px;border-radius:3px;font-size:11px;">🛒 售後服務</span>
+              <span style="background:#FEE75C;color:#1a1f2e;padding:4px 10px;border-radius:3px;font-size:11px;">🤝 異業合作</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>按鈕類型</h3>
+      <p>管理分流按鈕：每個按鈕獨立設定歡迎詞、分類、通知角色、超時時間</p>
+    </div>
+  </div>
+
+  <!-- Card 3: Ticket List & Analytics -->
+  <div class="card" data-choice="analytics">
+    <div class="card-image">
+      <div style="background:#1a1f2e;padding:20px;border-radius:8px;font-family:monospace;font-size:13px;">
+        <div style="color:#f9b4fe;font-weight:bold;margin-bottom:12px;">📊 票口總覽 & 分析</div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+          <div style="background:#2b2d31;padding:8px;border-radius:6px;text-align:center;box-shadow:0 0 8px rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:10px;">開啟中</div>
+            <div style="color:#57F287;font-size:18px;font-weight:bold;">12</div>
+          </div>
+          <div style="background:#2b2d31;padding:8px;border-radius:6px;text-align:center;box-shadow:0 0 8px rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:10px;">已關閉</div>
+            <div style="color:#FEE75C;font-size:18px;font-weight:bold;">45</div>
+          </div>
+          <div style="background:#2b2d31;padding:8px;border-radius:6px;text-align:center;box-shadow:0 0 8px rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:10px;">已存檔</div>
+            <div style="color:#5865F2;font-size:18px;font-weight:bold;">128</div>
+          </div>
+          <div style="background:#2b2d31;padding:8px;border-radius:6px;text-align:center;box-shadow:0 0 8px rgba(249,180,254,0.15);">
+            <div style="color:#9ca3af;font-size:10px;">平均處理</div>
+            <div style="color:#f9b4fe;font-size:18px;font-weight:bold;">4.2h</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:6px;">按類型分布</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="width:60%;height:12px;background:#5865F2;border-radius:3px;"></div>
+                <span style="color:#dbdee1;font-size:10px;">一般 58%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="width:30%;height:12px;background:#57F287;border-radius:3px;"></div>
+                <span style="color:#dbdee1;font-size:10px;">售後 28%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="width:10%;height:12px;background:#FEE75C;border-radius:3px;"></div>
+                <span style="color:#dbdee1;font-size:10px;">合作 14%</span>
+              </div>
+            </div>
+          </div>
+          <div style="background:#2b2d31;padding:10px;border-radius:6px;">
+            <div style="color:#9ca3af;font-size:11px;margin-bottom:6px;">每日開單量 (7天)</div>
+            <div style="display:flex;align-items:flex-end;gap:4px;height:50px;">
+              <div style="width:14%;height:40%;background:#f9b4fe;border-radius:2px;opacity:0.6;"></div>
+              <div style="width:14%;height:60%;background:#f9b4fe;border-radius:2px;opacity:0.7;"></div>
+              <div style="width:14%;height:80%;background:#f9b4fe;border-radius:2px;opacity:0.8;"></div>
+              <div style="width:14%;height:45%;background:#f9b4fe;border-radius:2px;opacity:0.65;"></div>
+              <div style="width:14%;height:90%;background:#f9b4fe;border-radius:2px;opacity:0.9;"></div>
+              <div style="width:14%;height:70%;background:#f9b4fe;border-radius:2px;opacity:0.75;"></div>
+              <div style="width:14%;height:100%;background:#f9b4fe;border-radius:2px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#2b2d31;padding:10px;border-radius:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="color:#9ca3af;font-size:11px;">票口列表</div>
+            <div style="display:flex;gap:4px;">
+              <span style="background:rgba(88,101,242,0.3);color:#8b9dff;padding:2px 6px;border-radius:3px;font-size:10px;">全部</span>
+              <span style="background:rgba(87,242,135,0.2);color:#57F287;padding:2px 6px;border-radius:3px;font-size:10px;">開啟</span>
+              <span style="background:rgba(254,231,92,0.2);color:#FEE75C;padding:2px 6px;border-radius:3px;font-size:10px;">關閉</span>
+            </div>
+          </div>
+          <div style="font-size:11px;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #3a3d44;">
+              <span style="color:#57F287;">● ticket-0042</span>
+              <span style="color:#9ca3af;">User#1234</span>
+              <span style="color:#5865F2;">一般</span>
+              <span style="color:#9ca3af;">2h ago</span>
+              <span style="color:#f9b4fe;cursor:pointer;">關閉 | 存檔</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #3a3d44;">
+              <span style="color:#57F287;">● ticket-0041</span>
+              <span style="color:#9ca3af;">User#5678</span>
+              <span style="color:#57F287;">售後</span>
+              <span style="color:#9ca3af;">5h ago</span>
+              <span style="color:#f9b4fe;cursor:pointer;">關閉 | 存檔</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;">
+              <span style="color:#FEE75C;">○ ticket-0040</span>
+              <span style="color:#9ca3af;">User#9012</span>
+              <span style="color:#FEE75C;">合作</span>
+              <span style="color:#9ca3af;">1d ago</span>
+              <span style="color:#f9b4fe;cursor:pointer;">重開 | 刪除</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>總覽 & 分析</h3>
+      <p>即時統計、類型分布圖、每日趨勢、票口列表（篩選/搜尋/操作）</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:24px;padding:16px;background:rgba(249,180,254,0.05);border:1px solid rgba(249,180,254,0.2);border-radius:8px;">
+  <h3 style="color:#f9b4fe;margin:0 0 8px 0;">Dashboard 子頁面切換</h3>
+  <p style="color:#9ca3af;margin:0;">在主分頁「票口」下，使用子分頁切換：<strong style="color:#dbdee1;">設定</strong> | <strong style="color:#dbdee1;">按鈕類型</strong> | <strong style="color:#dbdee1;">黑名單</strong> | <strong style="color:#dbdee1;">總覽 & 分析</strong></p>
+</div>
