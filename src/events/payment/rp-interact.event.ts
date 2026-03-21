@@ -157,25 +157,64 @@ async function handleConfirm(interaction: any, parts: string[]) {
   logger.info({ orderId, store, amount, fee, total, paymentCode }, "Payment created via /rp");
 
   // Build result embed
-  const resultEmbed = new EmbedBuilder()
-    .setTitle("繳費資訊")
-    .setColor(0x22c55e)
-    .addFields(
-      { name: "訂單編號", value: `\`${orderId}\``, inline: true },
-      { name: "繳費超商", value: STORE_LABELS[store] ?? store, inline: true },
-      { name: "繳費代碼", value: `**\`${paymentCode ?? "-"}\`**`, inline: false },
-      { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
-      { name: "手續費", value: `$${fee.toLocaleString()}`, inline: true },
-      { name: "總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
-      { name: "繳費期限", value: payEndDate ?? "依超商規定", inline: true },
-      { name: "狀態", value: "⏳ 待繳費", inline: true },
-    );
+  const storeEmoji = store === "711" ? "🏪" : "🏬";
+  const storeName = STORE_LABELS[store] ?? store;
+  const deadlineText = payEndDate ?? "依超商規定";
+  const remarkText = remark ? `\n> 📝 ${remark}` : "";
 
-  if (remark) {
-    resultEmbed.addFields({ name: "備註", value: remark, inline: false });
-  }
+  const resultEmbed = new EmbedBuilder()
+    .setTitle(`${storeEmoji} 超商繳費單`)
+    .setColor(store === "711" ? 0xf97316 : 0x22c55e)
+    .setDescription(
+      `請至 **${storeName}** 使用以下代碼繳費\n` +
+      `\n` +
+      `### 繳費代碼\n` +
+      `# \`${paymentCode ?? "-"}\`\n` +
+      `\n` +
+      `───────────────────` +
+      remarkText,
+    )
+    .addFields(
+      { name: "💰 訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
+      { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
+      { name: "💵 總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
+      { name: "⏰ 繳費期限", value: deadlineText, inline: true },
+      { name: "📌 訂單編號", value: `\`${orderId}\``, inline: true },
+    )
+    .setFooter({ text: "繳費完成後系統會自動更新狀態" })
+    .setTimestamp();
 
   await interaction.editReply({ embeds: [resultEmbed], components: [] });
+
+  // Send the same payment info to the user's DM
+  try {
+    const dmEmbed = new EmbedBuilder()
+      .setTitle(`${storeEmoji} 超商繳費單`)
+      .setColor(store === "711" ? 0xf97316 : 0x22c55e)
+      .setDescription(
+        `請至 **${storeName}** 使用以下代碼繳費\n` +
+        `\n` +
+        `### 繳費代碼\n` +
+        `# \`${paymentCode ?? "-"}\`\n` +
+        `\n` +
+        `───────────────────` +
+        remarkText,
+      )
+      .addFields(
+        { name: "💰 訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
+        { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
+        { name: "💵 總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
+        { name: "⏰ 繳費期限", value: deadlineText, inline: true },
+        { name: "📌 訂單編號", value: `\`${orderId}\``, inline: true },
+      )
+      .setFooter({ text: "繳費完成後系統會自動更新狀態 | 此為自動發送的私人訊息" })
+      .setTimestamp();
+
+    await interaction.user.send({ embeds: [dmEmbed] });
+    logger.info({ orderId, userId: interaction.user.id }, "Payment info DM sent to user");
+  } catch (dmErr) {
+    logger.warn({ err: dmErr, orderId, userId: interaction.user.id }, "Failed to send payment DM — user may have DMs disabled");
+  }
 }
 
 async function handleCancel(interaction: any) {
