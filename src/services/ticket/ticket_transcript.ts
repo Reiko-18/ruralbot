@@ -224,7 +224,7 @@ function renderReply(msg: Message, allMessages: Message[]): string {
 }
 
 function renderMessageHtml(msg: Message, allMessages: Message[]): string {
-  const avatar = msg.author.displayAvatarURL({ size: 40 });
+  const avatar = msg.author.displayAvatarURL({ size: 32 });
   const name = esc(msg.author.displayName ?? msg.author.username);
   const time = msg.createdAt.toLocaleString("zh-TW");
   const isBot = msg.author.bot;
