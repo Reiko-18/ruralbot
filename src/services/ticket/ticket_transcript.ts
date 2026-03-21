@@ -360,18 +360,26 @@ export async function generateAndSendTranscript(
   const threadName = `票口紀錄-${new Date().toISOString().slice(0, 7)}`;
   const ticketLabel = `票口 #${String(ticket.ticketNum).padStart(4, "0")}`;
 
-  // ── DM to creator: embed + HTML file ──
+  // ── DM to creator: embed + HTML file + view button ──
   try {
     const user = await client.users.fetch(ticket.creatorId);
     const dmEmbed = new EmbedBuilder()
       .setTitle(`📜 ${ticketLabel} 對話紀錄`)
-      .setDescription("以下是您的票口對話紀錄，下載 HTML 檔案後以瀏覽器開啟即可查看完整內容（含圖片、貼圖、連結等）。")
+      .setDescription("以下是您的票口對話紀錄，點擊下方按鈕即可在瀏覽器中查看完整內容（含圖片、貼圖、連結等）。")
       .setColor(0xf9b4fe)
       .setTimestamp();
-    await user.send({
+    const dmMsg = await user.send({
       embeds: [dmEmbed.toJSON()],
       files: [new AttachmentBuilder(buffer, { name: fileName })],
     });
+    // Add view button with the attachment CDN URL
+    const attachUrl = dmMsg.attachments.first()?.url;
+    if (attachUrl) {
+      const viewButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("📄 點擊查看對話紀錄").setURL(attachUrl),
+      );
+      await dmMsg.edit({ components: [viewButton] });
+    }
   } catch (err) {
     logger.warn({ err, creatorId: ticket.creatorId }, "Failed to DM transcript to creator");
   }
@@ -397,10 +405,18 @@ export async function generateAndSendTranscript(
         .setFooter({ text: "下載 HTML 檔案以瀏覽器開啟可查看完整對話紀錄（含圖片、貼圖、Emoji、連結）" })
         .setTimestamp();
 
-      await thread.send({
+      const threadMsg = await thread.send({
         embeds: [summaryEmbed.toJSON()],
         files: [new AttachmentBuilder(buffer, { name: fileName })],
       });
+      // Add view button with the attachment CDN URL
+      const attachUrl = threadMsg.attachments.first()?.url;
+      if (attachUrl) {
+        const viewButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("📄 點擊查看對話紀錄").setURL(attachUrl),
+        );
+        await threadMsg.edit({ components: [viewButton] });
+      }
     } catch (err) {
       logger.warn({ err, logChannelId }, "Failed to send transcript to log channel thread");
     }
