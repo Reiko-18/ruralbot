@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import type { PaymentTransaction } from "../types";
 import { fetchPaymentTransactions } from "../api/client";
+import { BlurFade } from "./magicui/blur-fade";
 
 interface Props {
   guildId: string;
   refreshKey: number;
 }
 
-const STATUS_STYLES: Record<string, { label: string; color: string }> = {
-  PENDING: { label: "待付款", color: "text-yellow-400" },
-  COMPLETED: { label: "已完成", color: "text-green-400" },
-  FAILED: { label: "失敗", color: "text-red-400" },
-  EXPIRED: { label: "已過期", color: "text-gray-500" },
+const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  PENDING: { label: "待付款", cls: "badge-yellow" },
+  COMPLETED: { label: "已完成", cls: "badge-green" },
+  FAILED: { label: "失敗", cls: "badge-red" },
+  EXPIRED: { label: "已過期", cls: "badge bg-gray-500/15 text-gray-500" },
 };
 
 export function PaymentTransactions({ guildId, refreshKey }: Props) {
@@ -49,55 +50,69 @@ export function PaymentTransactions({ guildId, refreshKey }: Props) {
         {["", "PENDING", "COMPLETED", "FAILED", "EXPIRED"].map((s) => (
           <button
             key={s}
-            className={`px-3 py-1 rounded text-sm ${statusFilter === s ? "btn-accent" : "text-gray-400 hover:text-white"}`}
+            className={`px-3 py-1 rounded-lg text-sm transition-all ${statusFilter === s ? "btn-accent" : "text-gray-400 hover:text-white hover:bg-violet-500/10"}`}
             onClick={() => { setStatusFilter(s); setPage(1); }}
           >
-            {s ? (STATUS_STYLES[s]?.label ?? s) : "全部"}
+            {s ? (STATUS_BADGE[s]?.label ?? s) : "全部"}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="text-gray-400">載入中...</div>
+        <div className="flex justify-center py-12"><div className="spinner-lg" /></div>
       ) : transactions.length === 0 ? (
-        <div className="text-gray-500">尚無交易紀錄</div>
+        <div className="text-gray-500 text-center py-8">尚無交易紀錄</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-gray-400 border-b border-gray-700">
-                <th className="text-left py-2 px-3">訂單編號</th>
-                <th className="text-left py-2 px-3">金額</th>
-                <th className="text-left py-2 px-3">狀態</th>
-                <th className="text-left py-2 px-3">付款人</th>
-                <th className="text-left py-2 px-3">繳費代碼</th>
-                <th className="text-left py-2 px-3">建立時間</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((t) => {
-                const style = STATUS_STYLES[t.status] ?? { label: t.status, color: "text-gray-400" };
-                return (
-                  <tr key={t.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                    <td className="py-2 px-3 font-mono text-xs">{t.orderId}</td>
-                    <td className="py-2 px-3">${t.amount.toLocaleString()}</td>
-                    <td className={`py-2 px-3 ${style.color}`}>{style.label}</td>
-                    <td className="py-2 px-3">{t.payerName ?? "-"}</td>
-                    <td className="py-2 px-3 font-mono text-xs">{t.paymentCode ?? "-"}</td>
-                    <td className="py-2 px-3 text-gray-400">{new Date(t.createdAt).toLocaleString("zh-TW")}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <BlurFade delay={0.1} direction="up">
+          <div className="glow-card overflow-hidden">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>訂單編號</th>
+                  <th>金額</th>
+                  <th>狀態</th>
+                  <th>付款人</th>
+                  <th>繳費代碼</th>
+                  <th>建立時間</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((t) => {
+                  const badge = STATUS_BADGE[t.status] ?? { label: t.status, cls: "badge bg-gray-500/15 text-gray-400" };
+                  return (
+                    <tr key={t.id}>
+                      <td className="font-mono text-xs text-violet-400">{t.orderId}</td>
+                      <td>${t.amount.toLocaleString()}</td>
+                      <td><span className={badge.cls}>{badge.label}</span></td>
+                      <td>{t.payerName ?? "-"}</td>
+                      <td className="font-mono text-xs">{t.paymentCode ?? "-"}</td>
+                      <td className="text-gray-400">{new Date(t.createdAt).toLocaleString("zh-TW")}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </BlurFade>
       )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <button className="px-3 py-1 rounded text-sm text-gray-400 hover:text-white disabled:opacity-30" disabled={page <= 1} onClick={() => setPage(page - 1)}>上一頁</button>
-          <span className="text-sm text-gray-400">{page} / {totalPages}</span>
-          <button className="px-3 py-1 rounded text-sm text-gray-400 hover:text-white disabled:opacity-30" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>下一頁</button>
+          <button
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-violet-500/10 transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            上一頁
+          </button>
+          <span className="text-sm text-gray-500 tabular-nums">{page} / {totalPages}</span>
+          <button
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-violet-500/10 transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            下一頁
+          </button>
         </div>
       )}
     </div>
