@@ -5,7 +5,6 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  MessageFlags,
 } from "discord.js";
 import { getPaymentConfig, getEffectiveCredentials, calculateFee } from "../../services/payment/repo_payment_config.js";
 import { createTransaction, updateTransactionStatus } from "../../services/payment/repo_payment_transaction.js";
@@ -27,13 +26,13 @@ export function registerRpInteractEvent(client: Client): void {
 
     // User scoping
     if (interaction.user.id !== userId) {
-      await interaction.reply({ content: "只有發起者可以操作此付款", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "只有發起者可以操作此付款" });
       return;
     }
 
     // Timeout check (15 min = 900 seconds)
     if (Math.floor(Date.now() / 1000) - ts > 900) {
-      await interaction.reply({ content: "此付款已逾時，請重新使用 /rp", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "此付款已逾時，請重新使用 /rp" });
       return;
     }
 
@@ -163,7 +162,6 @@ async function handleConfirm(interaction: any, parts: string[]) {
     .setColor(0x22c55e)
     .addFields(
       { name: "訂單編號", value: `\`${orderId}\``, inline: true },
-      { name: "SmilePay 追蹤碼", value: `\`${bgResult.SmilePayNO ?? "-"}\``, inline: true },
       { name: "繳費超商", value: STORE_LABELS[store] ?? store, inline: true },
       { name: "繳費代碼", value: `**\`${paymentCode ?? "-"}\`**`, inline: false },
       { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },

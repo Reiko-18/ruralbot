@@ -1,6 +1,5 @@
 import {
   SlashCommandBuilder,
-  MessageFlags,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
@@ -42,5 +41,5 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setStyle(ButtonStyle.Primary),
   );
 
-  await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+  await interaction.reply({ embeds: [embed], components: [row] });
 }
