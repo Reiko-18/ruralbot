@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X, CheckCircle, Copy } from "lucide-react";
 import { createPayment } from "../api/client";
 
 interface Props {
@@ -42,53 +43,89 @@ export function PaymentCreateModal({ guildId, onClose, onCreated }: Props) {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold">建立付款</h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+      <div className="glow-card p-6 w-full max-w-md space-y-5 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">建立付款</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-violet-500/10">
+            <X size={18} />
+          </button>
+        </div>
 
         {result ? (
-          <div className="space-y-3">
-            <div className="bg-green-900/30 border border-green-700 rounded p-3 text-sm">付款已建立</div>
-            <div><span className="text-gray-400 text-sm">訂單編號：</span><span className="font-mono">{result.orderId}</span></div>
-            {result.paymentCode && (
-              <div><span className="text-gray-400 text-sm">超商繳費代碼：</span><span className="font-mono text-lg font-bold">{result.paymentCode}</span></div>
-            )}
-            <div>
-              <span className="text-gray-400 text-sm">付款連結：</span>
-              <a href={result.paymentUrl} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline text-sm break-all">{result.paymentUrl}</a>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+              <CheckCircle size={16} />
+              <span className="text-sm font-medium">付款已建立</span>
             </div>
-            <button className="btn-accent px-4 py-2 rounded text-sm w-full" onClick={onClose}>關閉</button>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between bg-surface p-3 rounded-lg">
+                <div>
+                  <div className="text-xs text-gray-400 mb-0.5">訂單編號</div>
+                  <div className="font-mono text-sm">{result.orderId}</div>
+                </div>
+                <button onClick={() => copyToClipboard(result.orderId)} className="text-gray-400 hover:text-violet-300 p-1">
+                  <Copy size={14} />
+                </button>
+              </div>
+
+              {result.paymentCode && (
+                <div className="flex items-center justify-between bg-surface p-3 rounded-lg">
+                  <div>
+                    <div className="text-xs text-gray-400 mb-0.5">超商繳費代碼</div>
+                    <div className="font-mono text-lg font-bold text-violet-300">{result.paymentCode}</div>
+                  </div>
+                  <button onClick={() => copyToClipboard(result.paymentCode!)} className="text-gray-400 hover:text-violet-300 p-1">
+                    <Copy size={14} />
+                  </button>
+                </div>
+              )}
+
+              <div className="bg-surface p-3 rounded-lg">
+                <div className="text-xs text-gray-400 mb-0.5">付款連結</div>
+                <a href={result.paymentUrl} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-sm break-all">
+                  {result.paymentUrl}
+                </a>
+              </div>
+            </div>
+
+            <button className="btn-accent w-full" onClick={onClose}>關閉</button>
           </div>
         ) : (
           <>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">金額 (新台幣) *</label>
-              <input type="number" min="1" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <label className="block text-sm text-gray-400 mb-1.5">金額 (新台幣) *</label>
+              <input type="number" min="1" className="w-full glow-input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="輸入金額" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">付款人名稱</label>
-              <input type="text" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
+              <label className="block text-sm text-gray-400 mb-1.5">付款人名稱</label>
+              <input type="text" className="w-full glow-input" value={payerName} onChange={(e) => setPayerName(e.target.value)} placeholder="選填" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Email</label>
-                <input type="email" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} />
+                <label className="block text-sm text-gray-400 mb-1.5">Email</label>
+                <input type="email" className="w-full glow-input" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="選填" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">電話</label>
-                <input type="tel" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} />
+                <label className="block text-sm text-gray-400 mb-1.5">電話</label>
+                <input type="tel" className="w-full glow-input" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} placeholder="選填" />
               </div>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">備註</label>
-              <textarea className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" rows={2} value={remark} onChange={(e) => setRemark(e.target.value)} />
+              <label className="block text-sm text-gray-400 mb-1.5">備註</label>
+              <textarea className="w-full glow-input resize-none" rows={2} value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="選填" />
             </div>
             <div className="flex gap-2">
-              <button className="btn-accent px-4 py-2 rounded text-sm flex-1" onClick={handleSubmit} disabled={submitting || !amount}>
-                {submitting ? "建立中..." : "建立付款"}
+              <button className="btn-accent flex-1" onClick={handleSubmit} disabled={submitting || !amount}>
+                {submitting ? <span className="flex items-center justify-center gap-2"><div className="spinner" /> 建立中...</span> : "建立付款"}
               </button>
-              <button className="px-4 py-2 rounded text-sm text-gray-400 hover:text-white border border-gray-700" onClick={onClose}>取消</button>
+              <button className="btn-accent-outline" onClick={onClose}>取消</button>
             </div>
           </>
         )}
