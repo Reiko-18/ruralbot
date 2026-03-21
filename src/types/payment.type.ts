@@ -27,14 +27,22 @@ export interface SmilePayXmlResponse {
 }
 
 export interface SmilePayCallbackData {
-  Dcvc: string;
-  Od_sob: string;
-  Amount: string;
-  SmilePayNO: string;
   Classif: string;
+  Od_sob: string;
   Data_id: string;
-  Verify_key?: string;
-  Roturl_status?: string;
+  Amount: string;
+  Purchamt: string;
+  Smseid: string;
+  Mid_smilepay?: string;
+  Process_date?: string;
+  Process_time?: string;
+  Response_id?: string;
+  Pur_name?: string;
+  Tel_number?: string;
+  Mobile_number?: string;
+  Email?: string;
+  Remark?: string;
+  Payment_no?: string;
 }
 
 export interface EffectiveCredentials {
@@ -43,6 +51,7 @@ export interface EffectiveCredentials {
   verifyKey: string;
   roturl: string;
   isTest: boolean;
+  merchantVerifyParam: string; // 商家驗證參數 (4碼), for Mid_smilepay callback verification
 }
 
 export interface TransactionFilters {

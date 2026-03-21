@@ -26,10 +26,11 @@ export function getEffectiveCredentials(dbConfig: {
   const verifyKey = dbConfig?.verifyKey || process.env.SMILEPAY_VERIFY_KEY;
   const roturl = process.env.SMILEPAY_ROTURL;
   const isTest = process.env.SMILEPAY_ENV === "test";
+  const merchantVerifyParam = process.env.SMILEPAY_MERCHANT_VERIFY_PARAM ?? "";
 
   if (!dcvc || !rvg2c || !verifyKey || !roturl) {
     throw new Error("Missing SmilePay credentials. Set SMILEPAY_DCVC, SMILEPAY_RVG2C, SMILEPAY_VERIFY_KEY, SMILEPAY_ROTURL environment variables or configure per-guild settings.");
   }
 
-  return { dcvc, rvg2c, verifyKey, roturl, isTest };
+  return { dcvc, rvg2c, verifyKey, roturl, isTest, merchantVerifyParam };
 }

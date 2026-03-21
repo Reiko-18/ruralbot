@@ -5,7 +5,7 @@ import {
   createCallbackLog,
 } from "./repo_payment_transaction.js";
 import { getPaymentConfig, getEffectiveCredentials } from "./repo_payment_config.js";
-import { buildVerifyCode } from "./smilepay_api.js";
+import { buildMidSmilepay } from "./smilepay_api.js";
 import type { SmilePayCallbackData } from "../../types/payment.type.js";
 
 export async function handleCallback(
@@ -15,7 +15,7 @@ export async function handleCallback(
   const callbackData = rawData as unknown as SmilePayCallbackData;
   const orderId = callbackData.Od_sob;
 
-  logger.info({ orderId, smilePayNo: callbackData.SmilePayNO, sourceIp }, "Payment callback received");
+  logger.info({ orderId, smseid: callbackData.Smseid, sourceIp }, "Payment callback received");
 
   // Find the transaction
   const transaction = await getTransactionByOrderId(orderId);
@@ -37,25 +37,25 @@ export async function handleCallback(
     return { success: true, responseHtml: "<Roturlstatus>SmilePay_OK</Roturlstatus>" };
   }
 
-  // Verify callback authenticity using verify code
+  // Verify callback authenticity using Mid_smilepay (SmilePay 驗證碼)
   try {
     const config = await getPaymentConfig(transaction.guildId);
     const credentials = getEffectiveCredentials(config);
 
-    const expectedCode = buildVerifyCode({
-      Dcvc: callbackData.Dcvc,
-      Od_sob: callbackData.Od_sob,
-      Amount: callbackData.Amount,
-      SmilePayNO: callbackData.SmilePayNO,
-      verifyKey: credentials.verifyKey,
-    });
+    if (credentials.merchantVerifyParam && callbackData.Mid_smilepay) {
+      const expected = buildMidSmilepay({
+        merchantVerifyParam: credentials.merchantVerifyParam,
+        amount: parseInt(callbackData.Amount, 10),
+        smseid: callbackData.Smseid,
+      });
 
-    if (callbackData.Verify_key && callbackData.Verify_key !== expectedCode) {
-      logger.error(
-        { expected: expectedCode, received: callbackData.Verify_key, orderId, sourceIp },
-        "Callback verify code mismatch — possible forgery",
-      );
-      return { success: false, responseHtml: "<Roturlstatus>VERIFY_FAIL</Roturlstatus>" };
+      if (String(expected) !== callbackData.Mid_smilepay) {
+        logger.error(
+          { expected, received: callbackData.Mid_smilepay, orderId, sourceIp },
+          "Callback Mid_smilepay mismatch — possible forgery",
+        );
+        return { success: false, responseHtml: "<Roturlstatus>VERIFY_FAIL</Roturlstatus>" };
+      }
     }
   } catch (err) {
     logger.error({ err, orderId }, "Failed to verify callback credentials");
@@ -63,24 +63,26 @@ export async function handleCallback(
   }
 
   // Determine payment status from callback data
-  const isSuccess = callbackData.Classif !== "0" && callbackData.Data_id !== "";
+  // Amount > 0 means actual payment received; Classif indicates payment method
+  const actualAmount = parseInt(callbackData.Amount, 10);
+  const isSuccess = actualAmount > 0 && callbackData.Classif !== "";
   const newStatus = isSuccess ? "COMPLETED" : "FAILED";
 
   // Update transaction status
   try {
     await updateTransactionStatus(transaction.id, newStatus, {
-      smilePayNo: callbackData.SmilePayNO,
+      smilePayNo: callbackData.Smseid,
       ...(isSuccess ? { completedAt: new Date() } : {}),
     });
 
     if (isSuccess) {
       logger.info(
-        { orderId, smilePayNo: callbackData.SmilePayNO, amount: transaction.amount },
+        { orderId, smseid: callbackData.Smseid, amount: actualAmount },
         "Payment completed successfully",
       );
     } else {
       logger.warn(
-        { orderId, smilePayNo: callbackData.SmilePayNO, classif: callbackData.Classif },
+        { orderId, smseid: callbackData.Smseid, classif: callbackData.Classif, amount: actualAmount },
         "Payment failed per SmilePay callback",
       );
     }
