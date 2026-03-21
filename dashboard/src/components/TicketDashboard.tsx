@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import { Ticket } from "lucide-react";
 import type { TicketConfig, DiscordGuild } from "../types";
 import { fetchTicketConfig, fetchGuilds } from "../api/client";
 import { TicketPanelSettings } from "./TicketPanelSettings";
 import { TicketSubTickets } from "./TicketSubTickets";
 import { TicketTranscriptSettings } from "./TicketTranscriptSettings";
+import { BlurFade } from "./magicui/blur-fade";
 
 export function TicketDashboard() {
   const [guilds, setGuilds] = useState<DiscordGuild[]>([]);
@@ -49,56 +51,65 @@ export function TicketDashboard() {
   };
 
   if (loading) {
-    return <div className="text-gray-400 text-center py-8">載入中...</div>;
+    return <div className="flex justify-center py-12"><div className="spinner-lg" /></div>;
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Guild selector */}
-      <div className="glow-card p-4 mb-4">
-        <label className="text-sm text-gray-400 block mb-1">選擇伺服器</label>
-        <select
-          className="glow-input w-full"
-          value={guildId}
-          onChange={(e) => handleGuildChange(e.target.value)}
-        >
-          {guilds.length === 0 && <option value="">機器人尚未加入任何伺服器</option>}
-          {guilds.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name} ({g.memberCount} 成員)
-            </option>
-          ))}
-        </select>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header + Guild selector */}
+      <BlurFade delay={0} direction="down">
+        <div className="glow-card p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Ticket size={18} className="text-violet-400" />
+            <h2 className="text-lg font-semibold">票口系統</h2>
+          </div>
+          <select
+            className="glow-input w-full"
+            value={guildId}
+            onChange={(e) => handleGuildChange(e.target.value)}
+          >
+            {guilds.length === 0 && <option value="">機器人尚未加入任何伺服器</option>}
+            {guilds.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} ({g.memberCount} 成員)
+              </option>
+            ))}
+          </select>
+        </div>
+      </BlurFade>
 
-      {configLoading && <div className="text-gray-400 text-center py-8">載入設定中...</div>}
+      {configLoading && (
+        <div className="flex justify-center py-12"><div className="spinner-lg" /></div>
+      )}
 
       {guildId && !configLoading && (
         <>
-          <TicketPanelSettings
-            guildId={guildId}
-            config={config}
-            onSave={() => loadConfig(guildId)}
-          />
+          <BlurFade delay={0.1} direction="up">
+            <TicketPanelSettings
+              guildId={guildId}
+              config={config}
+              onSave={() => loadConfig(guildId)}
+            />
+          </BlurFade>
 
           {config && (
-            <div className="mt-6">
+            <BlurFade delay={0.15} direction="up">
               <TicketSubTickets configId={config.id} guildId={guildId} />
-            </div>
+            </BlurFade>
           )}
 
           {config && (
-            <div className="mt-6">
+            <BlurFade delay={0.2} direction="up">
               <TicketTranscriptSettings
                 guildId={guildId}
                 config={config}
                 onSave={() => loadConfig(guildId)}
               />
-            </div>
+            </BlurFade>
           )}
 
           {!config && (
-            <div className="text-yellow-400 text-center py-4 text-sm mt-4">
+            <div className="text-amber-400 text-center py-6 text-sm bg-amber-500/5 border border-amber-500/10 rounded-xl">
               請先儲存主面板設定以管理子票口
             </div>
           )}
