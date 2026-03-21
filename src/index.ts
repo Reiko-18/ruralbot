@@ -26,6 +26,9 @@ import * as orderDelete from "./commands/accounting/order-delete.cmd.js";
 import * as salesOverview from "./commands/accounting/sales-overview.cmd.js";
 import * as orderLookup from "./commands/accounting/order-lookup.cmd.js";
 
+// Payment commands
+import * as payment from "./commands/payment/payment.cmd.js";
+
 // Config commands
 import * as botConfig from "./commands/config/bot-config.cmd.js";
 
@@ -69,6 +72,7 @@ registerCommand(salesOverview);
 registerCommand(orderLookup);
 registerCommand(botConfig);
 registerCommand(priceList);
+registerCommand(payment);
 
 const client = new Client({
   intents: [
