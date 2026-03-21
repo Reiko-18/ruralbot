@@ -12,6 +12,9 @@ export async function createTransaction(data: {
   originalAmount?: number;
   feeAmount?: number;
   paymentStore?: string;
+  channelId?: string;
+  messageId?: string;
+  userId?: string;
 }) {
   return prisma.paymentTransaction.create({ data });
 }

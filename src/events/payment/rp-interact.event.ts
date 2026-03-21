@@ -137,7 +137,8 @@ async function handleConfirm(interaction: any, parts: string[]) {
   const paymentCode = store === "711" ? bgResult.IbonNo : bgResult.FamiNO;
   const payEndDate = bgResult.PayEndDate;
 
-  // Create transaction record
+  // Create transaction record (store channel/message/user for callback notifications)
+  const replyMsg = await interaction.fetchReply();
   const transaction = await createTransaction({
     guildId,
     orderId,
@@ -146,6 +147,9 @@ async function handleConfirm(interaction: any, parts: string[]) {
     feeAmount: fee,
     paymentStore: store,
     remark,
+    channelId: replyMsg.channelId,
+    messageId: replyMsg.id,
+    userId: interaction.user.id,
   });
 
   await updateTransactionStatus(transaction.id, "PENDING", {

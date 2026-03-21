@@ -1,3 +1,4 @@
+import { type Client, EmbedBuilder, type TextChannel } from "discord.js";
 import { logger } from "../logger/logger.js";
 import {
   getTransactionByOrderId,
@@ -8,9 +9,12 @@ import { getPaymentConfig, getEffectiveCredentials } from "./repo_payment_config
 import { buildMidSmilepay } from "./smilepay_api.js";
 import type { SmilePayCallbackData } from "../../types/payment.type.js";
 
+const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
+
 export async function handleCallback(
   rawData: Record<string, string>,
   sourceIp?: string,
+  discordClient?: Client | null,
 ): Promise<{ success: boolean; responseHtml: string }> {
   const callbackData = rawData as unknown as SmilePayCallbackData;
   const orderId = callbackData.Od_sob;
@@ -80,6 +84,11 @@ export async function handleCallback(
         { orderId, smseid: callbackData.Smseid, amount: actualAmount },
         "Payment completed successfully",
       );
+
+      // Send Discord notifications
+      if (discordClient) {
+        await sendPaymentSuccessNotifications(discordClient, transaction);
+      }
     } else {
       logger.warn(
         { orderId, smseid: callbackData.Smseid, classif: callbackData.Classif, amount: actualAmount },
@@ -91,5 +100,117 @@ export async function handleCallback(
   } catch (err) {
     logger.error({ err, orderId }, "Failed to update transaction status from callback");
     return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
+  }
+}
+
+async function sendPaymentSuccessNotifications(
+  client: Client,
+  transaction: {
+    orderId: string;
+    amount: number;
+    originalAmount?: number | null;
+    feeAmount?: number | null;
+    paymentStore?: string | null;
+    remark?: string | null;
+    channelId?: string | null;
+    messageId?: string | null;
+    userId?: string | null;
+    guildId: string;
+  },
+): Promise<void> {
+  const store = transaction.paymentStore ?? "";
+  const storeEmoji = store === "711" ? "🏪" : "🏬";
+  const storeName = STORE_LABELS[store] ?? "超商";
+  const originalAmount = transaction.originalAmount ?? transaction.amount;
+  const fee = transaction.feeAmount ?? 0;
+
+  // Build the success embed for channel notification
+  const successEmbed = new EmbedBuilder()
+    .setTitle("✅ 繳費成功")
+    .setColor(0x22c55e)
+    .setDescription(
+      `${storeEmoji} **${storeName}** 繳費已完成！\n` +
+      `\n` +
+      `───────────────────`,
+    )
+    .addFields(
+      { name: "📌 訂單編號", value: `\`${transaction.orderId}\``, inline: true },
+      { name: "💰 訂單金額", value: `$${originalAmount.toLocaleString()}`, inline: true },
+      { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
+      { name: "💵 實付金額", value: `**$${transaction.amount.toLocaleString()}**`, inline: true },
+    )
+    .setFooter({ text: "感謝您的付款" })
+    .setTimestamp();
+
+  if (transaction.remark) {
+    successEmbed.addFields({ name: "📝 備註", value: transaction.remark, inline: false });
+  }
+
+  // Update the original message embed to show completed status
+  if (transaction.channelId && transaction.messageId) {
+    try {
+      const channel = await client.channels.fetch(transaction.channelId) as TextChannel;
+      if (channel) {
+        const message = await channel.messages.fetch(transaction.messageId);
+        if (message) {
+          const updatedEmbed = new EmbedBuilder()
+            .setTitle("✅ 繳費完成")
+            .setColor(0x22c55e)
+            .setDescription(
+              `此筆訂單已繳費完成\n` +
+              `\n` +
+              `───────────────────`,
+            )
+            .addFields(
+              { name: "📌 訂單編號", value: `\`${transaction.orderId}\``, inline: true },
+              { name: `${storeEmoji} 繳費超商`, value: storeName, inline: true },
+              { name: "💵 實付金額", value: `**$${transaction.amount.toLocaleString()}**`, inline: true },
+            )
+            .setFooter({ text: "繳費成功" })
+            .setTimestamp();
+
+          await message.edit({ embeds: [updatedEmbed], components: [] });
+        }
+
+        // Send a new success notification in the same channel
+        await channel.send({ embeds: [successEmbed] });
+
+        logger.info({ orderId: transaction.orderId, channelId: transaction.channelId }, "Payment success notification sent to channel");
+      }
+    } catch (err) {
+      logger.warn({ err, orderId: transaction.orderId }, "Failed to send channel payment success notification");
+    }
+  }
+
+  // DM the user
+  if (transaction.userId) {
+    try {
+      const user = await client.users.fetch(transaction.userId);
+      const dmEmbed = new EmbedBuilder()
+        .setTitle("✅ 繳費成功")
+        .setColor(0x22c55e)
+        .setDescription(
+          `${storeEmoji} 您在 **${storeName}** 的繳費已完成！\n` +
+          `\n` +
+          `───────────────────`,
+        )
+        .addFields(
+          { name: "📌 訂單編號", value: `\`${transaction.orderId}\``, inline: true },
+          { name: "💰 訂單金額", value: `$${originalAmount.toLocaleString()}`, inline: true },
+          { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
+          { name: "💵 實付金額", value: `**$${transaction.amount.toLocaleString()}**`, inline: true },
+        )
+        .setFooter({ text: "感謝您的付款 | 此為自動發送的私人訊息" })
+        .setTimestamp();
+
+      if (transaction.remark) {
+        dmEmbed.addFields({ name: "📝 備註", value: transaction.remark, inline: false });
+      }
+
+      await user.send({ embeds: [dmEmbed] });
+      logger.info({ orderId: transaction.orderId, userId: transaction.userId }, "Payment success DM sent to user");
+    } catch (err) {
+      logger.warn({ err, orderId: transaction.orderId, userId: transaction.userId }, "Failed to send payment success DM — user may have DMs disabled");
+    }
   }
 }

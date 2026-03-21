@@ -65,11 +65,12 @@ import {
   buildPanelButtons,
 } from "../ticket/ticket_panel_builder.js";
 import { updatePanelMessageId } from "../ticket/repo_ticket_config.js";
-import { paymentRoutes } from "./routes/payment.js";
+import { paymentRoutes, setPaymentDiscordClient } from "./routes/payment.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function startDashboard(client: Client): void {
+  setPaymentDiscordClient(client);
   const app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));

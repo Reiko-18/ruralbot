@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Client } from "discord.js";
 import { logger } from "../../logger/logger.js";
 import { getPaymentConfig, upsertPaymentConfig, getEffectiveCredentials } from "../../payment/repo_payment_config.js";
 import {
@@ -11,6 +12,16 @@ import {
 import { generatePaymentOrderId } from "../../payment/payment_id.js";
 import { buildPaymentPageUrl, createBackgroundPayment } from "../../payment/smilepay_api.js";
 import { handleCallback } from "../../payment/payment_callback.js";
+
+let discordClient: Client | null = null;
+
+export function setPaymentDiscordClient(client: Client): void {
+  discordClient = client;
+}
+
+export function getPaymentDiscordClient(): Client | null {
+  return discordClient;
+}
 
 export const paymentRoutes = Router();
 
@@ -168,7 +179,7 @@ paymentRoutes.get("/stats/:guildId", async (req, res) => {
 paymentRoutes.post("/callback", async (req, res) => {
   try {
     const sourceIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip;
-    const result = await handleCallback(req.body, sourceIp);
+    const result = await handleCallback(req.body, sourceIp, discordClient);
     res.set("Content-Type", "text/html; charset=utf-8");
     res.send(result.responseHtml);
   } catch (err) {

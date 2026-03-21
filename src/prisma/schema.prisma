@@ -294,6 +294,9 @@ model PaymentTransaction {
   originalAmount  Int?      @map("original_amount")
   feeAmount       Int?      @map("fee_amount")
   paymentStore    String?   @map("payment_store")
+  channelId       String?   @map("channel_id")
+  messageId       String?   @map("message_id")
+  userId          String?   @map("user_id")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   callbackLogs    PaymentCallbackLog[]
