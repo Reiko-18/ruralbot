@@ -1,0 +1,173 @@
+import { Router } from "express";
+import { logger } from "../../logger/logger.js";
+import { getPaymentConfig, upsertPaymentConfig, getEffectiveCredentials } from "../../payment/repo_payment_config.js";
+import {
+  createTransaction,
+  listTransactions,
+  getTransaction,
+  getTransactionStats,
+  updateTransactionStatus,
+} from "../../payment/repo_payment_transaction.js";
+import { generatePaymentOrderId } from "../../payment/payment_id.js";
+import { buildPaymentPageUrl, createBackgroundPayment } from "../../payment/smilepay_api.js";
+import { handleCallback } from "../../payment/payment_callback.js";
+
+export const paymentRoutes = Router();
+
+// GET /api/payment/config/:guildId
+paymentRoutes.get("/config/:guildId", async (req, res) => {
+  try {
+    const config = await getPaymentConfig(req.params.guildId);
+    const hasEnvCredentials = !!(process.env.SMILEPAY_DCVC && process.env.SMILEPAY_RVG2C && process.env.SMILEPAY_VERIFY_KEY);
+    res.json({ config, hasEnvCredentials });
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch payment config");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/payment/config/:guildId
+paymentRoutes.put("/config/:guildId", async (req, res) => {
+  try {
+    const { dcvc, rvg2c, verifyKey, enabled } = req.body;
+    const config = await upsertPaymentConfig(req.params.guildId, { dcvc, rvg2c, verifyKey, enabled });
+    logger.info({ guildId: req.params.guildId }, "Payment config updated");
+    res.json(config);
+  } catch (err) {
+    logger.error({ err }, "Failed to update payment config");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/payment/create/:guildId
+paymentRoutes.post("/create/:guildId", async (req, res) => {
+  try {
+    const { amount, payerName, payerEmail, payerPhone, remark } = req.body;
+    if (!amount || typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    const guildId = req.params.guildId;
+    const config = await getPaymentConfig(guildId);
+    const credentials = getEffectiveCredentials(config);
+    const orderId = await generatePaymentOrderId(guildId);
+
+    // Create transaction record
+    const transaction = await createTransaction({
+      guildId,
+      orderId,
+      amount,
+      payerName,
+      payerEmail,
+      payerPhone,
+      remark,
+    });
+
+    // Build payment page URL
+    const paymentUrl = buildPaymentPageUrl(credentials, {
+      orderId,
+      amount,
+      payerName,
+      email: payerEmail,
+      phone: payerPhone,
+      remark,
+    });
+
+    // Try background API for payment code
+    let paymentCode: string | undefined;
+    let smilePayNo: string | undefined;
+    try {
+      const bgResult = await createBackgroundPayment(credentials, {
+        orderId,
+        amount,
+        payerName,
+        email: payerEmail,
+        phone: payerPhone,
+        remark,
+      });
+
+      if (bgResult.Status === "1") {
+        paymentCode = bgResult.SmilePayNO;
+        smilePayNo = bgResult.SmilePayNO;
+        await updateTransactionStatus(transaction.id, "PENDING", {
+          smilePayNo,
+          paymentCode,
+        });
+      } else {
+        logger.warn({ orderId, status: bgResult.Status, desc: bgResult.Desc }, "SmilePay background API returned non-success");
+      }
+    } catch (err) {
+      logger.warn({ err, orderId }, "Background payment API failed, falling back to payment page URL only");
+    }
+
+    logger.info({ orderId, amount, guildId, payerName }, "Payment created");
+
+    res.status(201).json({
+      transaction: { ...transaction, paymentCode, smilePayNo },
+      paymentUrl,
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to create payment");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/payment/transactions/:guildId
+paymentRoutes.get("/transactions/:guildId", async (req, res) => {
+  try {
+    const { status, start, end, page, limit } = req.query;
+    const result = await listTransactions(req.params.guildId, {
+      status: status as any,
+      startDate: start ? new Date(start as string) : undefined,
+      endDate: end ? new Date(end as string) : undefined,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
+    res.json(result);
+  } catch (err) {
+    logger.error({ err }, "Failed to list transactions");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/payment/transaction/:id
+paymentRoutes.get("/transaction/:id", async (req, res) => {
+  try {
+    const transaction = await getTransaction(req.params.id);
+    if (!transaction) return res.status(404).json({ error: "Transaction not found" });
+    res.json(transaction);
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch transaction");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/payment/stats/:guildId
+paymentRoutes.get("/stats/:guildId", async (req, res) => {
+  try {
+    const { start, end } = req.query;
+    const stats = await getTransactionStats(
+      req.params.guildId,
+      start ? new Date(start as string) : undefined,
+      end ? new Date(end as string) : undefined,
+    );
+    res.json(stats);
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch transaction stats");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/payment/callback — public endpoint for SmilePay Roturl
+paymentRoutes.post("/callback", async (req, res) => {
+  try {
+    const sourceIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip;
+    const result = await handleCallback(req.body, sourceIp);
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.send(result.responseHtml);
+  } catch (err) {
+    logger.error({ err }, "Payment callback processing error");
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.send("<Roturlstatus>ERROR</Roturlstatus>");
+  }
+});

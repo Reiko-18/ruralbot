@@ -65,12 +65,14 @@ import {
   buildPanelButtons,
 } from "../ticket/ticket_panel_builder.js";
 import { updatePanelMessageId } from "../ticket/repo_ticket_config.js";
+import { paymentRoutes } from "./routes/payment.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function startDashboard(client: Client): void {
   const app = express();
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
   // ── Discord Guild API Routes ──
 
@@ -763,6 +765,9 @@ export function startDashboard(client: Client): void {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // ── Payment API Routes ──
+  app.use("/api/payment", paymentRoutes);
 
   // ── Static files (SPA) ──
   const dashboardDist = path.resolve(__dirname, "../../../dashboard/dist");
