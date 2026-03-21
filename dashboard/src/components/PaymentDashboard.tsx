@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { CreditCard } from "lucide-react";
 import { fetchGuilds } from "../api/client";
 import { PaymentConfig } from "./PaymentConfig";
 import { PaymentStats } from "./PaymentStats";
 import { PaymentTransactions } from "./PaymentTransactions";
 import { PaymentCreateModal } from "./PaymentCreateModal";
+import { ShimmerButton } from "./magicui/shimmer-button";
+import { BlurFade } from "./magicui/blur-fade";
 
 type View = "stats" | "transactions" | "config";
 
@@ -31,18 +34,24 @@ export function PaymentDashboard() {
 
   return (
     <div className="w-full space-y-6">
-      <div className="flex items-center gap-4">
-        <select
-          className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-white"
-          value={guildId}
-          onChange={(e) => setGuildId(e.target.value)}
-        >
-          <option value="">選擇伺服器</option>
-          {guilds.map((g) => (
-            <option key={g.id} value={g.id}>{g.name}</option>
-          ))}
-        </select>
-      </div>
+      <BlurFade delay={0} direction="down">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CreditCard size={20} className="text-violet-400" />
+            <h2 className="text-lg font-semibold">金流管理</h2>
+          </div>
+          <select
+            className="glow-input"
+            value={guildId}
+            onChange={(e) => setGuildId(e.target.value)}
+          >
+            <option value="">選擇伺服器</option>
+            {guilds.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+        </div>
+      </BlurFade>
 
       {guildId && (
         <>
@@ -55,24 +64,27 @@ export function PaymentDashboard() {
               ] as const).map(([key, label]) => (
                 <button
                   key={key}
-                  className={`px-3 py-1.5 rounded text-sm ${view === key ? "btn-accent" : "text-gray-400 hover:text-white"}`}
+                  className={`tab-btn ${view === key ? "active" : ""}`}
                   onClick={() => setView(key)}
                 >
                   {label}
                 </button>
               ))}
             </div>
-            <button
-              className="btn-accent px-4 py-2 rounded text-sm"
+            <ShimmerButton
+              shimmerColor="#a78bfa"
+              background="linear-gradient(135deg, #7c3aed, #6d28d9)"
               onClick={() => setShowCreateModal(true)}
             >
               建立付款
-            </button>
+            </ShimmerButton>
           </div>
 
-          {view === "stats" && <PaymentStats guildId={guildId} />}
-          {view === "transactions" && <PaymentTransactions guildId={guildId} refreshKey={refreshKey} />}
-          {view === "config" && <PaymentConfig guildId={guildId} />}
+          <BlurFade delay={0.1} direction="up">
+            {view === "stats" && <PaymentStats guildId={guildId} />}
+            {view === "transactions" && <PaymentTransactions guildId={guildId} refreshKey={refreshKey} />}
+            {view === "config" && <PaymentConfig guildId={guildId} />}
+          </BlurFade>
 
           {showCreateModal && (
             <PaymentCreateModal

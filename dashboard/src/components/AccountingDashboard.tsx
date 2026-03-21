@@ -19,6 +19,8 @@ import {
   fetchDistinctMonths,
   fetchDistinctDays,
 } from "../api/client";
+import { NumberTicker } from "./magicui/number-ticker";
+import { BlurFade } from "./magicui/blur-fade";
 
 type View = "overview" | "products" | "orders";
 
@@ -194,38 +196,38 @@ function SalesOverview() {
       {searchError && <div className="text-red-400 text-sm">{searchError}</div>}
 
       {loading ? (
-        <div className="text-gray-400 text-center py-8">載入中...</div>
+        <div className="flex justify-center py-12"><div className="spinner-lg" /></div>
       ) : (
         <>
           {/* Summary cards */}
           {sales && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="glow-card p-4">
-                <div className="text-gray-400 text-xs mb-1 flex items-center gap-1">
-                  <DollarSign size={12} /> 總營收
-                </div>
-                <div className="text-xl font-bold">${fmt(sales.totalRevenue)}</div>
-              </div>
-              <div className="glow-card p-4">
-                <div className="text-gray-400 text-xs mb-1 flex items-center gap-1">
-                  <TrendingDown size={12} /> 總成本
-                </div>
-                <div className="text-xl font-bold">${fmt(sales.totalCost)}</div>
-              </div>
-              <div className="glow-card p-4">
-                <div className={`text-xs mb-1 flex items-center gap-1 ${sales.totalProfit >= 0 ? "text-purple-400" : "text-red-400"}`}>
-                  <TrendingUp size={12} /> 總利潤
-                </div>
-                <div className={`text-xl font-bold ${profitColor(sales.totalProfit)}`}>
-                  ${fmt(sales.totalProfit)}
-                </div>
-              </div>
-              <div className="glow-card p-4">
-                <div className="text-gray-400 text-xs mb-1 flex items-center gap-1">
-                  <ShoppingCart size={12} /> 訂單數
-                </div>
-                <div className="text-xl font-bold">{sales.orderCount}</div>
-              </div>
+              {([
+                { label: "總營收", icon: DollarSign, value: sales.totalRevenue, color: "text-violet-400", prefix: "$" },
+                { label: "總成本", icon: TrendingDown, value: sales.totalCost, color: "text-blue-400", prefix: "$" },
+                { label: "總利潤", icon: TrendingUp, value: sales.totalProfit, color: sales.totalProfit >= 0 ? "text-emerald-400" : "text-red-400", prefix: "$" },
+                { label: "訂單數", icon: ShoppingCart, value: sales.orderCount, color: "text-amber-400" },
+              ] as { label: string; icon: typeof DollarSign; value: number; color: string; prefix?: string }[]).map((card, i) => {
+                const Icon = card.icon;
+                return (
+                  <BlurFade key={card.label} delay={0.05 * i} direction="up">
+                    <div className="stat-card">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">{card.label}</span>
+                        <Icon size={16} className={card.color} />
+                      </div>
+                      <div className={`text-2xl font-bold ${card.label === "總利潤" ? profitColor(sales.totalProfit) : ""}`}>
+                        {card.prefix ?? ""}
+                        <NumberTicker
+                          value={card.value}
+                          delay={0.1 * i}
+                          formatter={(n) => fmt(n)}
+                        />
+                      </div>
+                    </div>
+                  </BlurFade>
+                );
+              })}
             </div>
           )}
 
@@ -278,46 +280,48 @@ function SalesOverview() {
               <h3 className="text-sm text-gray-400 mb-2">
                 訂單列表（{orders.length} 筆）
               </h3>
-              <div className="glow-card overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-700 text-gray-400 text-left">
-                      <th className="px-4 py-2">ID</th>
-                      <th className="px-4 py-2">日期</th>
-                      <th className="px-4 py-2">商品</th>
-                      <th className="px-4 py-2 text-right">數量</th>
-                      <th className="px-4 py-2 text-right">售價</th>
-                      <th className="px-4 py-2 text-right">成本</th>
-                      <th className="px-4 py-2 text-right">利潤</th>
-                      <th className="px-4 py-2">類型</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((o) => (
-                      <tr key={o.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                        <td className="px-4 py-2 font-mono text-purple-400">{o.id}</td>
-                        <td className="px-4 py-2 text-gray-400">
-                          {new Date(o.createdAt).toLocaleDateString("zh-TW")}
-                        </td>
-                        <td className="px-4 py-2">{o.productName}</td>
-                        <td className="px-4 py-2 text-right">{o.quantity}</td>
-                        <td className="px-4 py-2 text-right">${fmt(o.actualPrice)}</td>
-                        <td className="px-4 py-2 text-right">${fmt(o.actualCost)}</td>
-                        <td className={`px-4 py-2 text-right font-medium ${profitColor(o.profit)}`}>
-                          ${fmt(o.profit)}
-                        </td>
-                        <td className="px-4 py-2">
-                          {o.isCustom ? (
-                            <span className="text-xs bg-yellow-600/30 text-yellow-400 px-1.5 py-0.5 rounded">自訂</span>
-                          ) : (
-                            <span className="text-xs bg-purple-600/30 text-purple-400 px-1.5 py-0.5 rounded">一般</span>
-                          )}
-                        </td>
+              <BlurFade delay={0.15} direction="up">
+                <div className="glow-card overflow-hidden">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>日期</th>
+                        <th>商品</th>
+                        <th className="text-right">數量</th>
+                        <th className="text-right">售價</th>
+                        <th className="text-right">成本</th>
+                        <th className="text-right">利潤</th>
+                        <th>類型</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {orders.map((o) => (
+                        <tr key={o.id}>
+                          <td className="font-mono text-violet-400">{o.id}</td>
+                          <td className="text-gray-400">
+                            {new Date(o.createdAt).toLocaleDateString("zh-TW")}
+                          </td>
+                          <td>{o.productName}</td>
+                          <td className="text-right">{o.quantity}</td>
+                          <td className="text-right">${fmt(o.actualPrice)}</td>
+                          <td className="text-right">${fmt(o.actualCost)}</td>
+                          <td className={`text-right font-medium ${profitColor(o.profit)}`}>
+                            ${fmt(o.profit)}
+                          </td>
+                          <td>
+                            {o.isCustom ? (
+                              <span className="badge-yellow">自訂</span>
+                            ) : (
+                              <span className="badge-purple">一般</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </BlurFade>
             </div>
           )}
         </>
@@ -346,7 +350,7 @@ function ProductList() {
   const categories = [...new Set(products.map((p) => p.category.name))].sort();
 
   if (loading) {
-    return <div className="text-gray-400 text-center py-8">載入中...</div>;
+    return <div className="flex justify-center py-12"><div className="spinner-lg" /></div>;
   }
 
   return (
@@ -354,7 +358,7 @@ function ProductList() {
       {/* Category filter */}
       <div className="flex gap-2 flex-wrap">
         <button
-          className={`px-3 py-1 rounded text-sm ${!filter ? "btn-accent" : "bg-gray-700 text-gray-300 hover:bg-purple-400/10"}`}
+          className={`px-3 py-1 rounded-lg text-sm transition-all ${!filter ? "btn-accent" : "bg-surface-overlay text-gray-300 hover:bg-violet-500/10"}`}
           onClick={() => setFilter("")}
         >
           全部 ({products.length})
@@ -362,7 +366,7 @@ function ProductList() {
         {categories.map((cat) => (
           <button
             key={cat}
-            className={`px-3 py-1 rounded text-sm ${filter === cat ? "btn-accent" : "bg-gray-700 text-gray-300 hover:bg-purple-400/10"}`}
+            className={`px-3 py-1 rounded-lg text-sm transition-all ${filter === cat ? "btn-accent" : "bg-surface-overlay text-gray-300 hover:bg-violet-500/10"}`}
             onClick={() => setFilter(cat)}
           >
             {cat} ({products.filter((p) => p.category.name === cat).length})
@@ -373,48 +377,50 @@ function ProductList() {
       {filtered.length === 0 ? (
         <div className="text-gray-500 text-center py-8">尚無商品</div>
       ) : (
-        <div className="glow-card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-700 text-gray-400 text-left">
-                <th className="px-4 py-2">商品名稱</th>
-                <th className="px-4 py-2">分類</th>
-                <th className="px-4 py-2 text-right">成本</th>
-                <th className="px-4 py-2 text-right">售價</th>
-                <th className="px-4 py-2 text-right">利潤率</th>
-                <th className="px-4 py-2">來源</th>
-                <th className="px-4 py-2">折扣</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => {
-                const margin = p.price > 0 ? ((p.price - p.cost) / p.price * 100) : 0;
-                const isDiscount = p.costDiscount != null && p.priceDiscount != null;
-                return (
-                  <tr key={p.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                    <td className="px-4 py-2 font-medium">{p.name}</td>
-                    <td className="px-4 py-2 text-gray-400">{p.category.name}</td>
-                    <td className="px-4 py-2 text-right">${fmt(p.cost)}</td>
-                    <td className="px-4 py-2 text-right">${fmt(p.price)}</td>
-                    <td className={`px-4 py-2 text-right ${margin >= 0 ? "text-purple-400" : "text-red-400"}`}>
-                      {fmt(margin)}%
-                    </td>
-                    <td className="px-4 py-2 text-gray-400">{p.source || "-"}</td>
-                    <td className="px-4 py-2">
-                      {isDiscount ? (
-                        <span className="text-xs bg-purple-600/30 text-purple-400 px-1.5 py-0.5 rounded">
-                          面額制 (成本{p.costDiscount}x / 售{p.priceDiscount}x)
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-500">固定價</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <BlurFade delay={0.1} direction="up">
+          <div className="glow-card overflow-hidden">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>商品名稱</th>
+                  <th>分類</th>
+                  <th className="text-right">成本</th>
+                  <th className="text-right">售價</th>
+                  <th className="text-right">利潤率</th>
+                  <th>來源</th>
+                  <th>折扣</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const margin = p.price > 0 ? ((p.price - p.cost) / p.price * 100) : 0;
+                  const isDiscount = p.costDiscount != null && p.priceDiscount != null;
+                  return (
+                    <tr key={p.id}>
+                      <td className="font-medium">{p.name}</td>
+                      <td className="text-gray-400">{p.category.name}</td>
+                      <td className="text-right">${fmt(p.cost)}</td>
+                      <td className="text-right">${fmt(p.price)}</td>
+                      <td className={`text-right ${margin >= 0 ? "text-violet-400" : "text-red-400"}`}>
+                        {fmt(margin)}%
+                      </td>
+                      <td className="text-gray-400">{p.source || "-"}</td>
+                      <td>
+                        {isDiscount ? (
+                          <span className="badge-purple">
+                            面額制 (成本{p.costDiscount}x / 售{p.priceDiscount}x)
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-500">固定價</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </BlurFade>
       )}
     </div>
   );
