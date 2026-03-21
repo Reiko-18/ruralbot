@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { Settings, Store, Shield } from "lucide-react";
 import type { PaymentConfig as PaymentConfigType } from "../types";
 import { fetchPaymentConfig, updatePaymentConfig } from "../api/client";
+import { BlurFade } from "./magicui/blur-fade";
 
 interface Props {
   guildId: string;
@@ -61,92 +63,88 @@ export function PaymentConfig({ guildId }: Props) {
     }
   };
 
-  if (loading) return <div className="text-gray-400">載入中...</div>;
+  if (loading) return <div className="flex justify-center py-12"><div className="spinner-lg" /></div>;
 
   return (
-    <div className="glow-card p-6 space-y-4">
-      <h3 className="text-lg font-semibold">SmilePay 商家設定</h3>
-
-      {hasEnvCredentials && (
-        <div className="text-sm text-gray-400 bg-gray-800 p-3 rounded">
-          已偵測到環境變數預設憑證。下方欄位留空將使用預設值。
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">商家代號 (Dcvc)</label>
-          <input
-            type="text"
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-            value={dcvc}
-            onChange={(e) => setDcvc(e.target.value)}
-            placeholder={hasEnvCredentials ? "使用環境變數預設值" : ""}
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">參數碼 (Rvg2c)</label>
-          <input
-            type="text"
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-            value={rvg2c}
-            onChange={(e) => setRvg2c(e.target.value)}
-            placeholder={hasEnvCredentials ? "使用環境變數預設值" : ""}
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-400 mb-1">檢查碼 (Verify Key)</label>
-        <input
-          type="password"
-          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-          value={verifyKey}
-          onChange={(e) => setVerifyKey(e.target.value)}
-          placeholder={hasEnvCredentials ? "使用環境變數預設值" : ""}
-        />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="payment-enabled"
-          checked={enabled}
-          onChange={(e) => setEnabled(e.target.checked)}
-          className="rounded"
-        />
-        <label htmlFor="payment-enabled" className="text-sm text-gray-300">啟用金流功能</label>
-      </div>
-
-      <div className="border-t border-gray-700 pt-4 mt-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-3">超商手續費設定</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">全家手續費 (元)</label>
-            <input type="number" min="0" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={feeFamily} onChange={(e) => setFeeFamily(e.target.value)} placeholder="0" />
+    <div className="space-y-6">
+      {/* Merchant Credentials */}
+      <BlurFade delay={0} direction="up">
+        <div className="glow-card p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Shield size={16} className="text-violet-400" />
+            <h3 className="text-base font-semibold">SmilePay 商家憑證</h3>
           </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">7-11 手續費 (元)</label>
-            <input type="number" min="0" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={fee711} onChange={(e) => setFee711(e.target.value)} placeholder="0" />
+
+          {hasEnvCredentials && (
+            <div className="text-sm text-gray-400 bg-violet-500/5 border border-violet-500/10 p-3 rounded-lg">
+              已偵測到環境變數預設憑證。下方欄位留空將使用預設值。
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">商家代號 (Dcvc)</label>
+              <input type="text" className="w-full glow-input" value={dcvc} onChange={(e) => setDcvc(e.target.value)} placeholder={hasEnvCredentials ? "使用環境變數預設值" : ""} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">參數碼 (Rvg2c)</label>
+              <input type="text" className="w-full glow-input" value={rvg2c} onChange={(e) => setRvg2c(e.target.value)} placeholder={hasEnvCredentials ? "使用環境變數預設值" : ""} />
+            </div>
           </div>
+
           <div>
-            <label className="block text-sm text-gray-400 mb-1">7-11 手續費 - 超過門檻 (元)</label>
-            <input type="number" min="0" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={fee711Over} onChange={(e) => setFee711Over(e.target.value)} placeholder="0" />
+            <label className="block text-sm text-gray-400 mb-1.5">檢查碼 (Verify Key)</label>
+            <input type="password" className="w-full glow-input" value={verifyKey} onChange={(e) => setVerifyKey(e.target.value)} placeholder={hasEnvCredentials ? "使用環境變數預設值" : ""} />
           </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">7-11 階梯門檻 (元)</label>
-            <input type="number" min="0" className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white" value={fee711Threshold} onChange={(e) => setFee711Threshold(e.target.value)} placeholder="1000" />
+
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <div className={`w-9 h-5 rounded-full relative transition-colors ${enabled ? "bg-violet-600" : "bg-gray-600"}`}>
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? "translate-x-4" : "translate-x-0.5"}`} />
+            </div>
+            <input type="checkbox" className="hidden" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+            <span className="text-sm text-gray-300">啟用金流功能</span>
+          </label>
+        </div>
+      </BlurFade>
+
+      {/* Fee Configuration */}
+      <BlurFade delay={0.1} direction="up">
+        <div className="glow-card p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Store size={16} className="text-violet-400" />
+            <h3 className="text-base font-semibold">超商手續費設定</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">全家手續費 (元)</label>
+              <input type="number" min="0" className="w-full glow-input" value={feeFamily} onChange={(e) => setFeeFamily(e.target.value)} placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">7-11 手續費 (元)</label>
+              <input type="number" min="0" className="w-full glow-input" value={fee711} onChange={(e) => setFee711(e.target.value)} placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">7-11 手續費 - 超過門檻 (元)</label>
+              <input type="number" min="0" className="w-full glow-input" value={fee711Over} onChange={(e) => setFee711Over(e.target.value)} placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">7-11 階梯門檻 (元)</label>
+              <input type="number" min="0" className="w-full glow-input" value={fee711Threshold} onChange={(e) => setFee711Threshold(e.target.value)} placeholder="1000" />
+            </div>
           </div>
         </div>
-      </div>
+      </BlurFade>
 
-      <button
-        className="btn-accent px-4 py-2 rounded text-sm"
-        onClick={handleSave}
-        disabled={saving}
-      >
-        {saving ? "儲存中..." : "儲存設定"}
-      </button>
+      <BlurFade delay={0.15} direction="up">
+        <button className="btn-accent" onClick={handleSave} disabled={saving}>
+          {saving ? (
+            <span className="flex items-center gap-2"><div className="spinner" /> 儲存中...</span>
+          ) : (
+            <span className="flex items-center gap-2"><Settings size={14} /> 儲存設定</span>
+          )}
+        </button>
+      </BlurFade>
     </div>
   );
 }
