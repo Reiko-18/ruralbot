@@ -175,6 +175,32 @@ paymentRoutes.get("/stats/:guildId", async (req, res) => {
   }
 });
 
+// POST /api/payment/test-callback/:orderId — simulate a successful SmilePay callback
+paymentRoutes.post("/test-callback/:orderId", async (req, res) => {
+  try {
+    const { getTransactionByOrderId } = await import("../../payment/repo_payment_transaction.js");
+    const transaction = await getTransactionByOrderId(req.params.orderId);
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    const fakeCallbackData: Record<string, string> = {
+      Od_sob: transaction.orderId,
+      Smseid: transaction.smilePayNo ?? `TEST-${Date.now()}`,
+      Amount: String(transaction.amount),
+      Classif: "C",
+      Mid_smilepay: "",
+    };
+
+    const result = await handleCallback(fakeCallbackData, "test-simulate", discordClient);
+    logger.info({ orderId: req.params.orderId }, "Test callback simulated");
+    res.json({ orderId: req.params.orderId, result });
+  } catch (err) {
+    logger.error({ err }, "Test callback simulation failed");
+    res.status(500).json({ error: "Simulation failed", message: String(err) });
+  }
+});
+
 // POST /api/payment/callback — public endpoint for SmilePay Roturl
 paymentRoutes.post("/callback", async (req, res) => {
   try {
