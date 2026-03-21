@@ -97,6 +97,11 @@ export function TicketPanelSettings({ guildId, config, onSave }: Props) {
   const handleDeploy = async () => {
     setDeploying(true);
     try {
+      // Auto-save before deploying to ensure DB has the latest data
+      await updateTicketConfig(guildId, {
+        panelChannelId: panelChannelId || null,
+        panelEmbed: Object.keys(panelData).length > 0 ? JSON.stringify(panelData) : null,
+      });
       const result = await deployTicketPanel(guildId);
       alert(result.action === "updated" ? "面板已更新！" : "面板已部署！");
       onSave();
