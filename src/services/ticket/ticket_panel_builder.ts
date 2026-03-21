@@ -27,12 +27,18 @@ const BUTTON_STYLE_MAP: Record<string, ButtonStyle> = {
 export function buildPanelEmbed(config: TicketConfig): APIEmbed {
   if (config.panelEmbed) {
     try {
-      const parsed = JSON.parse(config.panelEmbed) as TicketEmbedSettings;
+      const parsed = JSON.parse(config.panelEmbed) as TicketEmbedSettings & {
+        title?: string;
+        description?: string;
+        imageUrl?: string;
+      };
       const embed = new EmbedBuilder()
-        .setTitle(parsed.authorName ?? "🎫 客服中心")
-        .setDescription(config.defaultMessage ?? "請選擇下方按鈕開啟票口")
+        .setTitle(parsed.title ?? "🎫 客服中心")
+        .setDescription(parsed.description ?? "請選擇下方按鈕開啟票口")
         .setColor(parsed.color ? parseInt(parsed.color.replace("#", ""), 16) : 0xf9b4fe);
+      if (parsed.authorName) embed.setAuthor({ name: parsed.authorName, iconURL: parsed.authorIconUrl ?? undefined });
       if (parsed.thumbnailUrl) embed.setThumbnail(parsed.thumbnailUrl);
+      if (parsed.imageUrl) embed.setImage(parsed.imageUrl);
       if (parsed.footerText) embed.setFooter({ text: parsed.footerText, iconURL: parsed.footerIconUrl ?? undefined });
       if (parsed.showTimestamp) embed.setTimestamp();
       return embed.toJSON();
@@ -43,7 +49,7 @@ export function buildPanelEmbed(config: TicketConfig): APIEmbed {
 
   return new EmbedBuilder()
     .setTitle("🎫 客服中心")
-    .setDescription(config.defaultMessage ?? "請選擇下方按鈕開啟票口")
+    .setDescription("請選擇下方按鈕開啟票口")
     .setColor(0xf9b4fe)
     .toJSON();
 }
