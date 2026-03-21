@@ -29,8 +29,14 @@ paymentRoutes.get("/config/:guildId", async (req, res) => {
 // PUT /api/payment/config/:guildId
 paymentRoutes.put("/config/:guildId", async (req, res) => {
   try {
-    const { dcvc, rvg2c, verifyKey, enabled } = req.body;
-    const config = await upsertPaymentConfig(req.params.guildId, { dcvc, rvg2c, verifyKey, enabled });
+    const { dcvc, rvg2c, verifyKey, enabled, feeFamily, fee711, fee711Over, fee711Threshold } = req.body;
+    const config = await upsertPaymentConfig(req.params.guildId, {
+      dcvc, rvg2c, verifyKey, enabled,
+      feeFamily: feeFamily != null ? Number(feeFamily) : null,
+      fee711: fee711 != null ? Number(fee711) : null,
+      fee711Over: fee711Over != null ? Number(fee711Over) : null,
+      fee711Threshold: fee711Threshold != null ? Number(fee711Threshold) : null,
+    });
     logger.info({ guildId: req.params.guildId }, "Payment config updated");
     res.json(config);
   } catch (err) {

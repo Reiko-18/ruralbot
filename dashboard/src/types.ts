@@ -171,6 +171,10 @@ export interface PaymentConfig {
   rvg2c: string | null;
   verifyKey: string | null;
   enabled: boolean;
+  feeFamily: number | null;
+  fee711: number | null;
+  fee711Over: number | null;
+  fee711Threshold: number | null;
   createdAt: string;
   updatedAt: string;
 }
