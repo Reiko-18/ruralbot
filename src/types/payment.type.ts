@@ -24,6 +24,9 @@ export interface SmilePayXmlResponse {
   Data_id?: string;
   Rvg2c?: string;
   Dcvc?: string;
+  IbonNo?: string;
+  FamiNO?: string;
+  PayEndDate?: string;
 }
 
 export interface SmilePayCallbackData {

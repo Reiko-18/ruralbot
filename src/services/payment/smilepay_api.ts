@@ -15,7 +15,7 @@ const xmlParser = new XMLParser();
 
 export function buildPaymentPageUrl(
   credentials: EffectiveCredentials,
-  params: { orderId: string; amount: number; payerName?: string; email?: string; phone?: string; remark?: string },
+  params: { orderId: string; amount: number; payerName?: string; email?: string; phone?: string; remark?: string; payZg?: string },
 ): string {
   const base = credentials.isTest ? ENDPOINTS.testPage : ENDPOINTS.standardPage;
   const query = new URLSearchParams({
@@ -23,7 +23,7 @@ export function buildPaymentPageUrl(
     Rvg2c: credentials.rvg2c,
     Od_sob: params.orderId,
     Amount: String(params.amount),
-    Pay_zg: "3",
+    Pay_zg: params.payZg ?? "3",
     Roturl: credentials.roturl,
     Verify_key: credentials.verifyKey,
     ...(params.payerName ? { Pur_name: params.payerName } : {}),
@@ -36,14 +36,14 @@ export function buildPaymentPageUrl(
 
 export async function createBackgroundPayment(
   credentials: EffectiveCredentials,
-  params: { orderId: string; amount: number; payerName?: string; email?: string; phone?: string; remark?: string },
+  params: { orderId: string; amount: number; payerName?: string; email?: string; phone?: string; remark?: string; payZg?: string },
 ): Promise<SmilePayXmlResponse> {
   const body = new URLSearchParams({
     Dcvc: credentials.dcvc,
     Rvg2c: credentials.rvg2c,
     Od_sob: params.orderId,
     Amount: String(params.amount),
-    Pay_zg: "3",
+    Pay_zg: params.payZg ?? "3",
     Roturl: credentials.roturl,
     Verify_key: credentials.verifyKey,
     ...(params.payerName ? { Pur_name: params.payerName } : {}),
@@ -87,6 +87,9 @@ export function parseXmlResponse(xml: string): SmilePayXmlResponse {
     Data_id: data.Data_id ? String(data.Data_id) : undefined,
     Rvg2c: data.Rvg2c ? String(data.Rvg2c) : undefined,
     Dcvc: data.Dcvc ? String(data.Dcvc) : undefined,
+    IbonNo: data.IbonNo ? String(data.IbonNo) : undefined,
+    FamiNO: data.FamiNO ? String(data.FamiNO) : undefined,
+    PayEndDate: data.PayEndDate ? String(data.PayEndDate) : undefined,
   };
 }
 
