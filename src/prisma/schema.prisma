@@ -259,3 +259,50 @@ model TicketInstance {
   @@index([creatorId])
   @@map("ticket_instances")
 }
+
+model PaymentConfig {
+  id        String   @id @default(cuid())
+  guildId   String   @unique @map("guild_id")
+  dcvc      String?
+  rvg2c     String?
+  verifyKey String?  @map("verify_key") @db.Text
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("payment_configs")
+}
+
+model PaymentTransaction {
+  id              String   @id @default(cuid())
+  guildId         String   @map("guild_id")
+  orderId         String   @unique @map("order_id")
+  amount          Int
+  status          String   @default("PENDING")
+  payerName       String?  @map("payer_name")
+  payerEmail      String?  @map("payer_email")
+  payerPhone      String?  @map("payer_phone")
+  remark          String?  @db.Text
+  smilePayNo      String?  @map("smilepay_no")
+  paymentCode     String?  @map("payment_code")
+  paymentDeadline DateTime? @map("payment_deadline")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  callbackLogs    PaymentCallbackLog[]
+
+  @@index([guildId])
+  @@index([status])
+  @@map("payment_transactions")
+}
+
+model PaymentCallbackLog {
+  id            String   @id @default(cuid())
+  transactionId String   @map("transaction_id")
+  transaction   PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  rawData       String   @map("raw_data") @db.Text
+  sourceIp      String?  @map("source_ip")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("payment_callback_logs")
+}
