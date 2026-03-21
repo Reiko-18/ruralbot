@@ -8,8 +8,9 @@ import { DiscordPreview } from "./components/DiscordPreview";
 import { PresenceManager } from "./components/PresenceManager";
 import { AccountingDashboard } from "./components/AccountingDashboard";
 import { TicketDashboard } from "./components/TicketDashboard";
+import { PaymentDashboard } from "./components/PaymentDashboard";
 
-type Tab = "price" | "presence" | "accounting" | "ticket";
+type Tab = "price" | "presence" | "accounting" | "ticket" | "payment";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("price");
@@ -78,6 +79,9 @@ export default function App() {
           <button className={tabClass("ticket")} onClick={() => setTab("ticket")}>
             票口
           </button>
+          <button className={tabClass("payment")} onClick={() => setTab("payment")}>
+            金流
+          </button>
         </nav>
       </header>
 
@@ -121,6 +125,10 @@ export default function App() {
       ) : tab === "ticket" ? (
         <div className="flex-1 overflow-y-auto p-6">
           <TicketDashboard />
+        </div>
+      ) : tab === "payment" ? (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PaymentDashboard />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-6">
