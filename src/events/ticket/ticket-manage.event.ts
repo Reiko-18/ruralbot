@@ -16,6 +16,8 @@ import {
 } from "discord.js";
 import {
   TICKET_CLOSE_ID,
+  TICKET_CLOSE_CONFIRM_ID,
+  TICKET_CLOSE_CANCEL_ID,
   TICKET_REOPEN_ID,
   TICKET_DELETE_ID,
   TICKET_TRANSCRIPT_ID,
@@ -41,6 +43,8 @@ import { logger } from "../../services/logger/logger.js";
 
 const MANAGE_IDS = new Set([
   TICKET_CLOSE_ID,
+  TICKET_CLOSE_CONFIRM_ID,
+  TICKET_CLOSE_CANCEL_ID,
   TICKET_REOPEN_ID,
   TICKET_DELETE_ID,
   TICKET_TRANSCRIPT_ID,
@@ -90,6 +94,21 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
         }
       }
 
+      // Show close confirmation
+      const confirmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder().setCustomId(TICKET_CLOSE_CONFIRM_ID).setLabel("確定").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId(TICKET_CLOSE_CANCEL_ID).setLabel("取消").setStyle(ButtonStyle.Secondary),
+      );
+      await interaction.reply({
+        content: "### 確認沒有問題的話可以自行關閉此票口",
+        components: [confirmRow],
+      });
+      break;
+    }
+
+    case TICKET_CLOSE_CONFIRM_ID: {
+      await interaction.message?.delete().catch(() => {});
+
       await interaction.deferReply();
       const channel = interaction.channel as TextChannel;
 
@@ -117,6 +136,11 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
       });
 
       logger.info({ ticketNum: instance.ticketNum, closedBy: interaction.user.id }, "Ticket closed");
+      break;
+    }
+
+    case TICKET_CLOSE_CANCEL_ID: {
+      await interaction.message?.delete().catch(() => {});
       break;
     }
 

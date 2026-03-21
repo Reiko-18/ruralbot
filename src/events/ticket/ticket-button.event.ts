@@ -68,7 +68,11 @@ export function registerTicketButtonEvent(client: Client): void {
       }
 
       const ticketNum = await incrementTicketNum(guildId);
-      const channelName = `ticket-${String(ticketNum).padStart(4, "0")}`;
+      const formattedNum = String(ticketNum).padStart(4, "0");
+      const now = new Date();
+      const dateStr = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const typeLabel = buttonType?.label ?? "票口";
+      const channelName = `${typeLabel}➤${formattedNum}｜${dateStr}`;
 
       // Build permission overwrites
       const permissionOverwrites: any[] = [
@@ -109,6 +113,7 @@ export function registerTicketButtonEvent(client: Client): void {
         name: channelName,
         type: ChannelType.GuildText,
         parent: categoryId,
+        topic: `票口資訊：\n${formattedNum}｜${dateStr}｜${typeLabel}｜${interaction.user.username} / ${interaction.user.id}`,
         permissionOverwrites,
       });
 
@@ -127,11 +132,14 @@ export function registerTicketButtonEvent(client: Client): void {
         } catch { /* skip */ }
       }
 
-      await ticketChannel.send({
+      const welcomeMsg = await ticketChannel.send({
         content: mentionContent,
         embeds: [welcomeEmbed],
         components: buttons,
       });
+
+      // Pin the welcome message
+      await welcomeMsg.pin().catch(() => { /* Missing permission, skip */ });
 
       // Create DB record
       await createInstance({

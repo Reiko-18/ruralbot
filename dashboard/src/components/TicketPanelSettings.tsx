@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import type { TicketConfig, EmbedSettings, DiscordChannel } from "../types";
-import { updateTicketConfig, fetchGuildChannels, deployTicketPanel } from "../api/client";
+import type { TicketConfig, TicketButtonType, EmbedSettings, DiscordChannel } from "../types";
+import { updateTicketConfig, fetchGuildChannels, deployTicketPanel, fetchButtonTypes } from "../api/client";
 import { EmbedSettingsEditor } from "./EmbedSettingsEditor";
 import { DiscordText } from "./DiscordText";
 
@@ -22,8 +22,16 @@ interface Props {
   onSave: () => void;
 }
 
+const STYLE_COLORS: Record<string, string> = {
+  PRIMARY: "#5865F2",
+  SECONDARY: "#4f545c",
+  SUCCESS: "#57F287",
+  DANGER: "#ED4245",
+};
+
 export function TicketPanelSettings({ guildId, config, onSave }: Props) {
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
+  const [subTickets, setSubTickets] = useState<TicketButtonType[]>([]);
   const [panelChannelId, setPanelChannelId] = useState(config?.panelChannelId ?? "");
   const [panelData, setPanelData] = useState<PanelEmbedData>(parsePanelEmbed(config?.panelEmbed ?? null));
   const [saving, setSaving] = useState(false);
@@ -36,6 +44,15 @@ export function TicketPanelSettings({ guildId, config, onSave }: Props) {
       .then(setChannels)
       .catch((err) => console.error("Failed to load channels:", err));
   }, [guildId]);
+
+  // Load sub-tickets for preview
+  useEffect(() => {
+    if (config?.id) {
+      fetchButtonTypes(config.id).then(setSubTickets).catch(() => {});
+    } else {
+      setSubTickets([]);
+    }
+  }, [config?.id]);
 
   // Sync form when config changes (e.g., guild switch)
   useEffect(() => {
@@ -227,11 +244,21 @@ export function TicketPanelSettings({ guildId, config, onSave }: Props) {
           </div>
         </div>
 
-        {/* Placeholder buttons preview */}
-        <div className="mt-2 flex gap-2">
-          <div className="bg-[#5865F2] text-white text-sm px-4 py-1.5 rounded">
-            🎫 開啟票口
-          </div>
+        {/* Sub-ticket buttons preview */}
+        <div className="mt-2 flex gap-2 flex-wrap">
+          {subTickets.length > 0 ? subTickets.map((bt) => (
+            <span
+              key={bt.id}
+              className="px-3 py-1.5 rounded text-sm text-white"
+              style={{ backgroundColor: STYLE_COLORS[bt.style] ?? "#5865F2" }}
+            >
+              {bt.emoji ? `${bt.emoji} ` : ""}{bt.label}
+            </span>
+          )) : (
+            <span className="px-3 py-1.5 rounded text-sm text-white bg-[#5865F2]">
+              🎫 開啟票口
+            </span>
+          )}
         </div>
       </div>
 

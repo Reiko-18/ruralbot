@@ -9,6 +9,8 @@ export const TICKET_CREATE_ORDER_ID = "ticket_create_order";
 export const TICKET_LINK_ORDER_MODAL_ID = "ticket_link_order_modal";
 export const TICKET_CREATE_ORDER_MODAL_ID = "ticket_create_order_modal";
 export const TICKET_DELETE_CONFIRM_ID = "ticket_delete_confirm";
+export const TICKET_CLOSE_CONFIRM_ID = "ticket_close_confirm";
+export const TICKET_CLOSE_CANCEL_ID = "ticket_close_cancel";
 
 export interface TicketEmbedSettings {
   color?: string;
