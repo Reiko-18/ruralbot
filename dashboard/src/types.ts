@@ -161,3 +161,62 @@ export interface TicketStats {
   byType: { label: string; count: number }[];
   dailyTrend: { date: string; count: number }[];
 }
+
+// === Payment ===
+
+export interface PaymentConfig {
+  id: string;
+  guildId: string;
+  dcvc: string | null;
+  rvg2c: string | null;
+  verifyKey: string | null;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  guildId: string;
+  orderId: string;
+  amount: number;
+  status: "PENDING" | "COMPLETED" | "FAILED" | "EXPIRED";
+  payerName: string | null;
+  payerEmail: string | null;
+  payerPhone: string | null;
+  remark: string | null;
+  smilePayNo: string | null;
+  paymentCode: string | null;
+  paymentDeadline: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentCallbackLog {
+  id: string;
+  transactionId: string;
+  rawData: string;
+  sourceIp: string | null;
+  createdAt: string;
+}
+
+export interface PaymentTransactionDetail extends PaymentTransaction {
+  callbackLogs: PaymentCallbackLog[];
+}
+
+export interface PaymentTransactionList {
+  transactions: PaymentTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PaymentStats {
+  totalAmount: number;
+  totalCount: number;
+  completedCount: number;
+  pendingCount: number;
+  failedCount: number;
+  expiredCount: number;
+}

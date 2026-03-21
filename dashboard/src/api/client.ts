@@ -14,6 +14,11 @@ import type {
   TicketStats,
   DiscordGuild,
   DiscordChannel,
+  PaymentConfig,
+  PaymentTransaction,
+  PaymentTransactionDetail,
+  PaymentTransactionList,
+  PaymentStats,
 } from "../types";
 
 const BASE = "/api";
@@ -189,3 +194,42 @@ export const fetchGuildChannels = (guildId: string) =>
 
 export const deployTicketPanel = (guildId: string) =>
   request<{ success: boolean; action: string }>(`/ticket/deploy-panel/${guildId}`, { method: "POST" });
+
+// === Payment ===
+
+export const fetchPaymentConfig = (guildId: string) =>
+  request<{ config: PaymentConfig | null; hasEnvCredentials: boolean }>(`/payment/config/${guildId}`);
+
+export const updatePaymentConfig = (guildId: string, data: Partial<PaymentConfig>) =>
+  request<PaymentConfig>(`/payment/config/${guildId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+export const createPayment = (guildId: string, data: { amount: number; payerName?: string; payerEmail?: string; payerPhone?: string; remark?: string }) =>
+  request<{ transaction: PaymentTransaction; paymentUrl: string }>(`/payment/create/${guildId}`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+export const fetchPaymentTransactions = (guildId: string, params?: { status?: string; start?: string; end?: string; page?: number; limit?: number }) => {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  if (params?.start) qs.set("start", params.start);
+  if (params?.end) qs.set("end", params.end);
+  if (params?.page) qs.set("page", String(params.page));
+  if (params?.limit) qs.set("limit", String(params.limit));
+  const q = qs.toString();
+  return request<PaymentTransactionList>(`/payment/transactions/${guildId}${q ? `?${q}` : ""}`);
+};
+
+export const fetchPaymentTransaction = (id: string) =>
+  request<PaymentTransactionDetail>(`/payment/transaction/${id}`);
+
+export const fetchPaymentStats = (guildId: string, start?: string, end?: string) => {
+  const qs = new URLSearchParams();
+  if (start) qs.set("start", start);
+  if (end) qs.set("end", end);
+  const q = qs.toString();
+  return request<PaymentStats>(`/payment/stats/${guildId}${q ? `?${q}` : ""}`);
+};
