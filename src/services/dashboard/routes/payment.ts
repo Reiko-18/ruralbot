@@ -175,8 +175,8 @@ paymentRoutes.get("/stats/:guildId", async (req, res) => {
   }
 });
 
-// POST /api/payment/test-callback/:orderId — simulate a successful SmilePay callback
-paymentRoutes.post("/test-callback/:orderId", async (req, res) => {
+// GET /api/payment/test-callback/:orderId — simulate a successful SmilePay callback
+paymentRoutes.get("/test-callback/:orderId", async (req, res) => {
   try {
     const { getTransactionByOrderId } = await import("../../payment/repo_payment_transaction.js");
     const transaction = await getTransactionByOrderId(req.params.orderId);
