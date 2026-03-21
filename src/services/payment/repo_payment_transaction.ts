@@ -9,6 +9,9 @@ export async function createTransaction(data: {
   payerEmail?: string;
   payerPhone?: string;
   remark?: string;
+  originalAmount?: number;
+  feeAmount?: number;
+  paymentStore?: string;
 }) {
   return prisma.paymentTransaction.create({ data });
 }
