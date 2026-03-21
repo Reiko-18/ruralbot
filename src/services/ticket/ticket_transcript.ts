@@ -13,6 +13,8 @@ import { getCachedBotConfig } from "../config/repo_bot_config.js";
 
 const MAX_MESSAGES = 500;
 const FETCH_BATCH = 100;
+/** Discord message content limit */
+const MSG_LIMIT = 2000;
 
 async function fetchAllMessages(channel: TextChannel): Promise<Message[]> {
   const messages: Message[] = [];
@@ -120,6 +122,30 @@ ${messagesHtml}
 </html>`;
 }
 
+/**
+ * Format a single message as plain text for thread display.
+ * Format: `[HH:MM] username: content`
+ */
+function formatMessageText(msg: Message): string {
+  const time = msg.createdAt.toISOString().replace("T", " ").slice(11, 16);
+  const name = msg.author.displayName ?? msg.author.username;
+  let line = `[${time}] ${name}`;
+
+  if (msg.content) {
+    line += `: ${msg.content}`;
+  }
+
+  for (const att of msg.attachments.values()) {
+    line += `\n  📎 ${att.name ?? "attachment"}: ${att.url}`;
+  }
+
+  for (const embed of msg.embeds) {
+    if (embed.title) line += `\n  📋 [Embed] ${embed.title}`;
+  }
+
+  return line;
+}
+
 async function getOrCreateThread(channel: TextChannel, name: string) {
   const active = await channel.threads.fetchActive();
   let thread = active.threads.find((t) => t.name === name);
@@ -162,60 +188,84 @@ export async function generateAndSendTranscript(
 
   const html = generateTranscriptHtml(messages, channel.name, channel.guild.name);
   const buffer = Buffer.from(html, "utf-8");
-
+  const fileName = `${channel.name}.html`;
   const threadName = `票口紀錄-${new Date().toISOString().slice(0, 7)}`;
-  const summaryEmbed = new EmbedBuilder()
-    .setTitle(`📜 票口 #${String(ticket.ticketNum).padStart(4, "0")} 紀錄`)
-    .setColor(0xf9b4fe)
-    .addFields(
-      { name: "創建者", value: `<@${ticket.creatorId}>`, inline: true },
-      { name: "訊息數", value: `${messages.length}`, inline: true },
-      { name: "狀態", value: ticket.status, inline: true },
-      { name: "開單時間", value: ticket.createdAt.toISOString().slice(0, 19), inline: true },
-      { name: "關閉時間", value: ticket.closedAt?.toISOString().slice(0, 19) ?? "尚未關閉", inline: true },
-    )
-    .setTimestamp();
+  const ticketLabel = `票口 #${String(ticket.ticketNum).padStart(4, "0")}`;
 
-  // DM to creator
+  // ── DM to creator: just send the HTML file ──
   try {
     const user = await client.users.fetch(ticket.creatorId);
-    await user.send({ content: "📜 您的票口紀錄：", files: [new AttachmentBuilder(buffer, { name: `${channel.name}.html` })] });
+    const dmEmbed = new EmbedBuilder()
+      .setTitle(`📜 ${ticketLabel} 對話紀錄`)
+      .setDescription("以下是您的票口對話紀錄，下載檔案可永久保存。")
+      .setColor(0xf9b4fe)
+      .setTimestamp();
+    await user.send({
+      embeds: [dmEmbed.toJSON()],
+      files: [new AttachmentBuilder(buffer, { name: fileName })],
+    });
   } catch (err) {
     logger.warn({ err, creatorId: ticket.creatorId }, "Failed to DM transcript to creator");
   }
 
+  // ── Build plain-text conversation for thread display ──
+  const headerText = `**📜 ${ticketLabel} 對話紀錄**\n` +
+    `創建者: <@${ticket.creatorId}> | 訊息數: ${messages.length} | 狀態: ${ticket.status}\n` +
+    `開單: ${ticket.createdAt.toISOString().slice(0, 19)} | 關閉: ${ticket.closedAt?.toISOString().slice(0, 19) ?? "尚未關閉"}\n` +
+    `${"─".repeat(40)}`;
+
+  const formattedMessages = messages.map(formatMessageText);
+
+  // Split into chunks that fit within Discord's 2000 char limit
+  const chunks: string[] = [];
+  let current = "";
+  for (const line of formattedMessages) {
+    if (current.length + line.length + 1 > MSG_LIMIT) {
+      if (current) chunks.push(current);
+      // If a single line exceeds limit, truncate it
+      current = line.length > MSG_LIMIT ? line.slice(0, MSG_LIMIT - 3) + "..." : line;
+    } else {
+      current += (current ? "\n" : "") + line;
+    }
+  }
+  if (current) chunks.push(current);
+
+  // ── Send to log channel thread: full conversation + HTML download ──
+  const sendToThread = async (logChannelId: string) => {
+    try {
+      const logChannel = await client.channels.fetch(logChannelId);
+      if (!logChannel || logChannel.type !== ChannelType.GuildText) return;
+
+      const thread = await getOrCreateThread(logChannel as TextChannel, threadName);
+
+      // Send header
+      await thread.send(headerText);
+
+      // Send all conversation messages as plain text
+      for (const chunk of chunks) {
+        await thread.send(chunk);
+      }
+
+      // Send HTML download at the end
+      await thread.send({
+        content: `**📥 下載完整 HTML 紀錄 (${messages.length} 則訊息)**`,
+        files: [new AttachmentBuilder(buffer, { name: fileName })],
+      });
+    } catch (err) {
+      logger.warn({ err, logChannelId }, "Failed to send transcript to log channel thread");
+    }
+  };
+
   // Send to local log channel
   if ((transcriptTarget === "local" || transcriptTarget === "both") && localLogChannelId) {
-    try {
-      const logChannel = await client.channels.fetch(localLogChannelId);
-      if (logChannel && logChannel.type === ChannelType.GuildText) {
-        const thread = await getOrCreateThread(logChannel as TextChannel, threadName);
-        await thread.send({
-          embeds: [summaryEmbed.toJSON()],
-          files: [new AttachmentBuilder(buffer, { name: `${channel.name}.html` })],
-        });
-      }
-    } catch (err) {
-      logger.warn({ err, localLogChannelId }, "Failed to send transcript to local log channel");
-    }
+    await sendToThread(localLogChannelId);
   }
 
   // Send to primary guild log channel
   if (transcriptTarget === "primary" || transcriptTarget === "both") {
-    try {
-      const botConfig = getCachedBotConfig();
-      if (botConfig?.ticketLogChannelId) {
-        const primaryChannel = await client.channels.fetch(botConfig.ticketLogChannelId);
-        if (primaryChannel && primaryChannel.type === ChannelType.GuildText) {
-          const thread = await getOrCreateThread(primaryChannel as TextChannel, threadName);
-          await thread.send({
-            embeds: [summaryEmbed.toJSON()],
-            files: [new AttachmentBuilder(buffer, { name: `${channel.name}.html` })],
-          });
-        }
-      }
-    } catch (err) {
-      logger.warn({ err }, "Failed to send transcript to primary guild log channel");
+    const botConfig = getCachedBotConfig();
+    if (botConfig?.ticketLogChannelId) {
+      await sendToThread(botConfig.ticketLogChannelId);
     }
   }
 

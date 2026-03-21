@@ -13,8 +13,6 @@ import {
   TICKET_REOPEN_ID,
   TICKET_DELETE_ID,
   TICKET_TRANSCRIPT_ID,
-  TICKET_LINK_ORDER_ID,
-  TICKET_CREATE_ORDER_ID,
 } from "../../types/ticket.type.js";
 
 const BUTTON_STYLE_MAP: Record<string, ButtonStyle> = {
@@ -103,13 +101,11 @@ export function buildWelcomeEmbed(
 }
 
 export function buildOpenTicketButtons(): ActionRowBuilder<ButtonBuilder>[] {
-  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId(TICKET_CLOSE_ID).setLabel("關閉票口").setEmoji("🔒").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(TICKET_LINK_ORDER_ID).setLabel("連結訂單").setEmoji("🔗").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(TICKET_CREATE_ORDER_ID).setLabel("建立訂單").setEmoji("🛒").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(TICKET_TRANSCRIPT_ID).setLabel("存檔紀錄").setEmoji("📜").setStyle(ButtonStyle.Secondary),
   );
-  return [row1];
+  return [row];
 }
 
 export function buildClosedTicketButtons(): ActionRowBuilder<ButtonBuilder>[] {
