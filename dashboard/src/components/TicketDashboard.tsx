@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { TicketConfig, DiscordGuild } from "../types";
 import { fetchTicketConfig, fetchGuilds } from "../api/client";
 import { TicketPanelSettings } from "./TicketPanelSettings";
+import { TicketSubTickets } from "./TicketSubTickets";
 
 export function TicketDashboard() {
   const [guilds, setGuilds] = useState<DiscordGuild[]>([]);
@@ -72,11 +73,25 @@ export function TicketDashboard() {
       {configLoading && <div className="text-gray-400 text-center py-8">載入設定中...</div>}
 
       {guildId && !configLoading && (
-        <TicketPanelSettings
-          guildId={guildId}
-          config={config}
-          onSave={() => loadConfig(guildId)}
-        />
+        <>
+          <TicketPanelSettings
+            guildId={guildId}
+            config={config}
+            onSave={() => loadConfig(guildId)}
+          />
+
+          {config && (
+            <div className="mt-6">
+              <TicketSubTickets configId={config.id} guildId={guildId} />
+            </div>
+          )}
+
+          {!config && (
+            <div className="text-yellow-400 text-center py-4 text-sm mt-4">
+              請先儲存主面板設定以管理子票口
+            </div>
+          )}
+        </>
       )}
     </div>
   );
