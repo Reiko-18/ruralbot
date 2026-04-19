@@ -120,3 +120,56 @@ systemctl restart ruralbot
 **若是全新空白 DB（從未建表）：**
 
 直接執行 `npx prisma migrate deploy`，baseline migration 會自動建立所有資料表。
+
+## 更新紀錄（2026-04-19 Phase 3）
+
+### PostgreSQL 資料目錄已遷移至 HDD1
+
+- 主機實際環境的 HDD1 `/mnt/data` 與 HDD2 `/mnt/backup` 皆為 NTFS（`ntfs-3g` / `fuseblk`）掛載，無法直接作為 PostgreSQL `data_directory` 使用。
+- 為保留 POSIX 權限與 PostgreSQL 所需的檔案系統語意，改採安全方案：
+  - 在 HDD1 建立 `ext4` loop image：`/mnt/data/postgresql/postgresql16-data.img`
+  - 掛載點：`/srv/postgresql-hdd1`
+  - PostgreSQL 新資料目錄：`/srv/postgresql-hdd1/data`
+- `/etc/fstab` 已加入：
+
+```fstab
+/mnt/data/postgresql/postgresql16-data.img /srv/postgresql-hdd1 ext4 loop,defaults,nofail 0 2
+```
+
+- PostgreSQL 16 已切換至新資料目錄並驗證成功：
+
+```bash
+sudo -u postgres psql -Atqc "SHOW data_directory;"
+# /srv/postgresql-hdd1/data
+```
+
+### 備份與回滾保護
+
+- 遷移前完整 SQL 備份：
+  - `/mnt/backup/postgresql-backups/pre-migration-20260419-181813.sql.gz`
+- 舊資料目錄 `/var/lib/postgresql/16/main` 保留不刪，作為短期回滾依據。
+- 驗證到 PostgreSQL cluster 與 ruralbot service 均已恢復正常後才完成切換。
+
+### HDD2 自動備份
+
+- 備份腳本：
+  - `/opt/deploy-framework/scripts/pg-backup.sh`
+- 備份目錄：
+  - `/mnt/backup/postgresql-backups`
+- cron：
+
+```cron
+0 3 * * * root /opt/deploy-framework/scripts/pg-backup.sh >> /opt/deploy-framework/logs/pg-backup.log 2>&1
+```
+
+- 備份策略：
+  - 每日凌晨 3 點執行 `pg_dumpall | gzip`
+  - 保留 14 天，刪除更舊的 `pg-backup-*.sql.gz`
+
+### 驗證結果
+
+- `postgresql@16-main.service`：`active`
+- `ruralbot.service`：`active`
+- `ruralbot` 資料庫 `public` schema 資料表數：`21`
+- 首次手動備份已成功產生：
+  - `/mnt/backup/postgresql-backups/pg-backup-20260419-182107.sql.gz`
