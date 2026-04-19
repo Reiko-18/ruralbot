@@ -28,7 +28,6 @@ echo "$(date -Is) updating ${LOCAL_HEAD} -> ${REMOTE_HEAD}"
 git pull --ff-only origin "${BRANCH}"
 
 npm ci
-npx prisma generate
 npx prisma migrate deploy
 npm run build
 

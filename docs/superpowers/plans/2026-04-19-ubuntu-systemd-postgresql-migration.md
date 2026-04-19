@@ -53,7 +53,6 @@ cron 每 5 分鐘執行：
 git fetch origin main
 git pull --ff-only origin main
 npm ci
-npx prisma generate
 npx prisma migrate deploy
 npm run build
 systemctl restart ruralbot
@@ -89,3 +88,35 @@ systemctl restart ruralbot
 - 目前 repo 若尚未建立正式 migration 歷史，正式啟用 `npx prisma migrate deploy` 前需先確認 migration baseline。
 - `SMILEPAY_ROTURL` 不含 port，因此主機 80 port 必須反向代理至 dashboard 實際監聽 port。
 - systemd 服務應維持單實例，避免 Discord bot 重複登入。
+
+## 更新紀錄（2026-04-19 補充）
+
+### 已補充完成項目
+
+- 新增 `src/prisma/migrations/20260419000000_init/migration.sql` — 完整 schema baseline。
+- 新增 `ops/nginx-ruralbot.conf.example` — 80 → 3000 反向代理範本。
+- `npm run build` 加入 `npx tsc`，`npm start` 改為 `node dist/index.js`。
+- `ops/ruralbot.service.example` ExecStart 改為 `node /opt/ruralbot/dist/index.js`。
+
+### 首次主機部署程序
+
+**前提：DB 已存在且以 db push 或手動建表初始化。**
+
+若主機 DB 已有資料表（曾用 `prisma db push`），執行以下指令將現有狀態標記為 migration baseline 已套用，避免 `migrate deploy` 嘗試重建資料表：
+
+```bash
+cd /opt/ruralbot
+npx prisma migrate resolve --applied 20260419000000_init
+```
+
+之後正常 deploy 流程即可：
+
+```bash
+npx prisma migrate deploy   # 後續增量 migration
+npm run build               # 包含 tsc + dashboard build
+systemctl restart ruralbot
+```
+
+**若是全新空白 DB（從未建表）：**
+
+直接執行 `npx prisma migrate deploy`，baseline migration 會自動建立所有資料表。
