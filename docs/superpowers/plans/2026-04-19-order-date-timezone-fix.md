@@ -160,3 +160,15 @@ git push origin main
 
 - **舊資料不受影響**：已存在的訂單仍以舊的 UTC 值儲存，歸類仍是錯誤的日期。若需修正舊資料，需額外執行 DB 更新指令（本計畫不涵蓋，可視需求另行處理）。
 - **不指定日期的訂單**（`new Date()`）：使用當前時刻，因為是即時操作，台灣時間與 UTC 日期的差異通常無影響（只有凌晨 12:00–8:00 之間會有跨日問題，但屬於極端邊緣情況）。
+
+## 執行紀錄（2026-04-19）
+
+- `src/commands/accounting/order-add.cmd.ts`
+  - `new Date(\`${normalizedDate}T00:00:00\`)`
+  - 改為 `new Date(\`${normalizedDate}T12:00:00+08:00\`)`
+- `src/commands/accounting/order-custom.cmd.ts`
+  - `new Date(\`${normalizedDate}T00:00:00\`)`
+  - 改為 `new Date(\`${normalizedDate}T12:00:00+08:00\`)`
+- `npx tsc --noEmit` 已通過
+- 未執行 DB migration
+- 此修復僅影響修正後新建立的訂單
