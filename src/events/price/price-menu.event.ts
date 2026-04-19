@@ -11,7 +11,10 @@ export function registerPriceMenuEvent(client: Client): void {
     const isEphemeral = interaction.message.flags.has(MessageFlags.Ephemeral);
 
     try {
-      if (!isEphemeral) {
+      // Acknowledge component interactions before expensive view building.
+      if (isEphemeral) {
+        await interaction.deferUpdate();
+      } else {
         if (!interaction.isRepliable()) return;
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       }
@@ -28,19 +31,10 @@ export function registerPriceMenuEvent(client: Client): void {
         view = buildPriceView(value);
       }
 
-      if (isEphemeral) {
-        // Already in ephemeral context — update in place
-        await interaction.update({
-          embeds: view.embeds,
-          components: view.components,
-        });
-      } else {
-        // Public homepage message — defer first, then respond ephemerally
-        await interaction.editReply({
-          embeds: view.embeds,
-          components: view.components,
-        });
-      }
+      await interaction.editReply({
+        embeds: view.embeds,
+        components: view.components,
+      });
     } catch (err) {
       logger.error({ err }, "Price menu interaction failed");
       try {
@@ -55,13 +49,11 @@ export function registerPriceMenuEvent(client: Client): void {
           components: [],
         };
 
-        if (isEphemeral) {
-          await interaction.update(errorPayload);
-        } else if (interaction.deferred || interaction.replied) {
+        if (interaction.deferred || interaction.replied) {
           await interaction.editReply(errorPayload);
         }
       } catch {
-        // interaction already responded
+        // interaction already responded or expired
       }
     }
   });
