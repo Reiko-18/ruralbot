@@ -173,3 +173,16 @@ sudo -u postgres psql -Atqc "SHOW data_directory;"
 - `ruralbot` 資料庫 `public` schema 資料表數：`21`
 - 首次手動備份已成功產生：
   - `/mnt/backup/postgresql-backups/pg-backup-20260419-182107.sql.gz`
+
+## 更新紀錄（2026-04-19 剩餘修補）
+
+- `src/events/price/price-menu.event.ts`
+  - ephemeral select menu 路徑改為先 `deferUpdate()`，後續統一 `editReply()`，避免 Discord interaction `10062`
+- `ops/ruralbot-auto-deploy.sh`
+  - repo 內 `APP_DIR` 改為 `/var/www/ruralbot`
+- Ubuntu 主機
+  - `/etc/systemd/system/postgresql@16-main.service.d/mount-after.conf`
+    - 補上 `After=` / `Requires=` 對 `srv-postgresql\x2dhdd1.mount` 的依賴
+  - `/etc/sudoers.d/ruralbot-deploy`
+    - 補上 `reiko` 對 `systemctl restart/status ruralbot` 的免密 sudo
+  - 清除 `/var/www/ruralbot/ops/ruralbot-auto-deploy.sh` 的主機端未提交修改，恢復由 git pull 正常更新
