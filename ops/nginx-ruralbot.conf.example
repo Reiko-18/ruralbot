@@ -1,0 +1,49 @@
+# Nginx 反向代理範本 — RuralBot Dashboard
+#
+# 使用方式：
+#   sudo cp nginx-ruralbot.conf.example /etc/nginx/sites-available/ruralbot
+#   sudo ln -s /etc/nginx/sites-available/ruralbot /etc/nginx/sites-enabled/ruralbot
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# 說明：
+#   將 80 port 的 HTTP 請求反代至 Dashboard (預設 3000)。
+#   SmilePay callback (POST /api/payment/callback) 經由此路徑進入。
+#   若日後要加 HTTPS，在此檔案補 443 server block 並引用 certbot 憑證。
+
+server {
+    listen 80;
+    server_name 211.22.158.125;  # 替換為正式網域名稱（若有）
+
+    # 健康檢查端點，供 load balancer / 監控直接使用
+    location /health {
+        proxy_pass http://127.0.0.1:3000/health;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # SmilePay 金流 callback（需讓 SmilePay 伺服器能直接 POST）
+    location /api/payment/callback {
+        proxy_pass http://127.0.0.1:3000/api/payment/callback;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+    }
+
+    # Dashboard 其餘所有路徑
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+}
