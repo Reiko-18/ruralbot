@@ -8,7 +8,14 @@ export function registerPriceMenuEvent(client: Client): void {
     if (!interaction.isStringSelectMenu()) return;
     if (interaction.customId !== PRICE_MENU_ID) return;
 
+    const isEphemeral = interaction.message.flags.has(MessageFlags.Ephemeral);
+
     try {
+      if (!isEphemeral) {
+        if (!interaction.isRepliable()) return;
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      }
+
       const value = interaction.values[0];
       let view;
 
@@ -21,8 +28,6 @@ export function registerPriceMenuEvent(client: Client): void {
         view = buildPriceView(value);
       }
 
-      const isEphemeral = interaction.message.flags.has(MessageFlags.Ephemeral);
-
       if (isEphemeral) {
         // Already in ephemeral context — update in place
         await interaction.update({
@@ -30,17 +35,15 @@ export function registerPriceMenuEvent(client: Client): void {
           components: view.components,
         });
       } else {
-        // Public homepage message — reply ephemeral, keep homepage visible
-        await interaction.reply({
+        // Public homepage message — defer first, then respond ephemerally
+        await interaction.editReply({
           embeds: view.embeds,
           components: view.components,
-          flags: MessageFlags.Ephemeral,
         });
       }
     } catch (err) {
       logger.error({ err }, "Price menu interaction failed");
       try {
-        const isEphemeral = interaction.message.flags.has(MessageFlags.Ephemeral);
         const errorPayload = {
           embeds: [
             {
@@ -54,11 +57,8 @@ export function registerPriceMenuEvent(client: Client): void {
 
         if (isEphemeral) {
           await interaction.update(errorPayload);
-        } else {
-          await interaction.reply({
-            ...errorPayload,
-            flags: MessageFlags.Ephemeral,
-          });
+        } else if (interaction.deferred || interaction.replied) {
+          await interaction.editReply(errorPayload);
         }
       } catch {
         // interaction already responded
