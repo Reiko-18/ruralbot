@@ -74,6 +74,13 @@ export function startDashboard(client: Client): void {
   const app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.get("/healthz", (_req, res) => {
+    res.json({
+      ok: true,
+      discordReady: client.isReady(),
+      uptimeSec: Math.floor(process.uptime()),
+    });
+  });
 
   // ── Discord Guild API Routes ──
 

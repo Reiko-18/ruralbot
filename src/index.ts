@@ -85,33 +85,43 @@ const client = new Client({
   ],
 });
 
+startDashboard(client);
+
 client.once(Events.ClientReady, async (readyClient) => {
   logger.info(`Ready! Logged in as ${readyClient.user.tag}`);
 
-  // Load log configs from DB into memory cache
-  await loadLogConfigs();
-  logger.info("Log configs loaded from database");
+  try {
+    await loadLogConfigs();
+    logger.info("Log configs loaded from database");
+  } catch (err) {
+    logger.error({ err }, "Failed to load log configs during startup");
+  }
 
-  await loadBotConfig();
-  await loadPriceCache();
+  try {
+    await loadBotConfig();
+  } catch (err) {
+    logger.error({ err }, "Failed to load bot config during startup");
+  }
 
-  // Deploy slash commands
-  await deployCommands();
-  logger.info("Slash commands deployed");
+  try {
+    await loadPriceCache();
+  } catch (err) {
+    logger.error({ err }, "Failed to load price cache during startup");
+  }
 
-  // Start keep-alive services
+  try {
+    await deployCommands();
+    logger.info("Slash commands deployed");
+  } catch (err) {
+    logger.error({ err }, "Failed to deploy slash commands during startup");
+  }
+
   KeepAliveService.startDatabaseHeartbeat();
   KeepAliveService.startSelfPing(process.env.RAILWAY_PUBLIC_URL ?? "");
   logger.info("Keep-alive services started");
 
-  // Start presence rotator
   startPresenceRotator(readyClient);
-
-  // Start ticket timeout service
   startTicketTimeout(readyClient);
-
-  // Start dashboard
-  startDashboard(readyClient);
 });
 
 registerGuildCreateEvent(client);
@@ -131,6 +141,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
   if (!interaction.isChatInputCommand()) return;
   await handleInteraction(interaction);
+});
+
+client.on(Events.ShardDisconnect, (event, shardId) => {
+  logger.warn(
+    {
+      shardId,
+      code: event.code,
+      reason: event.reason,
+      wasClean: event.wasClean,
+    },
+    "Discord gateway disconnected",
+  );
+});
+
+client.on(Events.ShardError, (err, shardId) => {
+  logger.error({ err, shardId }, "Discord gateway shard error");
+});
+
+client.on(Events.ShardReconnecting, (shardId) => {
+  logger.warn({ shardId }, "Discord gateway reconnecting");
+});
+
+client.on(Events.ShardResume, (_replayedEvents, shardId) => {
+  logger.info({ shardId }, "Discord gateway resumed");
 });
 
 // Global error handlers — send fatal logs before crashing

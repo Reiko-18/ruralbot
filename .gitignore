@@ -6,3 +6,4 @@ src/prisma/generated/
 *.js.map
 dashboard/node_modules/
 dashboard/dist/
+*.log
