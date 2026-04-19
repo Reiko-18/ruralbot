@@ -1,52 +1,18 @@
-# Coolify 部署修整設計
+# Coolify 部署修整設計（歷史文件）
 
-## 目標
+## 狀態
 
-將 RuralBot 從既有外部部署平台遷移到自有主機上的 Coolify，並讓 Discord bot、dashboard 與健康檢查在容器環境中穩定運作。
+本文件為歷史紀錄。RuralBot 現行正式部署已改為自架 Ubuntu 主機、systemd、本地 PostgreSQL 與 cron 輪詢 GitHub，不再使用 Coolify、Railway 或其他 PaaS 平台。
 
-## 高信心依據
+## 歷史背景
 
-- Coolify Dockerfile 型應用使用 UI health check 時，容器內需具備 `curl` 或 `wget`。
-- Dockerfile 型部署需由應用自行監聽正確 port 與 `0.0.0.0`。
-- Discord gateway 斷線與重連屬半常態事件，不應直接當成容器不健康。
+此文件曾用於記錄容器部署與健康檢查修整，包含 dashboard 提前啟動、`/healthz` 端點與容器健康檢查需求。
 
-## 設計決策
+## 現行取代文件
 
-### 1. 提前啟動 HTTP dashboard
+- `docs/superpowers/specs/2026-04-19-ubuntu-systemd-postgresql-deployment-design.md`
+- `docs/superpowers/plans/2026-04-19-ubuntu-systemd-postgresql-migration.md`
 
-- `startDashboard(client)` 在 Discord `client.login()` 前執行。
-- 目的：讓 Coolify 可在 Discord 尚未 fully ready 前先檢查 HTTP 存活。
+## 保留原因
 
-### 2. 增加 `/healthz`
-
-- 提供最早可回應的 HTTP 健康檢查端點。
-- 回傳內容包含：
-  - `ok`
-  - `discordReady`
-  - `uptimeSec`
-- 此端點主要代表 HTTP 與程序可存活，不以 Discord ready 作為失敗條件。
-
-### 3. Dockerfile 保留 `curl`
-
-- 於 `node:20-slim` 內安裝 `curl`。
-- 目的：滿足 Coolify UI health check 執行需求。
-
-### 4. 健康檢查設定
-
-- Build Pack：`Dockerfile`
-- Port：`3000`
-- Health Check Path：`/healthz`
-- Health Check Port：`3000`
-- 單實例部署
-
-## 已知限制
-
-- 若使用 UI health check 而 image 內缺少 `curl`/`wget`，Coolify 會將容器標為 `unhealthy` 並回滾。
-- 若公開 DNS 尚未設定，自訂網域不可直接用於 callback 或對外 dashboard 存取。
-- `RAILWAY_PUBLIC_URL` 目前仍存在於 keepalive 邏輯中，後續應收斂為通用平台變數。
-
-## 後續建議
-
-- 將平台相關 env 命名抽象化，例如 `APP_URL`。
-- 清理暫存 log 與 build context 雜訊。
-- 視需求評估將 production 啟動改為編譯後 JS，而非直接以 `tsx` 執行 TS。
+保留本文件是為了追蹤平台遷移脈絡與先前健康檢查問題，不應再作為現行部署指南。

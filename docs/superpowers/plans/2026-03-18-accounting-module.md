@@ -6,7 +6,7 @@
 
 **Architecture:** Layered architecture following existing patterns — slash commands → services/repos → Prisma DB. Orders logged to Discord threads named by date. Cascading select menu for sales overview.
 
-**Tech Stack:** TypeScript, Discord.js v14, Prisma 7.x, PostgreSQL (Supabase), nanoid v5, pino logger
+**Tech Stack:** TypeScript, Discord.js v14, Prisma 7.x, PostgreSQL, nanoid v5, pino logger
 
 ---
 

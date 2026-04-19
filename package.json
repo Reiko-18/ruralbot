@@ -1,7 +1,7 @@
 {
   "name": "ruralbot",
   "version": "1.0.0",
-  "description": "RuralBot - TypeScript Discord bot with Prisma + Supabase",
+  "description": "RuralBot - TypeScript Discord bot with Prisma + PostgreSQL",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

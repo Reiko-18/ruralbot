@@ -10,7 +10,7 @@ Mixed approach: default from environment variables, per-Guild override via datab
 
 - `SMILEPAY_DCVC` / `SMILEPAY_RVG2C` / `SMILEPAY_VERIFY_KEY` — env defaults
 - `SMILEPAY_ENV` — `test` or `production` (determines API endpoint URLs)
-- `SMILEPAY_ROTURL` — base callback URL (e.g. `https://yourdomain.com/api/payment/callback`)
+- `SMILEPAY_ROTURL` — base callback URL (current production target: `http://211.22.158.125/api/payment/callback`)
 - `PaymentConfig` model — per-Guild override, managed via Dashboard
 - Effective credentials: DB values take priority over env vars when present
 
@@ -200,7 +200,7 @@ Endpoint selection controlled by `SMILEPAY_ENV` environment variable.
 | `Email` | Payer email |
 | `Tel_number` | Phone |
 | `Remark` | Remark |
-| `Roturl` | Callback URL (from `SMILEPAY_ROTURL` env or guild config) |
+| `Roturl` | Callback URL (from `SMILEPAY_ROTURL` env or guild config, current production target `http://211.22.158.125/api/payment/callback`) |
 | `Pay_zg` | Payment method (3 = convenience store code) |
 | `Verify_key` | Verification key |
 
@@ -228,6 +228,11 @@ SmilePay POSTs payment results. Response format:
 Retry schedule: immediate, 60s, 5m, 15m, 30m, 60m, 90m, 180m (max 8 attempts).
 
 `paymentDeadline` is extracted from SmilePay's callback/API response when available. Convenience store codes typically expire in 3-7 days as set by SmilePay.
+
+Current deployment note:
+
+- Production callback URL is `http://211.22.158.125/api/payment/callback`
+- Because this URL does not include a port, the Ubuntu host must expose port 80 and reverse-proxy requests to the Express dashboard service
 
 ## API Routes
 

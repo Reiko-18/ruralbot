@@ -1,0 +1,18 @@
+[Unit]
+Description=RuralBot Discord bot and dashboard
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ruralbot
+WorkingDirectory=/opt/ruralbot
+EnvironmentFile=/etc/ruralbot/ruralbot.env
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

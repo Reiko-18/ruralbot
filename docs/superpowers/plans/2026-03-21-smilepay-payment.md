@@ -1961,7 +1961,7 @@ git commit -m "feat(payment): add PaymentDashboard container and integrate into 
 - `SMILEPAY_DCVC` — 商家代號
 - `SMILEPAY_RVG2C` — 參數碼
 - `SMILEPAY_VERIFY_KEY` — 檢查碼
-- `SMILEPAY_ROTURL` — callback URL
+- `SMILEPAY_ROTURL` — callback URL，現行 production 目標為 `http://211.22.158.125/api/payment/callback`
 - `SMILEPAY_ENV` — `test` 或 `production`
 
 ## 資料庫

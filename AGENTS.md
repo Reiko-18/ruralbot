@@ -25,7 +25,7 @@
 - 審查 2：檢查相關程式碼、部署設定與潛在錯誤。
 - 審查 3：檢查是否符合專案慣例、文件體系與維運需求。
 - 若可用 subagent，預設使用 3 個 agent 並行審查。
-- 若無法使用 subagent，改以三輪獨立審查流程替代，仍需先完成審查再修改。
+- 若因工具或上層規則無法使用 subagent，改以三輪獨立審查流程替代，仍需先完成審查再修改。
 
 ## 信心門檻
 
@@ -41,6 +41,7 @@
 - `src/core/`：共用基礎設施。
 - `src/prisma/`：Prisma schema 與相關設定。
 - `dashboard/`：Vite + React 管理介面。
+- `ops/`：Ubuntu systemd 與 cron 自動部署範本。
 - `docs/superpowers/specs/`：設計規格文件。
 - `docs/superpowers/plans/`：實作計畫與變更紀錄。
 
@@ -60,7 +61,7 @@
 - 使用 TypeScript、ESM imports、2 空白縮排與雙引號字串。
 - 依現有命名慣例維持 `.cmd.ts`、`.event.ts`、`repo_*.ts`、PascalCase 元件命名。
 - 前端介面必須使用 responsive 寫法，不寫死尺寸。
-- 變更部署、啟動與健康檢查時，同步檢查 `Dockerfile`、`railway.json`、`deploy-commands.mjs` 與相關 env 流程。
+- 變更部署、啟動與健康檢查時，同步檢查 `ops/`、`deploy-commands.mjs`、`prisma.config.ts` 與相關 env 流程。
 - 新增或調整函式時，若屬關鍵流程或錯誤處理，應使用既有 logger 記錄。
 
 ## 文件與 Obsidian 規範
@@ -79,16 +80,22 @@
 
 ## 部署與維運規範
 
-- Coolify 的 Dockerfile 型部署使用 UI health check 時，image 內必須具備 `curl` 或 `wget`。
-- Discord bot 預設為單實例部署，避免多副本重複登入。
-- 健康檢查應優先驗證 HTTP 存活與服務對外可用，不應把暫時性 gateway reconnect 視為容器失敗。
-- callback URL、公開網域、env 變數與部署平台設定必須一致。
+- 現行正式部署平台為自架 Ubuntu 主機，不使用 Railway、Coolify 或其他 PaaS。
+- Ubuntu 主機以 systemd 管理 `ruralbot` 單一服務，Discord bot 預設為單實例部署，避免多副本重複登入。
+- PostgreSQL 在同一台 Ubuntu 主機本地自架，預設以 `localhost:5432` 連線。
+- `DATABASE_URL` 與 `DIRECT_URL` 皆由環境變數提供，不在程式碼中寫死。
+- 自動部署採 cron 輪詢 GitHub，使用 `git fetch` 與 `git pull --ff-only`，不得使用 destructive reset 作為預設流程。
+- 健康檢查應優先驗證 HTTP 存活與服務對外可用，不應把暫時性 Discord gateway reconnect 視為服務失敗。
+- SmilePay callback URL、公開網域、env 變數與反向代理設定必須一致。
+- 若使用 `http://211.22.158.125/api/payment/callback`，主機需將 80 port 反向代理至 dashboard 實際監聽 port。
 - 轉移平台時，不保留與舊平台強綁定的設定命名，除非有相容性需求。
 
 ## 安全與設定
 
-- 秘密資訊以 `.env` 或部署平台 env 管理，不寫入版本控制。
+- 秘密資訊以 `.env`、systemd `EnvironmentFile` 或主機環境變數管理，不寫入版本控制。
+- 不得提交資料庫密碼、Discord token、SmilePay key 或任何第三方服務密鑰。
 - 修改資料庫、支付、Discord 或部署相關設定時，應同步檢查風險與回滾方式。
+- migration 回滾需特別標記風險；若 schema 變更無法自動回滾，需提出手動還原方案。
 
 ## 例外與衝突處理
 

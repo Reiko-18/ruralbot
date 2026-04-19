@@ -117,8 +117,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   }
 
   KeepAliveService.startDatabaseHeartbeat();
-  KeepAliveService.startSelfPing(process.env.RAILWAY_PUBLIC_URL ?? "");
-  logger.info("Keep-alive services started");
+  logger.info("Database health heartbeat started");
 
   startPresenceRotator(readyClient);
   startTicketTimeout(readyClient);
