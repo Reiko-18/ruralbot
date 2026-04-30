@@ -12,9 +12,11 @@
 
 ## 修正
 
-- 將 `APP_DIR` 改為 `APP_DIR="${RURALBOT_APP_DIR:-/opt/ruralbot}"`。
-- 預設對齊 systemd / cron 的 `/opt/ruralbot`。
+- 實機檢查後確認正式 service 與部署框架使用 `/var/www/ruralbot`。
+- 將 `APP_DIR` 改為 `APP_DIR="${RURALBOT_APP_DIR:-/var/www/ruralbot}"`。
 - 若未來主機路徑不同，可在環境中設定 `RURALBOT_APP_DIR` 覆蓋，不需要改 repo。
+- Nginx 目前有另一個 `scloud` site 作為 `default_server`，且原本吃掉 `192.168.254.84` / `211.22.158.125`。已在主機上把 IP server_name 改交給 RuralBot 的 Nginx site，保留 `ruralshop.top` 給 scloud。
+- 同步更新 `ops/nginx-ruralbot.conf.example`，明確把 `211.22.158.125`、`192.168.254.84`、`localhost`、`127.0.0.1` 反代到 `127.0.0.1:3000`。
 
 ## 官方文件查證
 
@@ -25,6 +27,8 @@
 
 - `npm run build` 通過。
 - `bash -n ops/ruralbot-auto-deploy.sh` 未能在本地 Windows 環境執行，原因是 `/bin/bash` 不存在；腳本變更僅為 POSIX shell 變數預設值語法，需在 Ubuntu 主機上再次確認。
+- 主機驗證：`http://127.0.0.1:3000/healthz` 回 `ok:true`。
+- 主機驗證：`http://192.168.254.84/`、`http://192.168.254.84/healthz`、`http://192.168.254.84/api/guilds` 皆回 200。
 
 ## 維運建議
 
@@ -39,3 +43,5 @@ npm run build
 sudo systemctl restart ruralbot
 sudo systemctl status ruralbot --no-pager
 ```
+
+本機目前實際目錄為 `/var/www/ruralbot`；若直接登入該主機，請以 `/var/www/ruralbot` 為準。

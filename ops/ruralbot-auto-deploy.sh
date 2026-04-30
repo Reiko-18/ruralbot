@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="${RURALBOT_APP_DIR:-/opt/ruralbot}"
+APP_DIR="${RURALBOT_APP_DIR:-/var/www/ruralbot}"
 LOCK_FILE="/tmp/ruralbot-deploy.lock"
 BRANCH="main"
 
