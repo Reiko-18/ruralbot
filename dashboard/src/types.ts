@@ -99,6 +99,9 @@ export interface TicketConfig {
   panelChannelId: string | null;
   panelMessageId: string | null;
   logChannelId: string | null;
+  categoryOpenId: string | null;
+  categoryCloseId: string | null;
+  panelComponentType: string;
   panelEmbed: string | null;
   defaultMessage: string | null;
   lastTicketNum: number;

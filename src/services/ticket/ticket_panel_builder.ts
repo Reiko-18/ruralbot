@@ -3,12 +3,14 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
   type APIEmbed,
 } from "discord.js";
 import type { TicketButtonType, TicketConfig } from "../../prisma/generated/prisma/client.js";
 import type { TicketEmbedSettings } from "../../types/ticket.type.js";
 import {
   TICKET_BUTTON_PREFIX,
+  TICKET_SELECT_ID,
   TICKET_CLOSE_ID,
   TICKET_REOPEN_ID,
   TICKET_DELETE_ID,
@@ -57,7 +59,7 @@ export function buildPanelButtons(
 ): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   // Discord allows max 5 buttons per row
-  for (let i = 0; i < buttonTypes.length; i += 5) {
+  for (let i = 0; i < Math.min(buttonTypes.length, 25); i += 5) {
     const row = new ActionRowBuilder<ButtonBuilder>();
     const slice = buttonTypes.slice(i, i + 5);
     for (const bt of slice) {
@@ -71,6 +73,27 @@ export function buildPanelButtons(
     rows.push(row);
   }
   return rows;
+}
+
+export function buildPanelComponents(
+  config: TicketConfig,
+  buttonTypes: TicketButtonType[],
+): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
+  if (config.panelComponentType === "select") {
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId(TICKET_SELECT_ID)
+      .setPlaceholder("請選擇票口類型")
+      .addOptions(
+        buttonTypes.slice(0, 25).map((bt) => ({
+          label: bt.label,
+          value: bt.id,
+          emoji: bt.emoji ?? undefined,
+        })),
+      );
+    return [new ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>().addComponents(menu)];
+  }
+
+  return buildPanelButtons(buttonTypes);
 }
 
 export function buildWelcomeEmbed(

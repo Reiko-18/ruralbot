@@ -5,7 +5,7 @@ import {
   PermissionFlagsBits,
   MessageFlags,
 } from "discord.js";
-import { TICKET_BUTTON_PREFIX } from "../../types/ticket.type.js";
+import { TICKET_BUTTON_PREFIX, TICKET_SELECT_ID } from "../../types/ticket.type.js";
 import { getTicketConfig, incrementTicketNum } from "../../services/ticket/repo_ticket_config.js";
 import { getButtonTypeById } from "../../services/ticket/repo_ticket_button_type.js";
 import { isBlacklisted } from "../../services/ticket/repo_ticket_blacklist.js";
@@ -18,10 +18,13 @@ import { logger } from "../../services/logger/logger.js";
 
 export function registerTicketButtonEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isButton()) return;
-    if (!interaction.customId.startsWith(TICKET_BUTTON_PREFIX)) return;
+    const isTicketButton = interaction.isButton() && interaction.customId.startsWith(TICKET_BUTTON_PREFIX);
+    const isTicketSelect = interaction.isStringSelectMenu() && interaction.customId === TICKET_SELECT_ID;
+    if (!isTicketButton && !isTicketSelect) return;
 
-    const buttonTypeId = interaction.customId.slice(TICKET_BUTTON_PREFIX.length);
+    const buttonTypeId = interaction.isStringSelectMenu()
+      ? interaction.values[0]
+      : interaction.customId.slice(TICKET_BUTTON_PREFIX.length);
     const guildId = interaction.guildId;
     if (!guildId) return;
 
@@ -49,7 +52,7 @@ export function registerTicketButtonEvent(client: Client): void {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       const buttonType = await getButtonTypeById(buttonTypeId);
-      const categoryId = buttonType?.categoryOpenId;
+      const categoryId = buttonType?.categoryOpenId ?? config.categoryOpenId;
       if (!categoryId) {
         await interaction.editReply("❌ 尚未設定票口分類。");
         return;

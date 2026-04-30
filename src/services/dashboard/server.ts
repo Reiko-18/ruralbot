@@ -62,7 +62,7 @@ import {
 } from "../ticket/repo_ticket_instance.js";
 import {
   buildPanelEmbed,
-  buildPanelButtons,
+  buildPanelComponents,
 } from "../ticket/ticket_panel_builder.js";
 import { updatePanelMessageId } from "../ticket/repo_ticket_config.js";
 import { paymentRoutes, setPaymentDiscordClient } from "./routes/payment.js";
@@ -140,13 +140,13 @@ export function startDashboard(client: Client): void {
       }
 
       const embed = buildPanelEmbed(config);
-      const buttons = buildPanelButtons(btnTypes);
+      const components = buildPanelComponents(config, btnTypes);
 
       // Try to edit existing panel message
       if (config.panelMessageId) {
         try {
           const existingMsg = await (channel as TextChannel).messages.fetch(config.panelMessageId);
-          await existingMsg.edit({ embeds: [embed], components: buttons });
+          await existingMsg.edit({ embeds: [embed], components });
           logger.info({ guildId: req.params.guildId }, "Ticket panel updated via dashboard");
           return res.json({ success: true, action: "updated" });
         } catch {
@@ -155,7 +155,7 @@ export function startDashboard(client: Client): void {
       }
 
       // Send new panel message
-      const msg = await (channel as TextChannel).send({ embeds: [embed], components: buttons });
+      const msg = await (channel as TextChannel).send({ embeds: [embed], components });
       await updatePanelMessageId(req.params.guildId, msg.id);
       logger.info({ guildId: req.params.guildId, messageId: msg.id }, "Ticket panel deployed via dashboard");
       res.json({ success: true, action: "deployed" });

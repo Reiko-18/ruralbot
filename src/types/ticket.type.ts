@@ -1,5 +1,6 @@
 // Custom IDs for button interactions
 export const TICKET_BUTTON_PREFIX = "ticket_create_";
+export const TICKET_SELECT_ID = "ticket_create_select";
 export const TICKET_CLOSE_ID = "ticket_close";
 export const TICKET_REOPEN_ID = "ticket_reopen";
 export const TICKET_DELETE_ID = "ticket_delete";

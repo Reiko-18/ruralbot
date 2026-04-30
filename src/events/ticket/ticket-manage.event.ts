@@ -62,15 +62,8 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
   switch (interaction.customId) {
     case TICKET_CLOSE_ID: {
       if (!hasAdmin) {
-        // Check if user has notify role
-        const roleIds = instance.buttonType?.notifyRoleIds
-          ? JSON.parse(instance.buttonType.notifyRoleIds) as string[]
-          : [];
-        const hasRole = roleIds.some((id: string) => member?.roles?.cache?.has(id));
-        if (!hasRole) {
-          await interaction.reply({ content: "❌ 您沒有權限關閉此票口。", flags: MessageFlags.Ephemeral });
-          return;
-        }
+        await interaction.reply({ content: "❌ 只有管理員可以關閉票口。", flags: MessageFlags.Ephemeral });
+        return;
       }
 
       // Show close confirmation
@@ -96,7 +89,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
       if (creatorPerms) await creatorPerms.delete();
 
       // Move to close category
-      const closeCategoryId = instance.buttonType?.categoryCloseId;
+      const closeCategoryId = instance.buttonType?.categoryCloseId ?? instance.config.categoryCloseId;
       if (closeCategoryId) {
         await channel.setParent(closeCategoryId, { lockPermissions: false });
       }
@@ -140,7 +133,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
       });
 
       // Move back to open category
-      const openCategoryId = instance.buttonType?.categoryOpenId;
+      const openCategoryId = instance.buttonType?.categoryOpenId ?? instance.config.categoryOpenId;
       if (openCategoryId) {
         await channel.setParent(openCategoryId, { lockPermissions: false });
       }
