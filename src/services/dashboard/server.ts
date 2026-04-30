@@ -40,6 +40,7 @@ import {
 import { prisma } from "../../core/db.js";
 import {
   getTicketConfig,
+  getOrCreateTicketConfig,
   upsertTicketConfig,
 } from "../ticket/repo_ticket_config.js";
 import {
@@ -558,8 +559,7 @@ export function startDashboard(client: Client): void {
   // GET /api/ticket/config/:guildId — get ticket config
   app.get("/api/ticket/config/:guildId", async (req, res) => {
     try {
-      const config = await getTicketConfig(req.params.guildId);
-      if (!config) return res.status(404).json({ error: "Config not found" });
+      const config = await getOrCreateTicketConfig(req.params.guildId);
       res.json(config);
     } catch (err) {
       logger.error({ err }, "Failed to fetch ticket config");

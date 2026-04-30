@@ -5,6 +5,14 @@ export async function getTicketConfig(guildId: string) {
   return prisma.ticketConfig.findUnique({ where: { guildId } });
 }
 
+export async function getOrCreateTicketConfig(guildId: string) {
+  return prisma.ticketConfig.upsert({
+    where: { guildId },
+    create: { guildId },
+    update: {},
+  });
+}
+
 export async function upsertTicketConfig(
   guildId: string,
   data: {
