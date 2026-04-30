@@ -21,6 +21,30 @@
 - 關閉與自動超時關閉會優先使用子票口關閉分類，未設定時 fallback 到主面板關閉分類。
 - Dashboard 主面板新增分類與互動元件設定，紀錄設定新增 `transcriptTarget` 發送範圍。
 
+## 2026-04-30 追加市場常見票口功能
+
+市場對照來源包含 Ticket Tool、TicketsBot 與 Discord ticket bot 常見功能頁，常見能力分成 staff workflow、transcript、dashboard、表單與使用者體驗。本次優先補上不需要重做大型資料模型、且能直接提升維運效率的功能：
+
+- 認領 / 取消認領：管理員可在票口內認領案件，避免多人重複處理。
+- 鎖定 / 解鎖：管理員可暫停或恢復客人發言權限。
+- 加入 / 移除成員：管理員可輸入使用者 ID 或 mention，直接調整票口可見與發言權限。
+- 重新命名：管理員可透過 modal 修改票口頻道名稱。
+- 關閉原因：關閉票口改用 modal 填寫原因，寫入資料庫與 transcript 摘要。
+- Transcript 摘要補上處理人員、關閉人員與關閉原因。
+- Dashboard 關閉 / 重開 / 刪除 / 產生紀錄 API 改為同步操作 Discord 頻道，不再只改資料庫狀態。
+- Dashboard 票口列表顯示處理人員、鎖定狀態與關閉原因。
+
+### 尚未一次納入的較大型功能
+
+以下屬於市場票口 bot 的進階功能，但需要新增設定頁、資料模型或全文索引，不適合混在本次低風險 workflow 修正內一次硬上：
+
+- 開單前表單建構器：每個子票口自訂問題、必填欄位、附件欄位。
+- 快捷回覆 / canned response / tag：需建立回覆模板 CRUD 與權限設定。
+- 滿意度評分 / feedback：需新增評分資料表與統計圖。
+- 每使用者開單上限、冷卻時間與同類型重複票口限制。
+- Transcript 搜尋與永久檔案儲存：目前 transcript 仍以 Discord 附件與 thread 為主，若要搜尋需要 DB 或物件儲存。
+- SLA / 優先級 / 升級通知：需新增優先級欄位、排程與 dashboard 指標。
+
 ## 驗證
 
 - 已執行 `npm run build`，通過 Prisma generate、TypeScript build、dashboard production build。

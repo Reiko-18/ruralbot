@@ -63,8 +63,11 @@ import {
 import {
   buildPanelEmbed,
   buildPanelComponents,
+  buildClosedTicketButtons,
+  buildOpenTicketButtons,
 } from "../ticket/ticket_panel_builder.js";
 import { updatePanelMessageId } from "../ticket/repo_ticket_config.js";
+import { generateAndSendTranscript } from "../ticket/ticket_transcript.js";
 import { paymentRoutes, setPaymentDiscordClient } from "./routes/payment.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -714,7 +717,22 @@ export function startDashboard(client: Client): void {
     try {
       const instance = await getInstanceById(req.params.id);
       if (!instance) return res.status(404).json({ error: "Instance not found" });
-      const updated = await updateInstanceStatus(instance.channelId, "CLOSED", new Date());
+      const channel = await client.channels.fetch(instance.channelId).catch(() => null);
+      if (channel?.type === ChannelType.GuildText) {
+        const textChannel = channel as TextChannel;
+        await textChannel.permissionOverwrites.delete(instance.creatorId).catch(() => {});
+        const closeCategoryId = instance.buttonType?.categoryCloseId ?? instance.config.categoryCloseId;
+        if (closeCategoryId) await textChannel.setParent(closeCategoryId, { lockPermissions: false });
+        await textChannel.send({
+          content: "🔒 票口已由管理面板關閉。",
+          components: buildClosedTicketButtons(),
+        });
+      }
+      const updated = await updateInstanceStatus(instance.channelId, "CLOSED", new Date(), {
+        closeReason: "由管理面板關閉",
+        closedById: "dashboard",
+        locked: true,
+      });
       logger.info({ id: req.params.id }, "Ticket closed via dashboard");
       res.json(updated);
     } catch (err) {
@@ -728,7 +746,26 @@ export function startDashboard(client: Client): void {
     try {
       const instance = await getInstanceById(req.params.id);
       if (!instance) return res.status(404).json({ error: "Instance not found" });
-      const updated = await updateInstanceStatus(instance.channelId, "OPEN");
+      const channel = await client.channels.fetch(instance.channelId).catch(() => null);
+      if (channel?.type === ChannelType.GuildText) {
+        const textChannel = channel as TextChannel;
+        await textChannel.permissionOverwrites.edit(instance.creatorId, {
+          ViewChannel: true,
+          SendMessages: true,
+          AttachFiles: true,
+        });
+        const openCategoryId = instance.buttonType?.categoryOpenId ?? instance.config.categoryOpenId;
+        if (openCategoryId) await textChannel.setParent(openCategoryId, { lockPermissions: false });
+        await textChannel.send({
+          content: "🔓 票口已由管理面板重新開啟。",
+          components: buildOpenTicketButtons(),
+        });
+      }
+      const updated = await updateInstanceStatus(instance.channelId, "OPEN", undefined, {
+        closeReason: null,
+        closedById: null,
+        locked: false,
+      });
       logger.info({ id: req.params.id }, "Ticket reopened via dashboard");
       res.json(updated);
     } catch (err) {
@@ -743,6 +780,10 @@ export function startDashboard(client: Client): void {
       const instance = await getInstanceById(req.params.id);
       if (!instance) return res.status(404).json({ error: "Instance not found" });
       await updateInstanceStatus(instance.channelId, "ARCHIVED");
+      const channel = await client.channels.fetch(instance.channelId).catch(() => null);
+      if (channel?.type === ChannelType.GuildText) {
+        await (channel as TextChannel).delete("Ticket deleted via dashboard");
+      }
       logger.info({ id: req.params.id }, "Ticket archived via dashboard");
       res.status(204).end();
     } catch (err) {
@@ -751,12 +792,35 @@ export function startDashboard(client: Client): void {
     }
   });
 
-  // POST /api/ticket/instances/:id/transcript — transcript stub
+  // POST /api/ticket/instances/:id/transcript — generate transcript
   app.post("/api/ticket/instances/:id/transcript", async (req, res) => {
     try {
       const instance = await getInstanceById(req.params.id);
       if (!instance) return res.status(404).json({ error: "Instance not found" });
-      res.json({ success: true, message: "Use Discord button for full transcript" });
+      const channel = await client.channels.fetch(instance.channelId).catch(() => null);
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        return res.status(404).json({ error: "Ticket channel not found" });
+      }
+      await generateAndSendTranscript(
+        client,
+        channel as TextChannel,
+        {
+          ticketNum: instance.ticketNum,
+          creatorId: instance.creatorId,
+          createdAt: instance.createdAt,
+          closedAt: instance.closedAt,
+          configId: instance.configId,
+          status: instance.status,
+          closeReason: instance.closeReason,
+          closedById: instance.closedById,
+          claimedById: instance.claimedById,
+        },
+        instance.config.transcriptTarget,
+        instance.config.logChannelId,
+        instance.config.transcriptLogMessage,
+        instance.config.transcriptDmMessage,
+      );
+      res.json({ success: true });
     } catch (err) {
       logger.error({ err }, "Failed to process transcript request");
       res.status(500).json({ error: "Internal server error" });

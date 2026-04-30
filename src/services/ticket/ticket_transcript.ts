@@ -19,6 +19,11 @@ import { getCachedBotConfig } from "../config/repo_bot_config.js";
 const MAX_MESSAGES = 500;
 const FETCH_BATCH = 100;
 
+function mentionOrText(id: string | null | undefined): string {
+  if (!id) return "";
+  return /^\d{15,25}$/.test(id) ? `<@${id}>` : id;
+}
+
 // ── Message fetching ──
 
 async function fetchAllMessages(channel: TextChannel): Promise<Message[]> {
@@ -343,6 +348,9 @@ export async function generateAndSendTranscript(
     closedAt: Date | null;
     configId: string;
     status: string;
+    closeReason?: string | null;
+    closedById?: string | null;
+    claimedById?: string | null;
   },
   transcriptTarget: string,
   localLogChannelId: string | null,
@@ -402,10 +410,13 @@ export async function generateAndSendTranscript(
       if (logDesc) summaryEmbed.setDescription(logDesc);
       summaryEmbed.addFields(
           { name: "創建者", value: `<@${ticket.creatorId}>`, inline: true },
+          { name: "處理人員", value: mentionOrText(ticket.claimedById) || "未認領", inline: true },
           { name: "訊息數", value: `${messages.length}`, inline: true },
           { name: "狀態", value: ticket.status, inline: true },
           { name: "開單時間", value: ticket.createdAt.toLocaleString("zh-TW"), inline: true },
           { name: "關閉時間", value: ticket.closedAt?.toLocaleString("zh-TW") ?? "尚未關閉", inline: true },
+          { name: "關閉人員", value: mentionOrText(ticket.closedById) || "尚未關閉", inline: true },
+          { name: "關閉原因", value: ticket.closeReason || "未填寫", inline: false },
         )
         .setFooter({ text: "下載 HTML 檔案以瀏覽器開啟可查看完整對話紀錄（含圖片、貼圖、Emoji、連結）" })
         .setTimestamp();

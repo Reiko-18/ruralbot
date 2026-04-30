@@ -148,6 +148,10 @@ export interface TicketInstance {
   ticketNum: number;
   status: string;
   orderId: string | null;
+  claimedById: string | null;
+  locked: boolean;
+  closeReason: string | null;
+  closedById: string | null;
   lastActivityAt: string;
   reminded: boolean;
   createdAt: string;

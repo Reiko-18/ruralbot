@@ -15,6 +15,11 @@ import {
   TICKET_REOPEN_ID,
   TICKET_DELETE_ID,
   TICKET_TRANSCRIPT_ID,
+  TICKET_CLAIM_ID,
+  TICKET_LOCK_ID,
+  TICKET_ADD_USER_ID,
+  TICKET_REMOVE_USER_ID,
+  TICKET_RENAME_ID,
 } from "../../types/ticket.type.js";
 
 const BUTTON_STYLE_MAP: Record<string, ButtonStyle> = {
@@ -124,11 +129,18 @@ export function buildWelcomeEmbed(
 }
 
 export function buildOpenTicketButtons(): ActionRowBuilder<ButtonBuilder>[] {
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(TICKET_CLOSE_ID).setLabel("關閉票口").setEmoji("🔒").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(TICKET_TRANSCRIPT_ID).setLabel("存檔紀錄").setEmoji("📜").setStyle(ButtonStyle.Secondary),
+  const mainRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setCustomId(TICKET_CLOSE_ID).setLabel("關閉票口").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(TICKET_CLAIM_ID).setLabel("認領").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(TICKET_LOCK_ID).setLabel("鎖定/解鎖").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(TICKET_TRANSCRIPT_ID).setLabel("發送紀錄").setStyle(ButtonStyle.Secondary),
   );
-  return [row];
+  const memberRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setCustomId(TICKET_ADD_USER_ID).setLabel("加入成員").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(TICKET_REMOVE_USER_ID).setLabel("移除成員").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(TICKET_RENAME_ID).setLabel("重新命名").setStyle(ButtonStyle.Secondary),
+  );
+  return [mainRow, memberRow];
 }
 
 export function buildClosedTicketButtons(): ActionRowBuilder<ButtonBuilder>[] {

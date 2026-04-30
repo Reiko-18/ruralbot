@@ -183,6 +183,9 @@ export const reopenTicketApi = (id: string) =>
 export const deleteTicketApi = (id: string) =>
   request<void>(`/ticket/instances/${id}`, { method: "DELETE" });
 
+export const transcriptTicketApi = (id: string) =>
+  request<{ success: boolean }>(`/ticket/instances/${id}/transcript`, { method: "POST" });
+
 export const fetchTicketStats = (configId: string) =>
   request<TicketStats>(`/ticket/stats/${configId}`);
 

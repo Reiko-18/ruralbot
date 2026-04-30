@@ -5,9 +5,21 @@ export const TICKET_CLOSE_ID = "ticket_close";
 export const TICKET_REOPEN_ID = "ticket_reopen";
 export const TICKET_DELETE_ID = "ticket_delete";
 export const TICKET_TRANSCRIPT_ID = "ticket_transcript";
+export const TICKET_CLAIM_ID = "ticket_claim";
+export const TICKET_LOCK_ID = "ticket_lock";
+export const TICKET_ADD_USER_ID = "ticket_add_user";
+export const TICKET_REMOVE_USER_ID = "ticket_remove_user";
+export const TICKET_RENAME_ID = "ticket_rename";
 export const TICKET_DELETE_CONFIRM_ID = "ticket_delete_confirm";
 export const TICKET_CLOSE_CONFIRM_ID = "ticket_close_confirm";
 export const TICKET_CLOSE_CANCEL_ID = "ticket_close_cancel";
+export const TICKET_CLOSE_MODAL_ID = "ticket_close_modal";
+export const TICKET_CLOSE_REASON_INPUT_ID = "ticket_close_reason";
+export const TICKET_ADD_USER_MODAL_ID = "ticket_add_user_modal";
+export const TICKET_REMOVE_USER_MODAL_ID = "ticket_remove_user_modal";
+export const TICKET_USER_INPUT_ID = "ticket_user_id";
+export const TICKET_RENAME_MODAL_ID = "ticket_rename_modal";
+export const TICKET_RENAME_INPUT_ID = "ticket_rename_value";
 
 export interface TicketEmbedSettings {
   color?: string;

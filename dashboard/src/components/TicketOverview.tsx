@@ -7,6 +7,7 @@ import {
   closeTicketApi,
   reopenTicketApi,
   deleteTicketApi,
+  transcriptTicketApi,
 } from "../api/client";
 import { BlurFade } from "./magicui/blur-fade";
 import { NumberTicker } from "./magicui/number-ticker";
@@ -44,10 +45,11 @@ export function TicketOverview({ configId }: Props) {
 
   useEffect(() => { loadStats(); loadInstances(); }, [loadStats, loadInstances]);
 
-  const handleAction = async (id: string, action: "close" | "reopen" | "delete") => {
+  const handleAction = async (id: string, action: "close" | "reopen" | "delete" | "transcript") => {
     if (action === "delete" && !confirm("確定刪除此票口紀錄？")) return;
     if (action === "close") await closeTicketApi(id);
     else if (action === "reopen") await reopenTicketApi(id);
+    else if (action === "transcript") await transcriptTicketApi(id);
     else await deleteTicketApi(id);
     await Promise.all([loadStats(), loadInstances()]);
   };
@@ -163,6 +165,9 @@ export function TicketOverview({ configId }: Props) {
                   <span className="font-mono text-xs text-gray-300">ticket-{String(inst.ticketNum).padStart(4, "0")}</span>
                   <span className="text-gray-500 text-xs">{inst.creatorId}</span>
                   <span className="text-gray-600 text-xs">{inst.buttonType?.label ?? ""}</span>
+                  {inst.claimedById && <span className="text-cyan-300 text-xs">處理: {inst.claimedById}</span>}
+                  {inst.locked && <span className="badge-yellow text-xs">已鎖定</span>}
+                  {inst.closeReason && <span className="text-gray-500 text-xs truncate max-w-[160px]">原因: {inst.closeReason}</span>}
                   {inst.order && <span className="badge-green text-xs">{inst.order.id}</span>}
                 </div>
                 <div className="flex items-center gap-3">
@@ -174,6 +179,7 @@ export function TicketOverview({ configId }: Props) {
                     {inst.status === "CLOSED" && (
                       <button className="text-emerald-400 hover:text-emerald-300 text-xs px-1.5 py-0.5 rounded hover:bg-emerald-500/10 transition-colors" onClick={() => handleAction(inst.id, "reopen")}>重開</button>
                     )}
+                    <button className="text-cyan-400 hover:text-cyan-300 text-xs px-1.5 py-0.5 rounded hover:bg-cyan-500/10 transition-colors" onClick={() => handleAction(inst.id, "transcript")}>紀錄</button>
                     <button className="text-red-400 hover:text-red-300 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10 transition-colors" onClick={() => handleAction(inst.id, "delete")}>刪除</button>
                   </div>
                 </div>

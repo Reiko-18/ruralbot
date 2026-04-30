@@ -62,10 +62,35 @@ export async function updateInstanceStatus(
   channelId: string,
   status: string,
   closedAt?: Date,
+  options?: {
+    closeReason?: string | null;
+    closedById?: string | null;
+    locked?: boolean;
+  },
 ) {
   return prisma.ticketInstance.update({
     where: { channelId },
-    data: { status, closedAt: closedAt ?? null },
+    data: {
+      status,
+      closedAt: closedAt ?? null,
+      closeReason: options?.closeReason,
+      closedById: options?.closedById,
+      locked: options?.locked,
+    },
+  });
+}
+
+export async function claimInstance(channelId: string, claimedById: string | null) {
+  return prisma.ticketInstance.update({
+    where: { channelId },
+    data: { claimedById },
+  });
+}
+
+export async function setInstanceLocked(channelId: string, locked: boolean) {
+  return prisma.ticketInstance.update({
+    where: { channelId },
+    data: { locked },
   });
 }
 

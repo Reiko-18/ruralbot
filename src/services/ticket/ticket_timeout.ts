@@ -63,7 +63,10 @@ async function checkTimeouts(): Promise<void> {
             await channel.setParent(closeCategoryId, { lockPermissions: false });
           }
 
-          await updateInstanceStatus(instance.channelId, "CLOSED", new Date());
+          await updateInstanceStatus(instance.channelId, "CLOSED", new Date(), {
+            closeReason: "自動超時關閉",
+            locked: true,
+          });
           logger.info({ ticketNum: instance.ticketNum }, "Ticket auto-closed due to timeout");
         } catch (err) {
           logger.error({ err, ticketNum: instance.ticketNum }, "Failed to auto-close ticket");
