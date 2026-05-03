@@ -19,7 +19,6 @@ import { validateBuyerInfo, type BuyerInfo } from "../../services/payment/buyer_
 const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
 const STORE_PAY_ZG: Record<string, string> = { fami: "6", "711": "4" };
 const RP_THEME_COLOR = 0xb8a7ff;
-const RP_SUCCESS_COLOR = 0x22c55e;
 const buyerInfoCache = new Map<string, BuyerInfo>();
 
 function buildBuyerInfoKey(parts: string[]): string {
@@ -323,7 +322,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
 
   const resultEmbed = new EmbedBuilder()
     .setTitle(`速買配 - 成功建立訂單 (${storeName}代碼)`)
-    .setColor(RP_SUCCESS_COLOR)
+    .setColor(RP_THEME_COLOR)
     .setThumbnail(getBotThumbnail(interaction))
     .setDescription(
       `付款編號：${paymentCode ?? "-"}\n` +
