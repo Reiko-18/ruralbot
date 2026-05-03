@@ -16,8 +16,17 @@ export async function handleCallback(
   sourceIp?: string,
   discordClient?: Client | null,
 ): Promise<{ success: boolean; responseHtml: string }> {
+  if (!rawData || typeof rawData !== "object") {
+    logger.warn({ sourceIp }, "Payment callback received without form data");
+    return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
+  }
+
   const callbackData = rawData as unknown as SmilePayCallbackData;
   const orderId = callbackData.Od_sob;
+  if (!orderId) {
+    logger.warn({ sourceIp, keys: Object.keys(rawData) }, "Payment callback missing Od_sob");
+    return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
+  }
 
   logger.info({ orderId, smseid: callbackData.Smseid, sourceIp }, "Payment callback received");
 

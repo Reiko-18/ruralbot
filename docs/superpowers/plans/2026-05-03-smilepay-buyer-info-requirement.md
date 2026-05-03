@@ -11,6 +11,7 @@ SmilePay 官方 API 文件範例在自行撰寫收款頁面與背景取號流程
 - `/rp` 互動式超商繳費流程改為在按下「確認付款」後跳出 Discord modal，買家填完資料才會向 SmilePay 背景取號。
 - `/payment create` slash command 新增必填 `email` 與 `phone`，並把 `payer` 改為必填。
 - SmilePay 出站參數會帶入 `Pur_name`、`Email`、`Tel_number`，並同步把電話帶到 `Mobile_number`。
+- Callback endpoint 對空 body 或缺少 `Od_sob` 的 malformed request 會回傳 `<Roturlstatus>ERROR</Roturlstatus>`，避免 public endpoint 因測試或掃描請求產生 TypeError。
 
 ## 驗證規則
 
@@ -33,4 +34,6 @@ SmilePay 官方 API 文件範例在自行撰寫收款頁面與背景取號流程
 ## 驗證結果
 
 - `npm run build`：通過。
+- 遠端 Ubuntu 已重新建置、部署 18 個 slash commands 並重啟 `ruralbot`。
+- 遠端 `SMILEPAY_ROTURL` 已由舊 Railway callback 修正為 `http://211.22.158.125/api/payment/callback`。
 - 建置期間 npm audit 回報既有 3 個弱點：1 moderate、2 high。本次未調整依賴版本。

@@ -211,7 +211,7 @@ paymentRoutes.get("/test-callback/:orderId", async (req, res) => {
 paymentRoutes.post("/callback", async (req, res) => {
   try {
     const sourceIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip;
-    const result = await handleCallback(req.body, sourceIp, discordClient);
+    const result = await handleCallback(req.body ?? {}, sourceIp, discordClient);
     res.set("Content-Type", "text/html; charset=utf-8");
     res.send(result.responseHtml);
   } catch (err) {
