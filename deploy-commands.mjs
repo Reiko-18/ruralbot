@@ -1,5 +1,5 @@
 /**
- * Standalone script to deploy all 16 slash commands globally.
+ * Standalone script to deploy all 18 slash commands globally.
  * Does NOT import any project source code (avoids Prisma issues).
  *
  * Usage: node deploy-commands.mjs
@@ -264,6 +264,73 @@ const priceList = new SlashCommandBuilder()
       .setRequired(true),
   );
 
+// ── 17. payment ──
+const payment = new SlashCommandBuilder()
+  .setName("payment")
+  .setDescription("金流管理")
+  .addSubcommand((sub) =>
+    sub
+      .setName("create")
+      .setDescription("建立付款")
+      .addIntegerOption((o) =>
+        o.setName("amount").setDescription("金額 (新台幣)").setRequired(true).setMinValue(1),
+      )
+      .addStringOption((o) =>
+        o.setName("payer").setDescription("買家真實姓名").setRequired(true),
+      )
+      .addStringOption((o) =>
+        o.setName("email").setDescription("買家 Gmail").setRequired(true),
+      )
+      .addStringOption((o) =>
+        o.setName("phone").setDescription("買家電話").setRequired(true),
+      )
+      .addStringOption((o) => o.setName("remark").setDescription("備註")),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName("status")
+      .setDescription("查詢交易狀態")
+      .addStringOption((o) => o.setName("order_id").setDescription("訂單編號").setRequired(true)),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName("list")
+      .setDescription("列出近期交易")
+      .addStringOption((o) =>
+        o
+          .setName("status")
+          .setDescription("篩選狀態")
+          .addChoices(
+            { name: "待付款", value: "PENDING" },
+            { name: "已完成", value: "COMPLETED" },
+            { name: "失敗", value: "FAILED" },
+            { name: "已過期", value: "EXPIRED" },
+          ),
+      )
+      .addIntegerOption((o) =>
+        o.setName("days").setDescription("天數 (預設 7)").setMinValue(1).setMaxValue(90),
+      ),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName("stats")
+      .setDescription("交易統計")
+      .addIntegerOption((o) =>
+        o.setName("days").setDescription("天數 (預設 30)").setMinValue(1).setMaxValue(365),
+      ),
+  );
+
+// ── 18. rp ──
+const rp = new SlashCommandBuilder()
+  .setName("rp")
+  .setDescription("互動式超商繳費")
+  .addIntegerOption((o) =>
+    o.setName("amount").setDescription("訂單金額 (新台幣)").setRequired(true).setMinValue(1).setMaxValue(20000),
+  )
+  .addStringOption((o) =>
+    o.setName("remark").setDescription("備註 (最多 30 字)").setMaxLength(30),
+  );
+
 // ── Deploy ──
 const commands = [
   logAdd,
@@ -282,6 +349,8 @@ const commands = [
   orderLookup,
   botConfig,
   priceList,
+  payment,
+  rp,
 ].map((cmd) => cmd.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);

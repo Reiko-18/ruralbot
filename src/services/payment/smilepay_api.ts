@@ -28,7 +28,7 @@ export function buildPaymentPageUrl(
     Verify_key: credentials.verifyKey,
     ...(params.payerName ? { Pur_name: params.payerName } : {}),
     ...(params.email ? { Email: params.email } : {}),
-    ...(params.phone ? { Tel_number: params.phone } : {}),
+    ...(params.phone ? { Tel_number: params.phone, Mobile_number: params.phone } : {}),
     ...(params.remark ? { Remark: params.remark } : {}),
   });
   return `${base}?${query.toString()}`;
@@ -48,7 +48,7 @@ export async function createBackgroundPayment(
     Verify_key: credentials.verifyKey,
     ...(params.payerName ? { Pur_name: params.payerName } : {}),
     ...(params.email ? { Email: params.email } : {}),
-    ...(params.phone ? { Tel_number: params.phone } : {}),
+    ...(params.phone ? { Tel_number: params.phone, Mobile_number: params.phone } : {}),
     ...(params.remark ? { Remark: params.remark } : {}),
   });
 

@@ -12,6 +12,7 @@ import {
 import { generatePaymentOrderId } from "../../payment/payment_id.js";
 import { buildPaymentPageUrl, createBackgroundPayment } from "../../payment/smilepay_api.js";
 import { handleCallback } from "../../payment/payment_callback.js";
+import { validateBuyerInfo } from "../../payment/buyer_info.js";
 
 let discordClient: Client | null = null;
 
@@ -64,6 +65,11 @@ paymentRoutes.post("/create/:guildId", async (req, res) => {
       return res.status(400).json({ error: "Invalid amount" });
     }
 
+    const buyerInfo = validateBuyerInfo({ payerName, payerEmail, payerPhone });
+    if (!buyerInfo.ok) {
+      return res.status(400).json({ error: buyerInfo.error });
+    }
+
     const guildId = req.params.guildId;
     const config = await getPaymentConfig(guildId);
     const credentials = getEffectiveCredentials(config);
@@ -74,9 +80,9 @@ paymentRoutes.post("/create/:guildId", async (req, res) => {
       guildId,
       orderId,
       amount,
-      payerName,
-      payerEmail,
-      payerPhone,
+      payerName: buyerInfo.value.payerName,
+      payerEmail: buyerInfo.value.payerEmail,
+      payerPhone: buyerInfo.value.payerPhone,
       remark,
     });
 
@@ -84,9 +90,9 @@ paymentRoutes.post("/create/:guildId", async (req, res) => {
     const paymentUrl = buildPaymentPageUrl(credentials, {
       orderId,
       amount,
-      payerName,
-      email: payerEmail,
-      phone: payerPhone,
+      payerName: buyerInfo.value.payerName,
+      email: buyerInfo.value.payerEmail,
+      phone: buyerInfo.value.payerPhone,
       remark,
     });
 
@@ -97,9 +103,9 @@ paymentRoutes.post("/create/:guildId", async (req, res) => {
       const bgResult = await createBackgroundPayment(credentials, {
         orderId,
         amount,
-        payerName,
-        email: payerEmail,
-        phone: payerPhone,
+        payerName: buyerInfo.value.payerName,
+        email: buyerInfo.value.payerEmail,
+        phone: buyerInfo.value.payerPhone,
         remark,
       });
 
@@ -117,7 +123,7 @@ paymentRoutes.post("/create/:guildId", async (req, res) => {
       logger.warn({ err, orderId }, "Background payment API failed, falling back to payment page URL only");
     }
 
-    logger.info({ orderId, amount, guildId, payerName }, "Payment created");
+    logger.info({ orderId, amount, guildId, payerName: buyerInfo.value.payerName }, "Payment created");
 
     res.status(201).json({
       transaction: { ...transaction, paymentCode, smilePayNo },

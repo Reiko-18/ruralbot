@@ -8,6 +8,7 @@ export interface SmilePayRequestParams {
   Pur_name?: string;
   Email?: string;
   Tel_number?: string;
+  Mobile_number?: string;
   Remark?: string;
   Roturl: string;
   Pay_zg: string;
