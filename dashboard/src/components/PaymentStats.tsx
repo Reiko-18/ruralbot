@@ -4,7 +4,6 @@ import type { PaymentStats as PaymentStatsType } from "../types";
 import { fetchPaymentStats } from "../api/client";
 import { NumberTicker } from "./magicui/number-ticker";
 import { BlurFade } from "./magicui/blur-fade";
-import { BorderBeam } from "./magicui/border-beam";
 
 interface Props {
   guildId: string;
@@ -73,20 +72,23 @@ export function PaymentStats({ guildId }: Props) {
 
           return (
             <BlurFade key={card.key} delay={0.05 * i} direction="up">
-              <div className="stat-card relative">
-                {isHighlight && <BorderBeam size={80} duration={8} colorFrom="#a78bfa" colorTo="#7c3aed" />}
+              <div className={`stat-card relative ${isHighlight ? "border-violet-400/25 bg-violet-500/[0.03]" : ""}`}>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">{card.label}</span>
                   <Icon size={16} className={card.color} />
                 </div>
                 <div className="text-2xl font-bold">
                   {card.prefix ?? ""}
-                  <NumberTicker
-                    value={val}
-                    decimalPlaces={card.key === "completionRate" ? 1 : 0}
-                    delay={0.1 * i}
-                    formatter={card.isCurrency ? (n) => n.toLocaleString("zh-TW") : undefined}
-                  />
+                  {isHighlight ? (
+                    <span>{card.isCurrency ? val.toLocaleString("zh-TW") : val}</span>
+                  ) : (
+                    <NumberTicker
+                      value={val}
+                      decimalPlaces={card.key === "completionRate" ? 1 : 0}
+                      delay={0.1 * i}
+                      formatter={card.isCurrency ? (n) => n.toLocaleString("zh-TW") : undefined}
+                    />
+                  )}
                   {card.suffix ?? ""}
                 </div>
               </div>
