@@ -35,6 +35,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .setTitle("超商代碼繳費")
     .setColor(RP_THEME_COLOR)
     .setDescription(descLines.join("\n"))
+    .setThumbnail(interaction.client.user.displayAvatarURL({ size: 128 }))
     .addFields(
       { name: "繳費金額", value: `**$${amount.toLocaleString()}**`, inline: true },
       { name: "有效時間", value: "15 分鐘", inline: true },

@@ -19,6 +19,20 @@ import { validateBuyerInfo, type BuyerInfo } from "../../services/payment/buyer_
 const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
 const STORE_PAY_ZG: Record<string, string> = { fami: "6", "711": "4" };
 const RP_THEME_COLOR = 0xb8a7ff;
+const RP_SUCCESS_COLOR = 0x22c55e;
+const buyerInfoCache = new Map<string, BuyerInfo>();
+
+function buildBuyerInfoKey(parts: string[]): string {
+  return parts.slice(1, 7).join(":");
+}
+
+function buildBaseCustomId(parts: string[], action: string): string {
+  return `rp:${parts[1]}:${parts[2]}:${action}:${parts[4]}:${parts[5]}:${parts[6] ?? ""}`;
+}
+
+function getBotThumbnail(interaction: any): string | null {
+  return interaction.client?.user?.displayAvatarURL?.({ size: 128 }) ?? null;
+}
 
 export function registerRpInteractEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
@@ -34,15 +48,21 @@ export function registerRpInteractEvent(client: Client): void {
       return;
     }
 
-    const action = parts[3]; // "store", "confirm", "buyer", or "cancel"
+    const action = parts[3]; // "store", "confirm", "buyer", "pay", "cancel", or "back"
 
     try {
       if (interaction.isButton() && action === "store") {
         await handleStoreSelect(interaction, parts);
       } else if (interaction.isButton() && action === "confirm") {
+        await handleBuyerInfoReview(interaction, parts);
+      } else if (interaction.isButton() && action === "buyer") {
         await handleBuyerInfoModal(interaction, parts);
       } else if (interaction.isModalSubmit() && action === "buyer") {
         await handleBuyerInfoSubmit(interaction, parts);
+      } else if (interaction.isButton() && action === "pay") {
+        await handlePay(interaction, parts);
+      } else if (interaction.isButton() && action === "back") {
+        await handleStoreSelect(interaction, parts);
       } else if (interaction.isButton() && action === "cancel") {
         await handleCancel(interaction);
       }
@@ -79,39 +99,82 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
 
   const storeName = STORE_LABELS[store] ?? store;
   const descLines = [
-    `已選擇 **${storeName}**。`,
-    "確認取號前需填寫買家真實姓名、電話與 Gmail。",
+    `訂單金額：${amount.toLocaleString()} 新台幣`,
+    `付款方式：${storeName} 代碼繳費`,
   ];
   const remark = encodedRemark ? decodeURIComponent(encodedRemark) : "";
 
   const embed = new EmbedBuilder()
-    .setTitle("確認付款資訊")
+    .setTitle("再次確認您的付款方式")
     .setColor(RP_THEME_COLOR)
     .setDescription(descLines.join("\n"))
+    .setThumbnail(getBotThumbnail(interaction))
     .addFields(
-      { name: "繳費超商", value: storeName, inline: true },
-      { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
-      { name: "手續費", value: `$${fee.toLocaleString()}`, inline: true },
-      { name: "總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
+      { name: "付款金額", value: `${amount.toLocaleString()} 元`, inline: false },
+      { name: "手續費", value: `${fee.toLocaleString()} 元`, inline: false },
+      { name: "總付款金額", value: `**${total.toLocaleString()} 元**`, inline: false },
       ...(remark ? [{ name: "備註", value: remark, inline: false }] : []),
     )
-    .setFooter({ text: `操作者：${interaction.user.displayName ?? interaction.user.username}` })
+    .setFooter({ text: "Powered by RuralBot" })
     .setTimestamp();
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(`rp:${clickerId}:${ts}:confirm:${store}:${amount}:${encodedRemark}`)
-      .setLabel("確認付款")
-      .setEmoji("✅")
-      .setStyle(ButtonStyle.Primary),
-    new ButtonBuilder()
       .setCustomId(`rp:${clickerId}:${ts}:cancel`)
-      .setLabel("取消")
-      .setEmoji("❌")
+      .setLabel("取消重選")
       .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`rp:${clickerId}:${ts}:confirm:${store}:${amount}:${encodedRemark}`)
+      .setLabel("下一步：確認購買資訊")
+      .setStyle(ButtonStyle.Primary),
   );
 
   await interaction.update({ embeds: [embed], components: [row] });
+}
+
+async function handleBuyerInfoReview(interaction: any, parts: string[]) {
+  const buyerInfo = buyerInfoCache.get(buildBuyerInfoKey(parts));
+  await interaction.update(buildBuyerInfoReviewPayload(interaction, parts, buyerInfo));
+}
+
+function buildBuyerInfoReviewPayload(interaction: any, parts: string[], buyerInfo?: BuyerInfo) {
+  const filled = !!buyerInfo;
+  const description = [
+    "根據金流平台相關規定，所有訂單消費者需提供真實姓名、電話與 Gmail，以符合金流取號資料要求。",
+    "資料僅用於本次付款建立與後續對帳。",
+  ];
+
+  const embed = new EmbedBuilder()
+    .setTitle("購買人資訊確認")
+    .setColor(RP_THEME_COLOR)
+    .setDescription(description.join("\n"))
+    .setThumbnail(getBotThumbnail(interaction))
+    .addFields(
+      { name: "您的姓名", value: buyerInfo?.payerName ?? "⚠️ 尚未填寫", inline: true },
+      { name: "電話號碼", value: buyerInfo?.payerPhone ?? "⚠️ 尚未填寫", inline: true },
+      { name: "電子郵件(Email)", value: buyerInfo?.payerEmail ?? "⚠️ 尚未填寫", inline: false },
+    )
+    .setFooter({ text: "Powered by RuralBot" })
+    .setTimestamp();
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildBaseCustomId(parts, "back"))
+      .setLabel("上一步")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(buildBaseCustomId(parts, "buyer"))
+      .setLabel("填寫/修改資訊")
+      .setEmoji("📝")
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(buildBaseCustomId(parts, "pay"))
+      .setLabel("確認並獲取付款碼")
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(!filled),
+  );
+
+  return { embeds: [embed], components: [row] };
 }
 
 async function handleBuyerInfoModal(interaction: any, parts: string[]) {
@@ -169,7 +232,18 @@ async function handleBuyerInfoSubmit(interaction: any, parts: string[]) {
     return;
   }
 
-  await handleConfirm(interaction, parts, buyerInfo.value);
+  buyerInfoCache.set(buildBuyerInfoKey(parts), buyerInfo.value);
+  await interaction.update(buildBuyerInfoReviewPayload(interaction, parts, buyerInfo.value));
+}
+
+async function handlePay(interaction: any, parts: string[]) {
+  const buyerInfo = buyerInfoCache.get(buildBuyerInfoKey(parts));
+  if (!buyerInfo) {
+    await interaction.update(buildBuyerInfoReviewPayload(interaction, parts));
+    return;
+  }
+
+  await handleConfirm(interaction, parts, buyerInfo);
 }
 
 async function handleConfirm(interaction: any, parts: string[], buyerInfo: BuyerInfo) {
@@ -248,24 +322,24 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   const deadlineText = payEndDate ?? "依超商規定";
 
   const resultEmbed = new EmbedBuilder()
-    .setTitle("超商繳費單")
-    .setColor(RP_THEME_COLOR)
+    .setTitle(`速買配 - 成功建立訂單 (${storeName}代碼)`)
+    .setColor(RP_SUCCESS_COLOR)
+    .setThumbnail(getBotThumbnail(interaction))
     .setDescription(
-      `請至 **${storeName}** 使用以下代碼繳費\n` +
+      `付款編號：${paymentCode ?? "-"}\n` +
       `\n` +
-      `**繳費代碼**\n` +
-      `\`${paymentCode ?? "-"}\``,
+      `付款者：<@${interaction.user.id}>\n` +
+      `手續費：${fee.toLocaleString()} 元`,
     )
     .addFields(
-      { name: "繳費超商", value: storeName, inline: true },
-      { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
-      { name: "手續費", value: `$${fee.toLocaleString()}`, inline: true },
-      { name: "總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
-      { name: "繳費期限", value: deadlineText, inline: true },
-      { name: "訂單編號", value: `\`${orderId}\``, inline: true },
+      { name: "付款超商", value: store === "711" ? "7-11" : "全家", inline: true },
+      { name: "繳費代碼", value: `\`${paymentCode ?? "-"}\``, inline: true },
+      { name: "付款金額", value: `${total.toLocaleString()}`, inline: false },
+      { name: "付款期限", value: deadlineText, inline: false },
+      { name: "訂單編號", value: `\`${orderId}\``, inline: false },
       ...(remark ? [{ name: "備註", value: remark, inline: false }] : []),
     )
-    .setFooter({ text: "繳費完成後系統會自動更新狀態" })
+    .setFooter({ text: "Powered by RuralBot" })
     .setTimestamp();
 
   await interaction.editReply({ embeds: [resultEmbed], components: [] });
@@ -275,6 +349,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
     const dmEmbed = new EmbedBuilder()
       .setTitle("超商繳費單")
       .setColor(RP_THEME_COLOR)
+      .setThumbnail(getBotThumbnail(interaction))
       .setDescription(
         `請至 **${storeName}** 使用以下代碼繳費\n` +
         `\n` +
