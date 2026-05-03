@@ -23,7 +23,7 @@ const RP_SUCCESS_COLOR = 0x22c55e;
 const buyerInfoCache = new Map<string, BuyerInfo>();
 
 function buildBuyerInfoKey(parts: string[]): string {
-  return parts.slice(1, 7).join(":");
+  return [parts[1], parts[2], parts[4], parts[5], parts[6] ?? ""].join(":");
 }
 
 function buildBaseCustomId(parts: string[], action: string): string {
