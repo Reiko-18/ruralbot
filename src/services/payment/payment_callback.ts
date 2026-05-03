@@ -17,14 +17,14 @@ export async function handleCallback(
   discordClient?: Client | null,
 ): Promise<{ success: boolean; responseHtml: string }> {
   if (!rawData || typeof rawData !== "object") {
-    logger.warn({ sourceIp }, "Payment callback received without form data");
+    logger.debug({ sourceIp }, "Payment callback received without form data");
     return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
   }
 
   const callbackData = rawData as unknown as SmilePayCallbackData;
   const orderId = callbackData.Od_sob;
   if (!orderId) {
-    logger.warn({ sourceIp, keys: Object.keys(rawData) }, "Payment callback missing Od_sob");
+    logger.debug({ sourceIp, keys: Object.keys(rawData) }, "Payment callback missing Od_sob");
     return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
   }
 
