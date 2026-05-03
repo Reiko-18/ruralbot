@@ -7,6 +7,8 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 
+const RP_THEME_COLOR = 0xb8a7ff;
+
 export const data = new SlashCommandBuilder()
   .setName("rp")
   .setDescription("互動式超商繳費")
@@ -25,19 +27,20 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const encodedRemark = encodeURIComponent(remark);
 
   const descLines = [
-    `<@${userId}> 發起了一筆繳費單`,
-    "",
-    `### 💰 繳費金額`,
-    `# \`$${amount.toLocaleString()}\``,
+    `<@${userId}> 已建立一筆超商代碼繳費單。`,
+    "請選擇要使用的繳費超商，系統會在確認前收集買家資料。",
   ];
-  if (remark) descLines.push("", `> 📝 ${remark}`);
-  descLines.push("", "━━━━━━━━━━━━━━━━━━━", "**請選擇繳費超商 👇**");
 
   const embed = new EmbedBuilder()
-    .setTitle("🧾 超商代碼繳費")
-    .setColor(0x7c3aed)
+    .setTitle("超商代碼繳費")
+    .setColor(RP_THEME_COLOR)
     .setDescription(descLines.join("\n"))
-    .setFooter({ text: "⏱ 15 分鐘內有效 · 所有人皆可操作" })
+    .addFields(
+      { name: "繳費金額", value: `**$${amount.toLocaleString()}**`, inline: true },
+      { name: "有效時間", value: "15 分鐘", inline: true },
+      ...(remark ? [{ name: "備註", value: remark, inline: false }] : []),
+    )
+    .setFooter({ text: "請選擇繳費超商" })
     .setTimestamp();
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -50,7 +53,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setCustomId(`rp:${userId}:${ts}:store:711:${amount}:${encodedRemark}`)
       .setLabel("7-11 ibon")
       .setEmoji("🏪")
-      .setStyle(ButtonStyle.Secondary),
+      .setStyle(ButtonStyle.Primary),
   );
 
   await interaction.reply({ embeds: [embed], components: [row] });

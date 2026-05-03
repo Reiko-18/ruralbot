@@ -18,6 +18,7 @@ import { validateBuyerInfo, type BuyerInfo } from "../../services/payment/buyer_
 
 const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
 const STORE_PAY_ZG: Record<string, string> = { fami: "6", "711": "4" };
+const RP_THEME_COLOR = 0xb8a7ff;
 
 export function registerRpInteractEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
@@ -76,24 +77,24 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
   const fee = calculateFee(config, store as "fami" | "711", amount);
   const total = amount + fee;
 
-  const storeEmoji = store === "711" ? "🏪" : "🏬";
   const storeName = STORE_LABELS[store] ?? store;
   const descLines = [
-    `${storeEmoji} **${storeName}**`,
-    "",
-    `> 💰 訂單金額　　\`$${amount.toLocaleString()}\``,
-    `> 📋 手續費　　　\`$${fee.toLocaleString()}\``,
-    `> ━━━━━━━━━━━━━━━━━`,
-    `> 💵 **總付款　　\`$${total.toLocaleString()}\`**`,
-    "",
+    `已選擇 **${storeName}**。`,
     "確認取號前需填寫買家真實姓名、電話與 Gmail。",
   ];
-  if (encodedRemark) descLines.push("", `> 📝 ${decodeURIComponent(encodedRemark)}`);
+  const remark = encodedRemark ? decodeURIComponent(encodedRemark) : "";
 
   const embed = new EmbedBuilder()
-    .setTitle("📋 確認付款資訊")
-    .setColor(0xeab308)
+    .setTitle("確認付款資訊")
+    .setColor(RP_THEME_COLOR)
     .setDescription(descLines.join("\n"))
+    .addFields(
+      { name: "繳費超商", value: storeName, inline: true },
+      { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
+      { name: "手續費", value: `$${fee.toLocaleString()}`, inline: true },
+      { name: "總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
+      ...(remark ? [{ name: "備註", value: remark, inline: false }] : []),
+    )
     .setFooter({ text: `操作者：${interaction.user.displayName ?? interaction.user.username}` })
     .setTimestamp();
 
@@ -102,12 +103,12 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
       .setCustomId(`rp:${clickerId}:${ts}:confirm:${store}:${amount}:${encodedRemark}`)
       .setLabel("確認付款")
       .setEmoji("✅")
-      .setStyle(ButtonStyle.Success),
+      .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`rp:${clickerId}:${ts}:cancel`)
       .setLabel("取消")
       .setEmoji("❌")
-      .setStyle(ButtonStyle.Danger),
+      .setStyle(ButtonStyle.Secondary),
   );
 
   await interaction.update({ embeds: [embed], components: [row] });
@@ -181,7 +182,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   // Show loading state
   await interaction.deferUpdate();
   await interaction.editReply({
-    embeds: [new EmbedBuilder().setTitle("⏳ 取號中...").setDescription("正在向 SmilePay 取得繳費代碼").setColor(0x7c3aed)],
+    embeds: [new EmbedBuilder().setTitle("取號中...").setDescription("正在向 SmilePay 取得繳費代碼").setColor(RP_THEME_COLOR)],
     components: [],
   });
 
@@ -206,7 +207,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   if (bgResult.Status !== "1") {
     logger.error({ orderId, status: bgResult.Status, desc: bgResult.Desc }, "SmilePay API returned error for /rp");
     await interaction.editReply({
-      embeds: [new EmbedBuilder().setTitle("取號失敗").setDescription(`SmilePay 回應: ${bgResult.Desc}\n請稍後重試或聯繫管理員`).setColor(0xef4444)],
+      embeds: [new EmbedBuilder().setTitle("取號失敗").setDescription(`SmilePay 回應: ${bgResult.Desc}\n請稍後重試或聯繫管理員`).setColor(RP_THEME_COLOR)],
       components: [],
     });
     return;
@@ -243,29 +244,26 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   logger.info({ orderId, store, amount, fee, total, paymentCode, payerName: buyerInfo.payerName }, "Payment created via /rp");
 
   // Build result embed
-  const storeEmoji = store === "711" ? "🏪" : "🏬";
   const storeName = STORE_LABELS[store] ?? store;
   const deadlineText = payEndDate ?? "依超商規定";
-  const remarkText = remark ? `\n> 📝 ${remark}` : "";
 
   const resultEmbed = new EmbedBuilder()
-    .setTitle(`${storeEmoji} 超商繳費單`)
-    .setColor(store === "711" ? 0xf97316 : 0x22c55e)
+    .setTitle("超商繳費單")
+    .setColor(RP_THEME_COLOR)
     .setDescription(
       `請至 **${storeName}** 使用以下代碼繳費\n` +
       `\n` +
-      `### 繳費代碼\n` +
-      `# \`${paymentCode ?? "-"}\`\n` +
-      `\n` +
-      `───────────────────` +
-      remarkText,
+      `**繳費代碼**\n` +
+      `\`${paymentCode ?? "-"}\``,
     )
     .addFields(
-      { name: "💰 訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
-      { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
-      { name: "💵 總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
-      { name: "⏰ 繳費期限", value: deadlineText, inline: true },
-      { name: "📌 訂單編號", value: `\`${orderId}\``, inline: true },
+      { name: "繳費超商", value: storeName, inline: true },
+      { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
+      { name: "手續費", value: `$${fee.toLocaleString()}`, inline: true },
+      { name: "總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
+      { name: "繳費期限", value: deadlineText, inline: true },
+      { name: "訂單編號", value: `\`${orderId}\``, inline: true },
+      ...(remark ? [{ name: "備註", value: remark, inline: false }] : []),
     )
     .setFooter({ text: "繳費完成後系統會自動更新狀態" })
     .setTimestamp();
@@ -275,23 +273,22 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   // Send the same payment info to the user's DM
   try {
     const dmEmbed = new EmbedBuilder()
-      .setTitle(`${storeEmoji} 超商繳費單`)
-      .setColor(store === "711" ? 0xf97316 : 0x22c55e)
+      .setTitle("超商繳費單")
+      .setColor(RP_THEME_COLOR)
       .setDescription(
         `請至 **${storeName}** 使用以下代碼繳費\n` +
         `\n` +
-        `### 繳費代碼\n` +
-        `# \`${paymentCode ?? "-"}\`\n` +
-        `\n` +
-        `───────────────────` +
-        remarkText,
+        `**繳費代碼**\n` +
+        `\`${paymentCode ?? "-"}\``,
       )
       .addFields(
-        { name: "💰 訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
-        { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
-        { name: "💵 總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
-        { name: "⏰ 繳費期限", value: deadlineText, inline: true },
-        { name: "📌 訂單編號", value: `\`${orderId}\``, inline: true },
+        { name: "繳費超商", value: storeName, inline: true },
+        { name: "訂單金額", value: `$${amount.toLocaleString()}`, inline: true },
+        { name: "手續費", value: `$${fee.toLocaleString()}`, inline: true },
+        { name: "總付款金額", value: `**$${total.toLocaleString()}**`, inline: true },
+        { name: "繳費期限", value: deadlineText, inline: true },
+        { name: "訂單編號", value: `\`${orderId}\``, inline: true },
+        ...(remark ? [{ name: "備註", value: remark, inline: false }] : []),
       )
       .setFooter({ text: "繳費完成後系統會自動更新狀態 | 此為自動發送的私人訊息" })
       .setTimestamp();
@@ -305,8 +302,8 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
 
 async function handleCancel(interaction: any) {
   const embed = new EmbedBuilder()
-    .setTitle("❌ 付款已取消")
-    .setColor(0xef4444)
+    .setTitle("付款已取消")
+    .setColor(RP_THEME_COLOR)
     .setDescription("此付款已取消，如需重新付款請使用 `/rp`")
     .setTimestamp();
 
