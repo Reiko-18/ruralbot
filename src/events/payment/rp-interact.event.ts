@@ -50,6 +50,11 @@ function getStoreEmoji(interaction: any, store: string): string {
   return resolveClientEmoji(interaction.client, emoji);
 }
 
+function formatDisplayOrderId(orderId: string): string {
+  const parts = orderId.split("-");
+  return parts.at(-1) ?? orderId.slice(-6);
+}
+
 export function registerRpInteractEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton() && !interaction.isModalSubmit()) return;
@@ -350,24 +355,26 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   const storeEmoji = getStoreEmoji(interaction, store);
   const deadlineText = payEndDate ?? "依超商規定";
   const paymentEmoji = getPaymentEmoji(interaction);
+  const displayOrderId = formatDisplayOrderId(orderId);
+  const paymentCodeText = paymentCode ?? "-";
 
   const resultEmbed = new EmbedBuilder()
-    .setTitle(`${paymentEmoji} 已成功建立消費紀錄`)
+    .setTitle(`${paymentEmoji} 超商繳費單`)
     .setColor(RP_THEME_COLOR)
     .setThumbnail(getBotThumbnail(interaction))
     .setDescription(
-      `◆ 用戶：<@${interaction.user.id}>\n` +
-      `◆ 編號：\`${orderId}\`\n` +
-      `◆ 超商：${storeEmoji} ${storeName}\n` +
+      `◆ 請至 ${storeEmoji} **${storeName}** 使用以下代碼繳費\n` +
+      `◇ 繳費代碼：\n` +
+      `# \`${paymentCodeText}\`\n` +
+      `◇ 訂單短碼：\`${displayOrderId}\`\n` +
       `◆ 備註：${remark || "無"}`,
     )
     .addFields(
-      { name: "◇ 消費日期", value: `└ <t:${Math.floor(Date.now() / 1000)}:D>`, inline: true },
-      { name: "◇ 消費金額", value: `└ ${total.toLocaleString()}`, inline: true },
-      { name: "◇ 消費編號", value: `└ #${orderId}`, inline: true },
-      { name: "◇ 繳費代碼", value: `└ \`${paymentCode ?? "-"}\``, inline: true },
+      { name: "◇ 繳費位置", value: `└ ${storeEmoji} **${storeName}**`, inline: false },
+      { name: "◇ 總付款金額", value: `└ **$${total.toLocaleString()}**`, inline: true },
       { name: "◇ 付款期限", value: `└ ${deadlineText}`, inline: true },
       { name: "◇ 手續費", value: `└ ${fee.toLocaleString()} 元`, inline: true },
+      { name: "◇ 訂單短碼", value: `└ \`${displayOrderId}\``, inline: true },
     )
     .setFooter({ text: "◆ 繳費完成後系統會自動更新狀態 ◆ RuralBot" })
     .setTimestamp();
@@ -382,15 +389,17 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
       .setThumbnail(getBotThumbnail(interaction))
       .setDescription(
         `◆ 請至 ${storeEmoji} **${storeName}** 使用以下代碼繳費\n` +
-        `◇ 繳費代碼：\`${paymentCode ?? "-"}\``,
+        `◇ 繳費代碼：\n` +
+        `# \`${paymentCodeText}\`\n` +
+        `◇ 訂單短碼：\`${displayOrderId}\``,
       )
       .addFields(
-        { name: "◇ 繳費超商", value: `└ ${storeEmoji} ${storeName}`, inline: true },
+        { name: "◇ 繳費位置", value: `└ ${storeEmoji} **${storeName}**`, inline: false },
         { name: "◇ 訂單金額", value: `└ $${amount.toLocaleString()}`, inline: true },
         { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
         { name: "◇ 總付款金額", value: `└ **$${total.toLocaleString()}**`, inline: true },
         { name: "◇ 繳費期限", value: `└ ${deadlineText}`, inline: true },
-        { name: "◇ 訂單編號", value: `└ \`${orderId}\``, inline: true },
+        { name: "◇ 訂單短碼", value: `└ \`${displayOrderId}\``, inline: true },
         ...(remark ? [{ name: "◇ 備註", value: `└ ${remark}`, inline: false }] : []),
       )
       .setFooter({ text: "◆ 繳費完成後系統會自動更新狀態 ◆ 自動私人訊息" })
