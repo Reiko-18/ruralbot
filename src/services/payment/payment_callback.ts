@@ -12,6 +12,8 @@ import { resolveClientEmoji } from "../discord/emoji.js";
 
 const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
 const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
+const FAMILY_MART_EMOJI = "<:FamilyMart:1332695203735142440>";
+const SEVEN_ELEVEN_EMOJI = "<:711:1332695189403336738>";
 
 export async function handleCallback(
   rawData: Record<string, string>,
@@ -130,7 +132,7 @@ async function sendPaymentSuccessNotifications(
   },
 ): Promise<void> {
   const store = transaction.paymentStore ?? "";
-  const storeEmoji = store === "711" ? "🏪" : "🏬";
+  const storeEmoji = resolveClientEmoji(client, store === "711" ? SEVEN_ELEVEN_EMOJI : FAMILY_MART_EMOJI);
   const storeName = STORE_LABELS[store] ?? "超商";
   const originalAmount = transaction.originalAmount ?? transaction.amount;
   const fee = transaction.feeAmount ?? 0;

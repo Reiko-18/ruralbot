@@ -10,6 +10,8 @@ import { resolveButtonEmoji, resolveClientEmoji } from "../../services/discord/e
 
 const RP_THEME_COLOR = 0xb8a7ff;
 const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
+const FAMILY_MART_EMOJI = "<:FamilyMart:1332695203735142440>";
+const SEVEN_ELEVEN_EMOJI = "<:711:1332695189403336738>";
 
 export const data = new SlashCommandBuilder()
   .setName("rp")
@@ -28,7 +30,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const ts = Math.floor(Date.now() / 1000);
   const encodedRemark = encodeURIComponent(remark);
   const paymentEmoji = resolveClientEmoji(interaction.client, PAYMENT_EMOJI);
-  const buttonEmoji = resolveButtonEmoji(interaction.client, PAYMENT_EMOJI);
+  const familyMartEmoji = resolveButtonEmoji(interaction.client, FAMILY_MART_EMOJI);
+  const sevenElevenEmoji = resolveButtonEmoji(interaction.client, SEVEN_ELEVEN_EMOJI);
 
   const descLines = [
     `${paymentEmoji} **已建立一筆超商代碼繳費單**`,
@@ -53,12 +56,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     new ButtonBuilder()
       .setCustomId(`rp:${userId}:${ts}:store:fami:${amount}:${encodedRemark}`)
       .setLabel("全家 FamilyMart")
-      .setEmoji(buttonEmoji)
+      .setEmoji(familyMartEmoji)
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`rp:${userId}:${ts}:store:711:${amount}:${encodedRemark}`)
       .setLabel("7-11 ibon")
-      .setEmoji("🏪")
+      .setEmoji(sevenElevenEmoji)
       .setStyle(ButtonStyle.Primary),
   );
 

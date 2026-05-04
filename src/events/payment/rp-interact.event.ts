@@ -21,6 +21,8 @@ const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711":
 const STORE_PAY_ZG: Record<string, string> = { fami: "6", "711": "4" };
 const RP_THEME_COLOR = 0xb8a7ff;
 const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
+const FAMILY_MART_EMOJI = "<:FamilyMart:1332695203735142440>";
+const SEVEN_ELEVEN_EMOJI = "<:711:1332695189403336738>";
 const buyerInfoCache = new Map<string, BuyerInfo>();
 
 function buildBuyerInfoKey(parts: string[]): string {
@@ -41,6 +43,11 @@ function getPaymentEmoji(interaction: any): string {
 
 function getPaymentButtonEmoji(interaction: any) {
   return resolveButtonEmoji(interaction.client, PAYMENT_EMOJI);
+}
+
+function getStoreEmoji(interaction: any, store: string): string {
+  const emoji = store === "711" ? SEVEN_ELEVEN_EMOJI : FAMILY_MART_EMOJI;
+  return resolveClientEmoji(interaction.client, emoji);
 }
 
 export function registerRpInteractEvent(client: Client): void {
@@ -107,11 +114,12 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
   const total = amount + fee;
 
   const storeName = STORE_LABELS[store] ?? store;
+  const storeEmoji = getStoreEmoji(interaction, store);
   const paymentEmoji = getPaymentEmoji(interaction);
   const descLines = [
     `${paymentEmoji} **再次確認您的付款方式**`,
     `◆ 訂單金額：${amount.toLocaleString()} 新台幣`,
-    `◆ 付款方式：${storeName} 代碼繳費`,
+    `◆ 付款方式：${storeEmoji} ${storeName} 代碼繳費`,
   ];
   const remark = encodedRemark ? decodeURIComponent(encodedRemark) : "";
 
@@ -339,6 +347,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
 
   // Build result embed
   const storeName = STORE_LABELS[store] ?? store;
+  const storeEmoji = getStoreEmoji(interaction, store);
   const deadlineText = payEndDate ?? "依超商規定";
   const paymentEmoji = getPaymentEmoji(interaction);
 
@@ -349,7 +358,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
     .setDescription(
       `◆ 用戶：<@${interaction.user.id}>\n` +
       `◆ 編號：\`${orderId}\`\n` +
-      `◆ 超商：${storeName}\n` +
+      `◆ 超商：${storeEmoji} ${storeName}\n` +
       `◆ 備註：${remark || "無"}`,
     )
     .addFields(
@@ -372,11 +381,11 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
       .setColor(RP_THEME_COLOR)
       .setThumbnail(getBotThumbnail(interaction))
       .setDescription(
-        `◆ 請至 **${storeName}** 使用以下代碼繳費\n` +
+        `◆ 請至 ${storeEmoji} **${storeName}** 使用以下代碼繳費\n` +
         `◇ 繳費代碼：\`${paymentCode ?? "-"}\``,
       )
       .addFields(
-        { name: "◇ 繳費超商", value: `└ ${storeName}`, inline: true },
+        { name: "◇ 繳費超商", value: `└ ${storeEmoji} ${storeName}`, inline: true },
         { name: "◇ 訂單金額", value: `└ $${amount.toLocaleString()}`, inline: true },
         { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
         { name: "◇ 總付款金額", value: `└ **$${total.toLocaleString()}**`, inline: true },
