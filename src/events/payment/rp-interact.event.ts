@@ -366,7 +366,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
       `◆ 請至 ${storeEmoji} **${storeName}** 使用以下代碼繳費\n` +
       `◇ 繳費代碼：\n` +
       `# \`${paymentCodeText}\`\n` +
-      `◇ 訂單短碼：\`${displayOrderId}\`\n` +
+      `◇ 訂單編號：\`${displayOrderId}\`\n` +
       `◆ 備註：${remark || "無"}`,
     )
     .addFields(
@@ -374,7 +374,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
       { name: "◇ 總付款金額", value: `└ **$${total.toLocaleString()}**`, inline: true },
       { name: "◇ 付款期限", value: `└ ${deadlineText}`, inline: true },
       { name: "◇ 手續費", value: `└ ${fee.toLocaleString()} 元`, inline: true },
-      { name: "◇ 訂單短碼", value: `└ \`${displayOrderId}\``, inline: true },
+      { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
     )
     .setFooter({ text: "◆ 繳費完成後系統會自動更新狀態 ◆ RuralBot" })
     .setTimestamp();
@@ -391,7 +391,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
         `◆ 請至 ${storeEmoji} **${storeName}** 使用以下代碼繳費\n` +
         `◇ 繳費代碼：\n` +
         `# \`${paymentCodeText}\`\n` +
-        `◇ 訂單短碼：\`${displayOrderId}\``,
+        `◇ 訂單編號：\`${displayOrderId}\``,
       )
       .addFields(
         { name: "◇ 繳費位置", value: `└ ${storeEmoji} **${storeName}**`, inline: false },
@@ -399,7 +399,7 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
         { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
         { name: "◇ 總付款金額", value: `└ **$${total.toLocaleString()}**`, inline: true },
         { name: "◇ 繳費期限", value: `└ ${deadlineText}`, inline: true },
-        { name: "◇ 訂單短碼", value: `└ \`${displayOrderId}\``, inline: true },
+        { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
         ...(remark ? [{ name: "◇ 備註", value: `└ ${remark}`, inline: false }] : []),
       )
       .setFooter({ text: "◆ 繳費完成後系統會自動更新狀態 ◆ 自動私人訊息" })

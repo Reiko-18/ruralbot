@@ -150,13 +150,13 @@ async function sendPaymentSuccessNotifications(
     .setColor(0x22c55e)
     .setDescription(
       `◆ 超商：${storeEmoji} **${storeName}**\n` +
-      `◆ 訂單短碼：\`${displayOrderId}\`\n` +
+      `◆ 訂單編號：\`${displayOrderId}\`\n` +
       `◆ 備註：${transaction.remark || "無"}`,
     )
     .addFields(
       { name: "◇ 消費日期", value: `└ <t:${Math.floor(Date.now() / 1000)}:D>`, inline: true },
       { name: "◇ 消費金額", value: `└ ${transaction.amount.toLocaleString()}`, inline: true },
-      { name: "◇ 消費短碼", value: `└ #${displayOrderId}`, inline: true },
+      { name: "◇ 消費編號", value: `└ #${displayOrderId}`, inline: true },
       { name: "◇ 訂單金額", value: `└ $${originalAmount.toLocaleString()}`, inline: true },
       { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
       { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
@@ -180,10 +180,10 @@ async function sendPaymentSuccessNotifications(
             .setColor(0x22c55e)
             .setDescription(
               `◆ 此筆訂單已繳費完成\n` +
-              `◆ 訂單短碼：\`${displayOrderId}\``,
+              `◆ 訂單編號：\`${displayOrderId}\``,
             )
             .addFields(
-              { name: "◇ 訂單短碼", value: `└ \`${displayOrderId}\``, inline: true },
+              { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
               { name: `◇ ${storeEmoji} 繳費超商`, value: `└ ${storeName}`, inline: true },
               { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
             )
@@ -212,10 +212,10 @@ async function sendPaymentSuccessNotifications(
         .setColor(0x22c55e)
         .setDescription(
           `◆ 您在 ${storeEmoji} **${storeName}** 的繳費已完成\n` +
-          `◆ 訂單短碼：\`${displayOrderId}\``,
+          `◆ 訂單編號：\`${displayOrderId}\``,
         )
         .addFields(
-          { name: "◇ 訂單短碼", value: `└ \`${displayOrderId}\``, inline: true },
+          { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
           { name: "◇ 訂單金額", value: `└ $${originalAmount.toLocaleString()}`, inline: true },
           { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
           { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
