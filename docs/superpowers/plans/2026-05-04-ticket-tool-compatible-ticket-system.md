@@ -35,6 +35,7 @@
 - 遠端部署：`/var/www/ruralbot` 已在 `14dcb2e`，`npx prisma migrate status` 顯示 database schema up to date，`/healthz` 回傳 `{"ok":true,"discordReady":true}`。
 - 部署優化：根目錄 `build` 腳本內的 dashboard 安裝流程由 `npm install --include=dev` 改為 `npm ci --include=dev`，避免 production build 時因 npm 版本差異改寫 `dashboard/package-lock.json`。
 - 相依修補：非破壞性更新 lockfile，修補 dashboard Vite/PostCSS/picomatch 與根專案可安全更新的 Discord/undici、fast-xml-parser 等相依弱點。
+- 2026-05-05 遠端設定：移除票口面板 Embed author 區塊，避免最上方重複顯示「客服中心」。
 
 ## Obsidian
 
