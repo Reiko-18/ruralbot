@@ -112,6 +112,10 @@ export interface TicketConfig {
   transcriptTarget: string;
   transcriptLogMessage: string | null;
   transcriptDmMessage: string | null;
+  maxOpenPerUser: number | null;
+  openCooldownSeconds: number | null;
+  channelNameFormat: string | null;
+  supportRoleIds: string | null;
 }
 
 export interface TicketButtonType {
@@ -127,6 +131,9 @@ export interface TicketButtonType {
   notifyRoleIds: string | null;
   autoRemindHours: number | null;
   autoCloseHours: number | null;
+  maxOpenPerUser: number | null;
+  cooldownSeconds: number | null;
+  questions: string | null;
   order: number;
 }
 
@@ -151,6 +158,7 @@ export interface TicketInstance {
   claimedById: string | null;
   locked: boolean;
   closeReason: string | null;
+  formAnswers: string | null;
   closedById: string | null;
   lastActivityAt: string;
   reminded: boolean;

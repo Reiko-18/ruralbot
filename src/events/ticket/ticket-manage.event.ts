@@ -78,14 +78,31 @@ export function registerTicketManageEvent(client: Client): void {
   });
 }
 
+function parseRoleIds(raw?: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as string[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return raw.split(/[,\s]+/);
+  }
+}
+
 function hasAdminPermission(interaction: ButtonInteraction | ModalSubmitInteraction): boolean {
   const member = interaction.member as any;
   return Boolean(member?.permissions?.has?.(PermissionFlagsBits.Administrator));
 }
 
-async function requireAdmin(interaction: ButtonInteraction | ModalSubmitInteraction): Promise<boolean> {
+function hasSupportRole(interaction: ButtonInteraction | ModalSubmitInteraction, instance: any): boolean {
+  const member = interaction.member as any;
+  const roleIds = parseRoleIds(instance?.config?.supportRoleIds).filter((id) => /^\d{15,25}$/.test(id));
+  return roleIds.some((roleId) => member?.roles?.cache?.has?.(roleId));
+}
+
+async function requireAdmin(interaction: ButtonInteraction | ModalSubmitInteraction, instance?: any): Promise<boolean> {
   if (hasAdminPermission(interaction)) return true;
-  await interaction.reply({ content: "❌ 只有管理員可以操作票口管理功能。", flags: MessageFlags.Ephemeral });
+  if (instance && hasSupportRole(interaction, instance)) return true;
+  await interaction.reply({ content: "❌ 只有管理員或支援角色可以操作票口管理功能。", flags: MessageFlags.Ephemeral });
   return false;
 }
 
@@ -157,7 +174,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
 
   switch (interaction.customId) {
     case TICKET_CLOSE_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       const modal = new ModalBuilder()
         .setCustomId(TICKET_CLOSE_MODAL_ID)
         .setTitle("關閉票口");
@@ -172,7 +189,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
     }
 
     case TICKET_CLAIM_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       if (instance.claimedById && instance.claimedById !== interaction.user.id) {
         await interaction.reply({
           content: `❌ 此票口已由 <@${instance.claimedById}> 認領。`,
@@ -190,7 +207,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
     }
 
     case TICKET_LOCK_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       const nextLocked = !instance.locked;
       await channel.permissionOverwrites.edit(instance.creatorId, {
         SendMessages: !nextLocked,
@@ -203,7 +220,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
 
     case TICKET_ADD_USER_ID:
     case TICKET_REMOVE_USER_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       const isAdd = interaction.customId === TICKET_ADD_USER_ID;
       const modal = new ModalBuilder()
         .setCustomId(isAdd ? TICKET_ADD_USER_MODAL_ID : TICKET_REMOVE_USER_MODAL_ID)
@@ -219,7 +236,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
     }
 
     case TICKET_RENAME_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       const modal = new ModalBuilder()
         .setCustomId(TICKET_RENAME_MODAL_ID)
         .setTitle("重新命名票口");
@@ -234,7 +251,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
     }
 
     case TICKET_REOPEN_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       await interaction.deferReply();
 
       await channel.permissionOverwrites.edit(instance.creatorId, {
@@ -268,7 +285,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
     }
 
     case TICKET_DELETE_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       const confirmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder().setCustomId(TICKET_DELETE_CONFIRM_ID).setLabel("確認刪除").setStyle(ButtonStyle.Danger),
       );
@@ -281,7 +298,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
     }
 
     case TICKET_DELETE_CONFIRM_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       await interaction.deferUpdate();
       await updateInstanceStatus(channel.id, "ARCHIVED");
       logger.info({ ticketNum: instance.ticketNum, deletedBy: interaction.user.id }, "Ticket deleted");
@@ -290,7 +307,7 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
     }
 
     case TICKET_TRANSCRIPT_ID: {
-      if (!(await requireAdmin(interaction))) return;
+      if (!(await requireAdmin(interaction, instance))) return;
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       await generateAndSendTranscript(
         client,
@@ -318,7 +335,6 @@ async function handleButton(client: Client, interaction: ButtonInteraction): Pro
 }
 
 async function handleModal(client: Client, interaction: ModalSubmitInteraction): Promise<void> {
-  if (!(await requireAdmin(interaction))) return;
   if (!interaction.channelId) {
     await interaction.reply({ content: "❌ 此操作必須在票口頻道內執行。", flags: MessageFlags.Ephemeral });
     return;
@@ -329,6 +345,7 @@ async function handleModal(client: Client, interaction: ModalSubmitInteraction):
     await interaction.reply({ content: "❌ 此頻道不是票口。", flags: MessageFlags.Ephemeral });
     return;
   }
+  if (!(await requireAdmin(interaction, instance))) return;
 
   switch (interaction.customId) {
     case TICKET_CLOSE_MODAL_ID: {

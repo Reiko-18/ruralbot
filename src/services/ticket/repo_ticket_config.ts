@@ -31,6 +31,10 @@ export async function upsertTicketConfig(
     transcriptTarget?: string;
     transcriptLogMessage?: string | null;
     transcriptDmMessage?: string | null;
+    maxOpenPerUser?: number | null;
+    openCooldownSeconds?: number | null;
+    channelNameFormat?: string | null;
+    supportRoleIds?: string | null;
   },
 ) {
   const config = await prisma.ticketConfig.upsert({

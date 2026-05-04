@@ -20,6 +20,21 @@ export const TICKET_REMOVE_USER_MODAL_ID = "ticket_remove_user_modal";
 export const TICKET_USER_INPUT_ID = "ticket_user_id";
 export const TICKET_RENAME_MODAL_ID = "ticket_rename_modal";
 export const TICKET_RENAME_INPUT_ID = "ticket_rename_value";
+export const TICKET_CREATE_MODAL_PREFIX = "ticket_create_modal_";
+export const TICKET_CREATE_QUESTION_PREFIX = "ticket_create_question_";
+
+export interface TicketQuestion {
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  style?: "short" | "paragraph";
+  maxLength?: number;
+}
+
+export interface TicketFormAnswer {
+  label: string;
+  value: string;
+}
 
 export interface TicketEmbedSettings {
   color?: string;

@@ -193,6 +193,10 @@ model TicketConfig {
   transcriptTarget     String   @default("both") @map("transcript_target")
   transcriptLogMessage String?  @db.Text @map("transcript_log_message")
   transcriptDmMessage  String?  @db.Text @map("transcript_dm_message")
+  maxOpenPerUser       Int?     @map("max_open_per_user")
+  openCooldownSeconds  Int?     @map("open_cooldown_seconds")
+  channelNameFormat    String?  @map("channel_name_format")
+  supportRoleIds       String?  @db.Text @map("support_role_ids")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -216,6 +220,9 @@ model TicketButtonType {
   notifyRoleIds   String?  @db.Text @map("notify_role_ids")
   autoRemindHours Int?     @map("auto_remind_hours")
   autoCloseHours  Int?     @map("auto_close_hours")
+  maxOpenPerUser  Int?     @map("max_open_per_user")
+  cooldownSeconds Int?     @map("cooldown_seconds")
+  questions       String?  @db.Text
   order           Int      @default(0)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -252,6 +259,7 @@ model TicketInstance {
   claimedById    String?   @map("claimed_by_id")
   locked         Boolean   @default(false)
   closeReason    String?   @db.Text @map("close_reason")
+  formAnswers     String?   @db.Text @map("form_answers")
   closedById     String?   @map("closed_by_id")
   lastActivityAt DateTime  @default(now()) @map("last_activity_at")
   reminded       Boolean   @default(false)

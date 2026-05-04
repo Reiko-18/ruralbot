@@ -8,6 +8,7 @@ export async function createInstance(data: {
   channelId: string;
   creatorId: string;
   ticketNum: number;
+  formAnswers?: string;
 }) {
   const instance = await prisma.ticketInstance.create({ data });
   logger.info({ id: instance.id, ticketNum: data.ticketNum }, "Ticket instance created");
@@ -55,6 +56,28 @@ export async function getInstances(params: {
     orderBy: { createdAt: "desc" },
     take: params.limit ?? 50,
     skip: params.offset ?? 0,
+  });
+}
+
+export async function countOpenInstancesForUser(configId: string, creatorId: string, buttonTypeId?: string | null) {
+  return prisma.ticketInstance.count({
+    where: {
+      configId,
+      creatorId,
+      status: "OPEN",
+      ...(buttonTypeId ? { buttonTypeId } : {}),
+    },
+  });
+}
+
+export async function getLatestInstanceForUser(configId: string, creatorId: string, buttonTypeId?: string | null) {
+  return prisma.ticketInstance.findFirst({
+    where: {
+      configId,
+      creatorId,
+      ...(buttonTypeId ? { buttonTypeId } : {}),
+    },
+    orderBy: { createdAt: "desc" },
   });
 }
 

@@ -28,6 +28,10 @@ interface SubTicketForm {
   categoryOpenId: string;
   categoryCloseId: string;
   welcomeMessage: string;
+  notifyRoleIds: string;
+  maxOpenPerUser: string;
+  cooldownSeconds: string;
+  questions: string;
 }
 
 const emptyForm: SubTicketForm = {
@@ -37,6 +41,10 @@ const emptyForm: SubTicketForm = {
   categoryOpenId: "",
   categoryCloseId: "",
   welcomeMessage: "",
+  notifyRoleIds: "",
+  maxOpenPerUser: "",
+  cooldownSeconds: "",
+  questions: "",
 };
 
 export function TicketSubTickets({ configId, guildId }: Props) {
@@ -81,6 +89,10 @@ export function TicketSubTickets({ configId, guildId }: Props) {
       categoryOpenId: bt.categoryOpenId ?? "",
       categoryCloseId: bt.categoryCloseId ?? "",
       welcomeMessage: bt.welcomeMessage ?? "",
+      notifyRoleIds: bt.notifyRoleIds ?? "",
+      maxOpenPerUser: bt.maxOpenPerUser?.toString() ?? "",
+      cooldownSeconds: bt.cooldownSeconds?.toString() ?? "",
+      questions: bt.questions ?? "",
     });
   };
 
@@ -104,6 +116,10 @@ export function TicketSubTickets({ configId, guildId }: Props) {
         categoryOpenId: form.categoryOpenId || null,
         categoryCloseId: form.categoryCloseId || null,
         welcomeMessage: form.welcomeMessage.trim() || null,
+        notifyRoleIds: form.notifyRoleIds.trim() || null,
+        maxOpenPerUser: form.maxOpenPerUser ? parseInt(form.maxOpenPerUser, 10) : null,
+        cooldownSeconds: form.cooldownSeconds ? parseInt(form.cooldownSeconds, 10) : null,
+        questions: form.questions.trim() || null,
       };
       if (editingId) {
         await updateButtonTypeApi(editingId, payload);
@@ -215,6 +231,51 @@ export function TicketSubTickets({ configId, guildId }: Props) {
         <p className="text-xs text-gray-500 mt-1">留空則使用預設歡迎詞</p>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">通知/可見角色 IDs</label>
+          <input
+            className="glow-input w-full"
+            value={form.notifyRoleIds}
+            onChange={(e) => setForm({ ...form, notifyRoleIds: e.target.value })}
+            placeholder='["role_id_1"]'
+          />
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">每人同時開啟上限</label>
+          <input
+            className="glow-input w-full"
+            type="number"
+            min="0"
+            value={form.maxOpenPerUser}
+            onChange={(e) => setForm({ ...form, maxOpenPerUser: e.target.value })}
+            placeholder="留空=用全局"
+          />
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">冷卻秒數</label>
+          <input
+            className="glow-input w-full"
+            type="number"
+            min="0"
+            value={form.cooldownSeconds}
+            onChange={(e) => setForm({ ...form, cooldownSeconds: e.target.value })}
+            placeholder="留空=用全局"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-400 block mb-1">開票表單問題 JSON</label>
+        <textarea
+          className="glow-input w-full min-h-[120px] font-mono text-xs"
+          value={form.questions}
+          onChange={(e) => setForm({ ...form, questions: e.target.value })}
+          placeholder='[{"label":"請描述問題","style":"paragraph","required":true},{"label":"訂單編號","placeholder":"可留空","required":false}]'
+        />
+        <p className="text-xs text-gray-500 mt-1">最多 5 題；style 可用 short 或 paragraph。</p>
+      </div>
+
       {/* Actions */}
       <div className="flex gap-2">
         <button className="btn-accent" onClick={handleSave} disabled={saving}>
@@ -254,6 +315,11 @@ export function TicketSubTickets({ configId, guildId }: Props) {
                   {bt.welcomeMessage && (
                     <div className="text-xs text-gray-500 mt-0.5 truncate">
                       歡迎詞: {bt.welcomeMessage}
+                    </div>
+                  )}
+                  {(bt.maxOpenPerUser || bt.cooldownSeconds || bt.questions) && (
+                    <div className="text-xs text-gray-500 mt-0.5 truncate">
+                      上限: {bt.maxOpenPerUser ?? "全局"} · 冷卻: {bt.cooldownSeconds ?? "全局"} 秒 · 表單: {bt.questions ? "已啟用" : "未啟用"}
                     </div>
                   )}
                 </div>

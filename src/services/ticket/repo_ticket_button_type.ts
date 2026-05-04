@@ -24,6 +24,9 @@ export async function createButtonType(data: {
   notifyRoleIds?: string;
   autoRemindHours?: number;
   autoCloseHours?: number;
+  maxOpenPerUser?: number;
+  cooldownSeconds?: number;
+  questions?: string;
 }) {
   const maxOrder = await prisma.ticketButtonType.aggregate({
     where: { configId: data.configId },
@@ -49,6 +52,9 @@ export async function updateButtonType(
     notifyRoleIds?: string | null;
     autoRemindHours?: number | null;
     autoCloseHours?: number | null;
+    maxOpenPerUser?: number | null;
+    cooldownSeconds?: number | null;
+    questions?: string | null;
   },
 ) {
   const btn = await prisma.ticketButtonType.update({ where: { id }, data });
