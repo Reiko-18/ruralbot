@@ -8,8 +8,10 @@ import {
 import { getPaymentConfig, getEffectiveCredentials } from "./repo_payment_config.js";
 import { buildMidSmilepay } from "./smilepay_api.js";
 import type { SmilePayCallbackData } from "../../types/payment.type.js";
+import { resolveClientEmoji } from "../discord/emoji.js";
 
 const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
+const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
 
 export async function handleCallback(
   rawData: Record<string, string>,
@@ -132,27 +134,30 @@ async function sendPaymentSuccessNotifications(
   const storeName = STORE_LABELS[store] ?? "超商";
   const originalAmount = transaction.originalAmount ?? transaction.amount;
   const fee = transaction.feeAmount ?? 0;
+  const paymentEmoji = resolveClientEmoji(client, PAYMENT_EMOJI);
 
   // Build the success embed for channel notification
   const successEmbed = new EmbedBuilder()
-    .setTitle("✅ 繳費成功")
+    .setTitle(`${paymentEmoji} 已成功登入消費紀錄`)
     .setColor(0x22c55e)
     .setDescription(
-      `${storeEmoji} **${storeName}** 繳費已完成！\n` +
-      `\n` +
-      `───────────────────`,
+      `◆ 超商：${storeEmoji} **${storeName}**\n` +
+      `◆ 編號：\`${transaction.orderId}\`\n` +
+      `◆ 備註：${transaction.remark || "無"}`,
     )
     .addFields(
-      { name: "📌 訂單編號", value: `\`${transaction.orderId}\``, inline: true },
-      { name: "💰 訂單金額", value: `$${originalAmount.toLocaleString()}`, inline: true },
-      { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
-      { name: "💵 實付金額", value: `**$${transaction.amount.toLocaleString()}**`, inline: true },
+      { name: "◇ 消費日期", value: `└ <t:${Math.floor(Date.now() / 1000)}:D>`, inline: true },
+      { name: "◇ 消費金額", value: `└ ${transaction.amount.toLocaleString()}`, inline: true },
+      { name: "◇ 消費編號", value: `└ #${transaction.orderId}`, inline: true },
+      { name: "◇ 訂單金額", value: `└ $${originalAmount.toLocaleString()}`, inline: true },
+      { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
+      { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
     )
-    .setFooter({ text: "感謝您的付款" })
+    .setFooter({ text: "◆ 繳費成功 ◆ RuralBot" })
     .setTimestamp();
 
   if (transaction.remark) {
-    successEmbed.addFields({ name: "📝 備註", value: transaction.remark, inline: false });
+    successEmbed.addFields({ name: "◇ 備註", value: `└ ${transaction.remark}`, inline: false });
   }
 
   // Update the original message embed to show completed status
@@ -163,19 +168,18 @@ async function sendPaymentSuccessNotifications(
         const message = await channel.messages.fetch(transaction.messageId);
         if (message) {
           const updatedEmbed = new EmbedBuilder()
-            .setTitle("✅ 繳費完成")
+            .setTitle(`${paymentEmoji} 繳費完成`)
             .setColor(0x22c55e)
             .setDescription(
-              `此筆訂單已繳費完成\n` +
-              `\n` +
-              `───────────────────`,
+              `◆ 此筆訂單已繳費完成\n` +
+              `◆ 編號：\`${transaction.orderId}\``,
             )
             .addFields(
-              { name: "📌 訂單編號", value: `\`${transaction.orderId}\``, inline: true },
-              { name: `${storeEmoji} 繳費超商`, value: storeName, inline: true },
-              { name: "💵 實付金額", value: `**$${transaction.amount.toLocaleString()}**`, inline: true },
+              { name: "◇ 訂單編號", value: `└ \`${transaction.orderId}\``, inline: true },
+              { name: `◇ ${storeEmoji} 繳費超商`, value: `└ ${storeName}`, inline: true },
+              { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
             )
-            .setFooter({ text: "繳費成功" })
+            .setFooter({ text: "◆ 繳費成功 ◆ RuralBot" })
             .setTimestamp();
 
           await message.edit({ embeds: [updatedEmbed], components: [] });
@@ -196,24 +200,23 @@ async function sendPaymentSuccessNotifications(
     try {
       const user = await client.users.fetch(transaction.userId);
       const dmEmbed = new EmbedBuilder()
-        .setTitle("✅ 繳費成功")
+        .setTitle(`${paymentEmoji} 繳費成功`)
         .setColor(0x22c55e)
         .setDescription(
-          `${storeEmoji} 您在 **${storeName}** 的繳費已完成！\n` +
-          `\n` +
-          `───────────────────`,
+          `◆ 您在 ${storeEmoji} **${storeName}** 的繳費已完成\n` +
+          `◆ 編號：\`${transaction.orderId}\``,
         )
         .addFields(
-          { name: "📌 訂單編號", value: `\`${transaction.orderId}\``, inline: true },
-          { name: "💰 訂單金額", value: `$${originalAmount.toLocaleString()}`, inline: true },
-          { name: "📋 手續費", value: `$${fee.toLocaleString()}`, inline: true },
-          { name: "💵 實付金額", value: `**$${transaction.amount.toLocaleString()}**`, inline: true },
+          { name: "◇ 訂單編號", value: `└ \`${transaction.orderId}\``, inline: true },
+          { name: "◇ 訂單金額", value: `└ $${originalAmount.toLocaleString()}`, inline: true },
+          { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
+          { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
         )
-        .setFooter({ text: "感謝您的付款 | 此為自動發送的私人訊息" })
+        .setFooter({ text: "◆ 感謝您的付款 ◆ 自動私人訊息" })
         .setTimestamp();
 
       if (transaction.remark) {
-        dmEmbed.addFields({ name: "📝 備註", value: transaction.remark, inline: false });
+        dmEmbed.addFields({ name: "◇ 備註", value: `└ ${transaction.remark}`, inline: false });
       }
 
       await user.send({ embeds: [dmEmbed] });

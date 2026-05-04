@@ -6,6 +6,9 @@
 
 ## 調整內容
 
+- 2026-05-04 追加：新增 Discord 自訂 emoji 解析工具，金流訊息可使用 bot 已加入伺服器中可用的自訂 emoji，包含動態 emoji。
+- 2026-05-04 追加：金流版面指定使用 `<a:ZSz26520125622:1343576083617812502>`，若 cache 中可解析就以 guild emoji 物件渲染，否則保留原始 Discord emoji 格式。
+- 2026-05-04 追加：`/rp` 初始頁、付款方式確認頁、購買人資訊確認頁、取號結果、DM 與 callback 成功通知改用「◆ / ◇ / └」符號裝飾，貼近 Discord 內嵌訊息範例風格。
 - `/rp` 初始繳費單改為淡紫色 embed，使用欄位呈現繳費金額、有效時間與備註。
 - 全家與 7-11 選擇按鈕統一使用 Discord `Primary` 樣式，視覺上接近紫藍色系。
 - 付款方式確認頁參考示例改為「再次確認您的付款方式」，顯示付款金額、手續費與下一步按鈕。
@@ -18,3 +21,10 @@
 
 - `npm run build`：通過。
 - 第二輪參考版面改造後 `npm run build`：通過。
+- 2026-05-04 自訂 emoji 與符號裝飾調整後 `npm run build`：通過。
+
+## 官方文件審查
+
+- Discord 自訂 emoji 可含 `animated` 屬性；discord.js 的 `Emoji#toString()` 會輸出 Discord 訊息中可渲染的 emoji 文字格式。
+- 本次未新增額外 gateway intent；現有 `GatewayIntentBits.Guilds` 已足以取得 bot 加入 guild 的 emoji cache。
+- 變更僅影響 Discord 訊息顯示，不修改 SmilePay API、資料庫 schema、migration 或部署設定。
