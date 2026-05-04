@@ -45,7 +45,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .setDescription(descLines.join("\n"))
     .setThumbnail(interaction.client.user.displayAvatarURL({ size: 128 }))
     .addFields(
-      { name: "◇ 繳費金額", value: `└ **$${amount.toLocaleString()}**`, inline: true },
+      { name: "◇ 訂單金額", value: `└ **$${amount.toLocaleString()}**`, inline: true },
       { name: "◇ 有效時間", value: "└ 15 分鐘", inline: true },
       ...(remark ? [{ name: "◇ 備註", value: `└ ${remark}`, inline: false }] : []),
     )

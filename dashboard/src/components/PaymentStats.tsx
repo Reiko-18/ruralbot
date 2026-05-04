@@ -10,7 +10,9 @@ interface Props {
 }
 
 const STAT_CARDS: { key: string; label: string; icon: typeof DollarSign; color: string; prefix?: string; suffix?: string; isCurrency?: boolean }[] = [
-  { key: "totalAmount", label: "總收款金額", icon: DollarSign, color: "text-violet-400", prefix: "$", isCurrency: true },
+  { key: "totalSalesAmount", label: "訂單售價合計", icon: DollarSign, color: "text-violet-400", prefix: "$", isCurrency: true },
+  { key: "totalPaymentAmount", label: "客人應繳合計", icon: DollarSign, color: "text-emerald-400", prefix: "$", isCurrency: true },
+  { key: "totalFeeAmount", label: "SmilePay 代收手續費", icon: DollarSign, color: "text-amber-400", prefix: "$", isCurrency: true },
   { key: "totalCount", label: "總交易筆數", icon: Hash, color: "text-blue-400" },
   { key: "completionRate", label: "完成率", icon: TrendingUp, color: "text-cyan-400", suffix: "%" },
   { key: "completedCount", label: "已完成", icon: CheckCircle, color: "text-emerald-400" },
@@ -41,7 +43,9 @@ export function PaymentStats({ guildId }: Props) {
     : 0;
 
   const values: Record<string, number> = {
-    totalAmount: stats.totalAmount,
+    totalSalesAmount: stats.totalSalesAmount ?? stats.totalAmount,
+    totalPaymentAmount: stats.totalPaymentAmount ?? stats.totalAmount,
+    totalFeeAmount: stats.totalFeeAmount ?? 0,
     totalCount: stats.totalCount,
     completionRate,
     completedCount: stats.completedCount,
@@ -68,7 +72,7 @@ export function PaymentStats({ guildId }: Props) {
         {STAT_CARDS.map((card, i) => {
           const Icon = card.icon;
           const val = values[card.key];
-          const isHighlight = card.key === "totalAmount";
+          const isHighlight = card.key === "totalSalesAmount";
 
           return (
             <BlurFade key={card.key} delay={0.05 * i} direction="up">

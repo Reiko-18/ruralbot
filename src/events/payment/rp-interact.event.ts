@@ -135,8 +135,8 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
     .setThumbnail(getBotThumbnail(interaction))
     .addFields(
       { name: "◇ 付款金額", value: `└ ${amount.toLocaleString()} 元`, inline: true },
-      { name: "◇ 手續費", value: `└ ${fee.toLocaleString()} 元`, inline: true },
-      { name: "◇ 總付款金額", value: `└ **${total.toLocaleString()} 元**`, inline: false },
+      { name: "◇ SmilePay 代收手續費", value: `└ ${fee.toLocaleString()} 元`, inline: true },
+      { name: "◇ 客人應繳總額", value: `└ **${total.toLocaleString()} 元**`, inline: false },
       ...(remark ? [{ name: "◇ 備註", value: `└ ${remark}`, inline: false }] : []),
     )
     .setFooter({ text: "◆ 請確認金額與超商後繼續 ◆ RuralBot" })
@@ -371,9 +371,9 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
     )
     .addFields(
       { name: "◇ 繳費位置", value: `└ ${storeEmoji} **${storeName}**`, inline: false },
-      { name: "◇ 總付款金額", value: `└ **$${total.toLocaleString()}**`, inline: true },
+      { name: "◇ 客人應繳總額", value: `└ **$${total.toLocaleString()}**`, inline: true },
       { name: "◇ 付款期限", value: `└ ${deadlineText}`, inline: true },
-      { name: "◇ 手續費", value: `└ ${fee.toLocaleString()} 元`, inline: true },
+      { name: "◇ SmilePay 代收手續費", value: `└ ${fee.toLocaleString()} 元`, inline: true },
       { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
     )
     .setFooter({ text: "◆ 繳費完成後系統會自動更新狀態 ◆ RuralBot" })
@@ -396,8 +396,8 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
       .addFields(
         { name: "◇ 繳費位置", value: `└ ${storeEmoji} **${storeName}**`, inline: false },
         { name: "◇ 訂單金額", value: `└ $${amount.toLocaleString()}`, inline: true },
-        { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
-        { name: "◇ 總付款金額", value: `└ **$${total.toLocaleString()}**`, inline: true },
+        { name: "◇ SmilePay 代收手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
+        { name: "◇ 客人應繳總額", value: `└ **$${total.toLocaleString()}**`, inline: true },
         { name: "◇ 繳費期限", value: `└ ${deadlineText}`, inline: true },
         { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
         ...(remark ? [{ name: "◇ 備註", value: `└ ${remark}`, inline: false }] : []),

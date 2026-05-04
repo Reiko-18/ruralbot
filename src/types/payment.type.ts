@@ -68,6 +68,9 @@ export interface TransactionFilters {
 
 export interface TransactionStats {
   totalAmount: number;
+  totalSalesAmount: number;
+  totalPaymentAmount: number;
+  totalFeeAmount: number;
   totalCount: number;
   completedCount: number;
   pendingCount: number;

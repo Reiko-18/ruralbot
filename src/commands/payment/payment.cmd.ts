@@ -234,7 +234,9 @@ async function handleStats(interaction: ChatInputCommandInteraction, guildId: st
     .setTitle(`近 ${days} 天交易統計`)
     .setColor(0x7c3aed)
     .addFields(
-      { name: "總收款金額", value: `$${stats.totalAmount.toLocaleString()}`, inline: true },
+      { name: "訂單售價合計", value: `$${stats.totalSalesAmount.toLocaleString()}`, inline: true },
+      { name: "客人應繳合計", value: `$${stats.totalPaymentAmount.toLocaleString()}`, inline: true },
+      { name: "SmilePay 代收手續費", value: `$${stats.totalFeeAmount.toLocaleString()}`, inline: true },
       { name: "總交易筆數", value: String(stats.totalCount), inline: true },
       { name: "完成率", value: `${completionRate}%`, inline: true },
       { name: "已完成", value: String(stats.completedCount), inline: true },

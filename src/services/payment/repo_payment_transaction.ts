@@ -110,7 +110,7 @@ export async function getTransactionStats(
     if (endDate) where.createdAt.lt = endDate;
   }
 
-  const [aggregate, statusCounts] = await Promise.all([
+  const [aggregate, statusCounts, completedTransactions] = await Promise.all([
     prisma.paymentTransaction.aggregate({
       where: { ...where, status: "COMPLETED" },
       _sum: { amount: true },
@@ -121,14 +121,31 @@ export async function getTransactionStats(
       where,
       _count: true,
     }),
+    prisma.paymentTransaction.findMany({
+      where: { ...where, status: "COMPLETED" },
+      select: { amount: true, originalAmount: true, feeAmount: true },
+    }),
   ]);
 
   const countByStatus = Object.fromEntries(
     statusCounts.map((s) => [s.status, s._count]),
   );
 
+  const totalPaymentAmount = aggregate._sum.amount ?? 0;
+  const totalSalesAmount = completedTransactions.reduce(
+    (sum, t) => sum + (t.originalAmount ?? t.amount),
+    0,
+  );
+  const totalFeeAmount = completedTransactions.reduce(
+    (sum, t) => sum + (t.feeAmount ?? 0),
+    0,
+  );
+
   return {
-    totalAmount: aggregate._sum.amount ?? 0,
+    totalAmount: totalSalesAmount,
+    totalSalesAmount,
+    totalPaymentAmount,
+    totalFeeAmount,
     totalCount: statusCounts.reduce((sum, s) => sum + s._count, 0),
     completedCount: countByStatus["COMPLETED"] ?? 0,
     pendingCount: countByStatus["PENDING"] ?? 0,

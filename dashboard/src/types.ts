@@ -191,6 +191,8 @@ export interface PaymentTransaction {
   guildId: string;
   orderId: string;
   amount: number;
+  originalAmount: number | null;
+  feeAmount: number | null;
   status: "PENDING" | "COMPLETED" | "FAILED" | "EXPIRED";
   payerName: string | null;
   payerEmail: string | null;
@@ -225,6 +227,9 @@ export interface PaymentTransactionList {
 
 export interface PaymentStats {
   totalAmount: number;
+  totalSalesAmount: number;
+  totalPaymentAmount: number;
+  totalFeeAmount: number;
   totalCount: number;
   completedCount: number;
   pendingCount: number;

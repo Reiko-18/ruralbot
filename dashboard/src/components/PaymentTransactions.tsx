@@ -69,7 +69,9 @@ export function PaymentTransactions({ guildId, refreshKey }: Props) {
               <thead>
                 <tr>
                   <th>訂單編號</th>
-                  <th>金額</th>
+                  <th>訂單售價</th>
+                  <th>代收手續費</th>
+                  <th>客人應繳</th>
                   <th>狀態</th>
                   <th>付款人</th>
                   <th>繳費代碼</th>
@@ -82,7 +84,9 @@ export function PaymentTransactions({ guildId, refreshKey }: Props) {
                   return (
                     <tr key={t.id}>
                       <td className="font-mono text-xs text-violet-400">{t.orderId}</td>
-                      <td>${t.amount.toLocaleString()}</td>
+                      <td>${(t.originalAmount ?? t.amount).toLocaleString()}</td>
+                      <td>${(t.feeAmount ?? 0).toLocaleString()}</td>
+                      <td className="font-semibold text-violet-200">${t.amount.toLocaleString()}</td>
                       <td><span className={badge.cls}>{badge.label}</span></td>
                       <td>{t.payerName ?? "-"}</td>
                       <td className="font-mono text-xs">{t.paymentCode ?? "-"}</td>

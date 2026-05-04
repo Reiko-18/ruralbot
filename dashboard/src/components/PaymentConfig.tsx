@@ -112,20 +112,24 @@ export function PaymentConfig({ guildId }: Props) {
         <div className="glow-card p-6 space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <Store size={16} className="text-violet-400" />
-            <h3 className="text-base font-semibold">超商手續費設定</h3>
+            <h3 className="text-base font-semibold">SmilePay 代收手續費設定</h3>
+          </div>
+
+          <div className="text-sm text-gray-400 bg-violet-500/5 border border-violet-500/10 p-3 rounded-lg">
+            此費用不是商品售價；系統會先把 SmilePay/超商代收手續費加到客人的應繳總額。
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">全家手續費 (元)</label>
+              <label className="block text-sm text-gray-400 mb-1.5">全家代收手續費 (元)</label>
               <input type="number" min="0" className="w-full glow-input" value={feeFamily} onChange={(e) => setFeeFamily(e.target.value)} placeholder="0" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">7-11 手續費 (元)</label>
+              <label className="block text-sm text-gray-400 mb-1.5">7-11 代收手續費 (元)</label>
               <input type="number" min="0" className="w-full glow-input" value={fee711} onChange={(e) => setFee711(e.target.value)} placeholder="0" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">7-11 手續費 - 超過門檻 (元)</label>
+              <label className="block text-sm text-gray-400 mb-1.5">7-11 代收手續費 - 超過門檻 (元)</label>
               <input type="number" min="0" className="w-full glow-input" value={fee711Over} onChange={(e) => setFee711Over(e.target.value)} placeholder="0" />
             </div>
             <div>

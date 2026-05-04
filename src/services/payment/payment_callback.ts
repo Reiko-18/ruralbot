@@ -155,11 +155,11 @@ async function sendPaymentSuccessNotifications(
     )
     .addFields(
       { name: "◇ 消費日期", value: `└ <t:${Math.floor(Date.now() / 1000)}:D>`, inline: true },
-      { name: "◇ 消費金額", value: `└ ${transaction.amount.toLocaleString()}`, inline: true },
+      { name: "◇ 客人應繳總額", value: `└ ${transaction.amount.toLocaleString()}`, inline: true },
       { name: "◇ 消費編號", value: `└ #${displayOrderId}`, inline: true },
       { name: "◇ 訂單金額", value: `└ $${originalAmount.toLocaleString()}`, inline: true },
-      { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
-      { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
+      { name: "◇ SmilePay 代收手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
+      { name: "◇ 實際繳費金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
     )
     .setFooter({ text: "◆ 繳費成功 ◆ RuralBot" })
     .setTimestamp();
@@ -185,7 +185,7 @@ async function sendPaymentSuccessNotifications(
             .addFields(
               { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
               { name: `◇ ${storeEmoji} 繳費超商`, value: `└ ${storeName}`, inline: true },
-              { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
+              { name: "◇ 實際繳費金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
             )
             .setFooter({ text: "◆ 繳費成功 ◆ RuralBot" })
             .setTimestamp();
@@ -217,8 +217,8 @@ async function sendPaymentSuccessNotifications(
         .addFields(
           { name: "◇ 訂單編號", value: `└ \`${displayOrderId}\``, inline: true },
           { name: "◇ 訂單金額", value: `└ $${originalAmount.toLocaleString()}`, inline: true },
-          { name: "◇ 手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
-          { name: "◇ 實付金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
+          { name: "◇ SmilePay 代收手續費", value: `└ $${fee.toLocaleString()}`, inline: true },
+          { name: "◇ 實際繳費金額", value: `└ **$${transaction.amount.toLocaleString()}**`, inline: true },
         )
         .setFooter({ text: "◆ 感謝您的付款 ◆ 自動私人訊息" })
         .setTimestamp();
