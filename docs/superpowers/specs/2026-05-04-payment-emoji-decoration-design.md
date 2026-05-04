@@ -9,6 +9,7 @@
 - 新增 `src/services/discord/emoji.ts` 作為共用 Discord emoji helper。
 - helper 解析 `<:name:id>` 與 `<a:name:id>` 格式，支援一般與動態自訂 emoji。
 - helper 也支援將文字中的 `:emoji_name:` 依照 bot 所在伺服器 emoji cache 轉成 Discord 官方 `<:name:id>` 或 `<a:name:id>` 格式。
+- helper 會修復前端預覽或複製造成的壞格式，例如 `<a✅140...>`、`<✅140...>`，轉回 Discord 可渲染的 `<a:emoji_id:id>` 或 `<:emoji_id:id>`。
 - helper 會先從 `client.emojis.cache` 與所有 `client.guilds.cache` 的 emoji cache 尋找可用 emoji。
 - 找到 guild emoji 時，Embed 文字使用 `GuildEmoji#toString()`，Button 使用 `{ id, name, animated }` 格式。
 - 找不到時保留原始 Discord emoji 文字格式，讓 Discord 端仍有機會在 bot 具備權限時渲染。
@@ -38,3 +39,4 @@
 
 - `npm run build`：通過。
 - 輕量驗證 `resolveEmojiText()`：`:ZSz26520125622:`、`:711:`、`:FamilyMart:` 可解析為 Discord 自訂 emoji 語法。
+- 輕量驗證 `normalizeBrokenCustomEmojiText()`：壞掉的 `<a✅id>` 可轉回合法 Discord 自訂 emoji 語法。

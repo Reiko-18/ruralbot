@@ -3,6 +3,7 @@ import type { Client, GuildEmoji } from "discord.js";
 const CUSTOM_EMOJI_RE = /^<(?<animated>a?):(?<name>[A-Za-z0-9_]+):(?<id>\d+)>$/;
 const CUSTOM_EMOJI_IN_TEXT_RE = /<a?:[A-Za-z0-9_]+:\d+>/g;
 const NAMED_EMOJI_RE = /:([A-Za-z0-9_]+):/g;
+const BROKEN_CUSTOM_EMOJI_RE = /<(a?)[^:\w\s<>][^:\s<>]*?(\d{15,25})>/g;
 
 export interface EmojiRef {
   animated?: boolean;
@@ -48,13 +49,25 @@ export function resolveButtonEmoji(client: Client, input: string): EmojiRef | st
 export function resolveEmojiText(client: Client, input: string): string {
   if (!input) return input;
 
-  let resolved = input.replace(CUSTOM_EMOJI_IN_TEXT_RE, (match) => resolveClientEmoji(client, match));
-  resolved = resolved.replace(NAMED_EMOJI_RE, (match, name: string) => {
+  let resolved = normalizeBrokenCustomEmojiText(input);
+  resolved = resolved.replace(CUSTOM_EMOJI_IN_TEXT_RE, (match) => resolveClientEmoji(client, match));
+  resolved = resolved.replace(NAMED_EMOJI_RE, (match, name: string, offset: number, fullText: string) => {
+    if (fullText[offset - 1] === "<" || (fullText[offset - 1] === "a" && fullText[offset - 2] === "<")) {
+      return match;
+    }
+
     const cached = findAvailableEmoji(client, name);
     return cached ? cached.toString() : match;
   });
 
   return resolved;
+}
+
+export function normalizeBrokenCustomEmojiText(input: string): string {
+  return input.replace(BROKEN_CUSTOM_EMOJI_RE, (match, animated: string, id: string) => {
+    if (CUSTOM_EMOJI_RE.test(match)) return match;
+    return `<${animated === "a" ? "a" : ""}:emoji_${id}:${id}>`;
+  });
 }
 
 function parseEmojiRef(client: Client, input: string): EmojiRef | null {

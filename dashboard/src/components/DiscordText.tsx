@@ -26,8 +26,9 @@ export function DiscordText({ text, className }: { text: string; className?: str
         src={url}
         alt={`:${name}:`}
         title={`:${name}:`}
-        className="inline-block align-middle"
+        className="inline-block align-middle select-none"
         style={{ width: "1.375em", height: "1.375em", margin: "0 0.05em" }}
+        aria-label={`:${name}:`}
         draggable={false}
       />
     );

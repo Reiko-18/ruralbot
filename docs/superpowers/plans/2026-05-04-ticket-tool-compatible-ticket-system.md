@@ -18,6 +18,7 @@
   - 支援角色與 notify roles 都會加入票口頻道權限與 mention。
   - 頻道名稱改為可用 template 生成。
   - 面板 Embed、歡迎訊息、按鈕與下拉選單 emoji 會先解析 `:emoji_name:`、`<:name:id>`、`<a:name:id>`，避免 Discord 顯示成純文字。
+  - 送出前會容錯修復壞掉的自訂 emoji 語法，例如 `<a✅140...>`、`<✅140...>`。
 - Dashboard：
   - 主面板設定新增：每人上限、冷卻、頻道命名格式、支援角色 IDs。
   - 子票口新增：每人上限、冷卻、開票表單 questions JSON、notify roles。
@@ -26,6 +27,7 @@
 
 - `npm run build`：通過。
 - emoji helper 輕量驗證：`:ZSz26520125622:`、`:711:`、`:FamilyMart:` 可轉成 Discord 官方自訂 emoji 語法。
+- 壞格式 emoji 輕量驗證：`<a✅id>` 可轉為 `<a:emoji_id:id>` 並在有 cache 時解析成真實 emoji 名稱。
 - `cd dashboard && npm audit`：通過，0 vulnerabilities。
 - `npm audit --omit=dev`：剩餘 Prisma CLI 相依 `@hono/node-server` moderate advisory；npm 提供的 `--force` 修法會降版 Prisma 到 6.19.3，屬破壞性版本變更，本次不採用。
 - 遠端部署：`/var/www/ruralbot` 已在 `14dcb2e`，`npx prisma migrate status` 顯示 database schema up to date，`/healthz` 回傳 `{"ok":true,"discordReady":true}`。

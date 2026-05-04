@@ -3,6 +3,7 @@ import type { TicketConfig, TicketButtonType, EmbedSettings, DiscordChannel } fr
 import { updateTicketConfig, fetchGuildChannels, deployTicketPanel, fetchButtonTypes } from "../api/client";
 import { EmbedSettingsEditor } from "./EmbedSettingsEditor";
 import { DiscordText } from "./DiscordText";
+import { normalizeDiscordEmojiObject, normalizeDiscordEmojiText } from "../utils/discordEmoji";
 
 interface PanelEmbedData extends EmbedSettings {
   title?: string;
@@ -12,7 +13,7 @@ interface PanelEmbedData extends EmbedSettings {
 
 function parsePanelEmbed(json: string | null): PanelEmbedData {
   if (!json) return {};
-  try { return JSON.parse(json); } catch { return {}; }
+  try { return normalizeDiscordEmojiObject(JSON.parse(json)); } catch { return {}; }
 }
 
 interface Props {
@@ -73,7 +74,7 @@ export function TicketPanelSettings({ guildId, config, onSave }: Props) {
   }, [config]);
 
   const updateField = (key: keyof PanelEmbedData, value: any) => {
-    setPanelData((prev) => ({ ...prev, [key]: value || undefined }));
+    setPanelData((prev) => ({ ...prev, [key]: typeof value === "string" ? normalizeDiscordEmojiText(value) || undefined : value || undefined }));
   };
 
   const embedSettings: EmbedSettings = {
@@ -87,7 +88,7 @@ export function TicketPanelSettings({ guildId, config, onSave }: Props) {
   };
 
   const handleEmbedChange = (settings: EmbedSettings) => {
-    setPanelData((prev) => ({ ...prev, ...settings }));
+    setPanelData((prev) => ({ ...prev, ...normalizeDiscordEmojiObject(settings as Record<string, unknown>) }));
   };
 
   const savePayload = async () => {
@@ -100,7 +101,7 @@ export function TicketPanelSettings({ guildId, config, onSave }: Props) {
       openCooldownSeconds: openCooldownSeconds ? parseInt(openCooldownSeconds, 10) : null,
       channelNameFormat: channelNameFormat.trim() || null,
       supportRoleIds: supportRoleIds.trim() || null,
-      panelEmbed: Object.keys(panelData).length > 0 ? JSON.stringify(panelData) : null,
+      panelEmbed: Object.keys(panelData).length > 0 ? JSON.stringify(normalizeDiscordEmojiObject({ ...panelData })) : null,
     });
   };
 

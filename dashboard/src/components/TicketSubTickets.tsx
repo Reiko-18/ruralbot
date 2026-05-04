@@ -8,6 +8,7 @@ import {
   fetchGuildChannels,
 } from "../api/client";
 import { Trash2, Edit2, Plus, GripVertical } from "lucide-react";
+import { normalizeDiscordEmojiText } from "../utils/discordEmoji";
 
 interface Props {
   configId: string;
@@ -111,11 +112,11 @@ export function TicketSubTickets({ configId, guildId }: Props) {
     try {
       const payload = {
         label: form.label.trim(),
-        emoji: form.emoji.trim() || null,
+        emoji: normalizeDiscordEmojiText(form.emoji).trim() || null,
         style: form.style,
         categoryOpenId: form.categoryOpenId || null,
         categoryCloseId: form.categoryCloseId || null,
-        welcomeMessage: form.welcomeMessage.trim() || null,
+        welcomeMessage: normalizeDiscordEmojiText(form.welcomeMessage).trim() || null,
         notifyRoleIds: form.notifyRoleIds.trim() || null,
         maxOpenPerUser: form.maxOpenPerUser ? parseInt(form.maxOpenPerUser, 10) : null,
         cooldownSeconds: form.cooldownSeconds ? parseInt(form.cooldownSeconds, 10) : null,
@@ -152,7 +153,7 @@ export function TicketSubTickets({ configId, guildId }: Props) {
           <input
             className="glow-input w-full"
             value={form.emoji}
-            onChange={(e) => setForm({ ...form, emoji: e.target.value })}
+            onChange={(e) => setForm({ ...form, emoji: normalizeDiscordEmojiText(e.target.value) })}
             placeholder="📩 或 <:name:id>"
           />
         </div>
@@ -225,7 +226,7 @@ export function TicketSubTickets({ configId, guildId }: Props) {
         <textarea
           className="glow-input w-full min-h-[80px]"
           value={form.welcomeMessage}
-          onChange={(e) => setForm({ ...form, welcomeMessage: e.target.value })}
+          onChange={(e) => setForm({ ...form, welcomeMessage: normalizeDiscordEmojiText(e.target.value) })}
           placeholder="感謝您的來信！請描述您的問題，我們會盡快為您處理。"
         />
         <p className="text-xs text-gray-500 mt-1">留空則使用預設歡迎詞</p>
