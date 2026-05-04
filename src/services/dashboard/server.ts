@@ -143,8 +143,8 @@ export function startDashboard(client: Client): void {
         return res.status(400).json({ error: "面板頻道不存在或非文字頻道" });
       }
 
-      const embed = buildPanelEmbed(config);
-      const components = buildPanelComponents(config, btnTypes);
+      const embed = buildPanelEmbed(client, config);
+      const components = buildPanelComponents(client, config, btnTypes);
 
       // Try to edit existing panel message
       if (config.panelMessageId) {

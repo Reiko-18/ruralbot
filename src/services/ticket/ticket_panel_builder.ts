@@ -5,9 +5,11 @@ import {
   ButtonStyle,
   StringSelectMenuBuilder,
   type APIEmbed,
+  type Client,
 } from "discord.js";
 import type { TicketButtonType, TicketConfig } from "../../prisma/generated/prisma/client.js";
 import type { TicketEmbedSettings } from "../../types/ticket.type.js";
+import { resolveButtonEmoji, resolveEmojiText } from "../discord/emoji.js";
 import {
   TICKET_BUTTON_PREFIX,
   TICKET_SELECT_ID,
@@ -29,7 +31,7 @@ const BUTTON_STYLE_MAP: Record<string, ButtonStyle> = {
   DANGER: ButtonStyle.Danger,
 };
 
-export function buildPanelEmbed(config: TicketConfig): APIEmbed {
+export function buildPanelEmbed(client: Client, config: TicketConfig): APIEmbed {
   if (config.panelEmbed) {
     try {
       const parsed = JSON.parse(config.panelEmbed) as TicketEmbedSettings & {
@@ -38,13 +40,13 @@ export function buildPanelEmbed(config: TicketConfig): APIEmbed {
         imageUrl?: string;
       };
       const embed = new EmbedBuilder()
-        .setTitle(parsed.title ?? "🎫 客服中心")
-        .setDescription(parsed.description ?? "請選擇下方按鈕開啟票口")
+        .setTitle(resolveEmojiText(client, parsed.title ?? "🎫 客服中心"))
+        .setDescription(resolveEmojiText(client, parsed.description ?? "請選擇下方按鈕開啟票口"))
         .setColor(parsed.color ? parseInt(parsed.color.replace("#", ""), 16) : 0xf9b4fe);
-      if (parsed.authorName) embed.setAuthor({ name: parsed.authorName, iconURL: parsed.authorIconUrl ?? undefined });
+      if (parsed.authorName) embed.setAuthor({ name: resolveEmojiText(client, parsed.authorName), iconURL: parsed.authorIconUrl ?? undefined });
       if (parsed.thumbnailUrl) embed.setThumbnail(parsed.thumbnailUrl);
       if (parsed.imageUrl) embed.setImage(parsed.imageUrl);
-      if (parsed.footerText) embed.setFooter({ text: parsed.footerText, iconURL: parsed.footerIconUrl ?? undefined });
+      if (parsed.footerText) embed.setFooter({ text: resolveEmojiText(client, parsed.footerText), iconURL: parsed.footerIconUrl ?? undefined });
       if (parsed.showTimestamp) embed.setTimestamp();
       return embed.toJSON();
     } catch {
@@ -60,6 +62,7 @@ export function buildPanelEmbed(config: TicketConfig): APIEmbed {
 }
 
 export function buildPanelButtons(
+  client: Client,
   buttonTypes: TicketButtonType[],
 ): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
@@ -72,7 +75,7 @@ export function buildPanelButtons(
         .setCustomId(`${TICKET_BUTTON_PREFIX}${bt.id}`)
         .setLabel(bt.label)
         .setStyle(BUTTON_STYLE_MAP[bt.style] ?? ButtonStyle.Primary);
-      if (bt.emoji) button.setEmoji(bt.emoji);
+      if (bt.emoji) button.setEmoji(resolveButtonEmoji(client, bt.emoji));
       row.addComponents(button);
     }
     rows.push(row);
@@ -81,6 +84,7 @@ export function buildPanelButtons(
 }
 
 export function buildPanelComponents(
+  client: Client,
   config: TicketConfig,
   buttonTypes: TicketButtonType[],
 ): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
@@ -92,16 +96,17 @@ export function buildPanelComponents(
         buttonTypes.slice(0, 25).map((bt) => ({
           label: bt.label,
           value: bt.id,
-          emoji: bt.emoji ?? undefined,
+          emoji: bt.emoji ? resolveButtonEmoji(client, bt.emoji) : undefined,
         })),
       );
     return [new ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>().addComponents(menu)];
   }
 
-  return buildPanelButtons(buttonTypes);
+  return buildPanelButtons(client, buttonTypes);
 }
 
 export function buildWelcomeEmbed(
+  client: Client,
   ticketNum: number,
   creatorId: string,
   welcomeMessage: string | null,
@@ -111,7 +116,7 @@ export function buildWelcomeEmbed(
 
   const embed = new EmbedBuilder()
     .setTitle(`🎫 票口 #${String(ticketNum).padStart(4, "0")}`)
-    .setDescription(`${description}\n\n<@${creatorId}>`)
+    .setDescription(`${resolveEmojiText(client, description)}\n\n<@${creatorId}>`)
     .setColor(0xf9b4fe)
     .setTimestamp();
 
@@ -119,7 +124,7 @@ export function buildWelcomeEmbed(
     try {
       const settings = JSON.parse(embedSettingsJson) as TicketEmbedSettings;
       if (settings.color) embed.setColor(parseInt(settings.color.replace("#", ""), 16));
-      if (settings.footerText) embed.setFooter({ text: settings.footerText });
+      if (settings.footerText) embed.setFooter({ text: resolveEmojiText(client, settings.footerText) });
     } catch {
       // Use defaults
     }

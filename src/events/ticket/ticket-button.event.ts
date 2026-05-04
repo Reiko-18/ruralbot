@@ -169,7 +169,7 @@ export function registerTicketButtonEvent(client: Client): void {
         .filter(Boolean)
         .join("\n\n");
       const embedSettings = buttonType?.embedSettings ?? null;
-      const welcomeEmbed = buildWelcomeEmbed(ticketNum, interaction.user.id, welcomeMessage || null, embedSettings);
+      const welcomeEmbed = buildWelcomeEmbed(interaction.client, ticketNum, interaction.user.id, welcomeMessage || null, embedSettings);
       const buttons = buildOpenTicketButtons();
 
       // Build mentions
