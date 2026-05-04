@@ -26,7 +26,8 @@ export function resolveClientEmoji(client: Client, input: string): string {
   const parsed = parseEmojiRef(client, input);
   if (!parsed) return input;
 
-  const cached = findAvailableEmoji(client, parsed.id ?? parsed.name);
+  const cached = findAvailableEmoji(client, parsed.id ?? parsed.name)
+    ?? (parsed.id ? findAvailableEmoji(client, parsed.name) : null);
   if (cached) return cached.toString();
 
   return parsed.id ? formatEmojiRef(parsed) : input;
@@ -36,7 +37,8 @@ export function resolveButtonEmoji(client: Client, input: string): EmojiRef | st
   const parsed = parseEmojiRef(client, input);
   if (!parsed) return input;
 
-  const cached = findAvailableEmoji(client, parsed.id ?? parsed.name);
+  const cached = findAvailableEmoji(client, parsed.id ?? parsed.name)
+    ?? (parsed.id ? findAvailableEmoji(client, parsed.name) : null);
   if (!cached) return parsed;
 
   return {
