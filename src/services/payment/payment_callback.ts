@@ -15,6 +15,7 @@ const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
 const FAMILY_MART_EMOJI = "<:FamilyMart:1332695203735142440>";
 const SEVEN_ELEVEN_EMOJI = "<:711:1332695189403336738>";
 const DEFAULT_CALLBACK_OK_STATUS = "SmilePay_OK";
+const PAYMENT_THEME_COLOR = 0xb8a7ff;
 
 function formatDisplayOrderId(orderId: string): string {
   const parts = orderId.split("-");
@@ -181,7 +182,7 @@ export async function sendPaymentSuccessNotifications(
   // Build the success embed for channel notification
   const successEmbed = new EmbedBuilder()
     .setTitle(`${paymentEmoji} 已成功登入消費紀錄`)
-    .setColor(0x22c55e)
+    .setColor(PAYMENT_THEME_COLOR)
     .setDescription(
       `◆ 超商：${storeEmoji} **${storeName}**\n` +
       `◆ 訂單編號：\`${displayOrderId}\`\n` +
@@ -211,7 +212,7 @@ export async function sendPaymentSuccessNotifications(
         if (message) {
           const updatedEmbed = new EmbedBuilder()
             .setTitle(`${paymentEmoji} 繳費完成`)
-            .setColor(0x22c55e)
+            .setColor(PAYMENT_THEME_COLOR)
             .setDescription(
               `◆ 此筆訂單已繳費完成\n` +
               `◆ 訂單編號：\`${displayOrderId}\``,
@@ -243,7 +244,7 @@ export async function sendPaymentSuccessNotifications(
       const user = await client.users.fetch(transaction.userId);
       const dmEmbed = new EmbedBuilder()
         .setTitle(`${paymentEmoji} 繳費成功`)
-        .setColor(0x22c55e)
+        .setColor(PAYMENT_THEME_COLOR)
         .setDescription(
           `◆ 您在 ${storeEmoji} **${storeName}** 的繳費已完成\n` +
           `◆ 訂單編號：\`${displayOrderId}\``,

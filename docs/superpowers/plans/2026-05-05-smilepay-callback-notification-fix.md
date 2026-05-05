@@ -19,6 +19,7 @@
   - callback 參數改為先正規化，支援 query/body 與常見欄位別名。
   - callback 成功回覆優先使用 SmilePay 回送的 `Roturl_status`，沒有時使用 `SmilePay_OK`。
   - 成功更新交易後，使用更新後的交易資料送 Discord 通知。
+  - 付款完成通知、原訊息更新與 DM 均使用既有 `/rp` 淡紫主題色 `0xb8a7ff`，避免成功狀態變成綠色側邊條。
   - 匯出 `sendPaymentSuccessNotifications()` 供人工補發使用。
 - `src/services/dashboard/routes/payment.ts`
   - `/api/payment/callback` 同時支援 GET 與 POST。
