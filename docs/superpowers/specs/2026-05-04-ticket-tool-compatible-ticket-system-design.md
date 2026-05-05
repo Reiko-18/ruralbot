@@ -23,6 +23,7 @@
 - 全域開票冷卻秒數：`TicketConfig.openCooldownSeconds`。
 - 可設定頻道命名格式：`TicketConfig.channelNameFormat`，支援 `{type}`、`{number}`、`{username}`、`{userId}`、`{date}`。
 - 支援角色：`TicketConfig.supportRoleIds`，會取得票口頻道可見/發言權限，並可操作票口管理按鈕。
+- 票口管理按鈕不放在客人可見的公開票口訊息上；管理員或支援角色改在票口頻道執行 `/ticket-admin`，由 bot 回覆只有操作者可見的 ephemeral 管理面板。
 - 子票口每人上限與冷卻覆蓋：`TicketButtonType.maxOpenPerUser`、`TicketButtonType.cooldownSeconds`。
 - 子票口開票表單：`TicketButtonType.questions`，最多 5 題，支援 short / paragraph、必填、placeholder、maxLength。
 - 表單答案保存：`TicketInstance.formAnswers`，並在票口歡迎訊息中摘要顯示。

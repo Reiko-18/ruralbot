@@ -30,7 +30,6 @@ import {
 } from "../../services/ticket/repo_ticket_instance.js";
 import {
   buildWelcomeEmbed,
-  buildOpenTicketButtons,
 } from "../../services/ticket/ticket_panel_builder.js";
 import { logger } from "../../services/logger/logger.js";
 
@@ -163,14 +162,13 @@ export function registerTicketButtonEvent(client: Client): void {
         permissionOverwrites,
       });
 
-      // Send welcome embed + management buttons
+      // Send welcome embed. Admin-only buttons are shown via /ticket-admin ephemeral panel.
       const answerSummary = formatAnswerSummary(answers);
       const welcomeMessage = [buttonType?.welcomeMessage ?? config.defaultMessage, answerSummary]
         .filter(Boolean)
         .join("\n\n");
       const embedSettings = buttonType?.embedSettings ?? null;
       const welcomeEmbed = buildWelcomeEmbed(interaction.client, ticketNum, interaction.user.id, welcomeMessage || null, embedSettings);
-      const buttons = buildOpenTicketButtons();
 
       // Build mentions
       let mentionContent = `<@${interaction.user.id}>`;
@@ -181,7 +179,6 @@ export function registerTicketButtonEvent(client: Client): void {
       const welcomeMsg = await ticketChannel.send({
         content: mentionContent,
         embeds: [welcomeEmbed],
-        components: buttons,
       });
 
       // Pin the welcome message

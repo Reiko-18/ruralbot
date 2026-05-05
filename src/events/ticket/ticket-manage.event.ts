@@ -44,6 +44,7 @@ import {
   buildOpenTicketButtons,
 } from "../../services/ticket/ticket_panel_builder.js";
 import { generateAndSendTranscript } from "../../services/ticket/ticket_transcript.js";
+import { canManageTicket } from "../../services/ticket/ticket_permissions.js";
 import { logger } from "../../services/logger/logger.js";
 
 const MANAGE_IDS = new Set([
@@ -100,8 +101,7 @@ function hasSupportRole(interaction: ButtonInteraction | ModalSubmitInteraction,
 }
 
 async function requireAdmin(interaction: ButtonInteraction | ModalSubmitInteraction, instance?: any): Promise<boolean> {
-  if (hasAdminPermission(interaction)) return true;
-  if (instance && hasSupportRole(interaction, instance)) return true;
+  if (instance && canManageTicket(interaction, instance)) return true;
   await interaction.reply({ content: "❌ 只有管理員或支援角色可以操作票口管理功能。", flags: MessageFlags.Ephemeral });
   return false;
 }
@@ -150,7 +150,6 @@ async function closeTicket(
 
   await channel.send({
     embeds: [closedEmbed.toJSON()],
-    components: buildClosedTicketButtons(),
   });
 
   logger.info({ ticketNum: instance.ticketNum, closedBy: interaction.user.id }, "Ticket closed");

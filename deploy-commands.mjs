@@ -1,5 +1,5 @@
 /**
- * Standalone script to deploy all 18 slash commands globally.
+ * Standalone script to deploy all 19 slash commands globally.
  * Does NOT import any project source code (avoids Prisma issues).
  *
  * Usage: node deploy-commands.mjs
@@ -332,6 +332,10 @@ const rp = new SlashCommandBuilder()
   );
 
 // ── Deploy ──
+const ticketAdmin = new SlashCommandBuilder()
+  .setName("ticket-admin")
+  .setDescription("顯示票口管理員專用按鈕");
+
 const commands = [
   logAdd,
   logList,
@@ -351,6 +355,7 @@ const commands = [
   priceList,
   payment,
   rp,
+  ticketAdmin,
 ].map((cmd) => cmd.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);

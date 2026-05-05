@@ -36,6 +36,9 @@ import * as botConfig from "./commands/config/bot-config.cmd.js";
 // Price commands
 import * as priceList from "./commands/price/price-list.cmd.js";
 
+// Ticket commands
+import * as ticketAdmin from "./commands/ticket/ticket-admin.cmd.js";
+
 // Price events
 import { registerPriceMenuEvent } from "./events/price/price-menu.event.js";
 
@@ -76,6 +79,7 @@ registerCommand(botConfig);
 registerCommand(priceList);
 registerCommand(payment);
 registerCommand(rp);
+registerCommand(ticketAdmin);
 
 const client = new Client({
   intents: [
