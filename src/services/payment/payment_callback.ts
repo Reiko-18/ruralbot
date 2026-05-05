@@ -14,14 +14,46 @@ const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711":
 const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
 const FAMILY_MART_EMOJI = "<:FamilyMart:1332695203735142440>";
 const SEVEN_ELEVEN_EMOJI = "<:711:1332695189403336738>";
+const DEFAULT_CALLBACK_OK_STATUS = "SmilePay_OK";
 
 function formatDisplayOrderId(orderId: string): string {
   const parts = orderId.split("-");
   return parts.at(-1) ?? orderId.slice(-6);
 }
 
+function firstStringValue(value: unknown): string | undefined {
+  if (Array.isArray(value)) return firstStringValue(value[0]);
+  if (value == null) return undefined;
+  return String(value);
+}
+
+function normalizeCallbackData(rawData: Record<string, unknown>): Record<string, string> {
+  const normalized = Object.fromEntries(
+    Object.entries(rawData)
+      .map(([key, value]) => [key, firstStringValue(value)])
+      .filter((entry): entry is [string, string] => entry[1] !== undefined),
+  );
+
+  const aliases: Record<string, string[]> = {
+    Od_sob: ["Od_sob", "Data_id", "data_id", "orderId", "order_id"],
+    Smseid: ["Smseid", "smseid", "SmilePayNO", "SmilePayNo", "smilePayNo"],
+    Amount: ["Amount", "amount", "Purchamt", "purchamt"],
+    Classif: ["Classif", "classif"],
+    Mid_smilepay: ["Mid_smilepay", "mid_smilepay", "MidSmilepay"],
+    Roturl_status: ["Roturl_status", "roturl_status", "Roturlstatus"],
+  };
+
+  for (const [canonicalKey, possibleKeys] of Object.entries(aliases)) {
+    if (normalized[canonicalKey]) continue;
+    const matchedKey = possibleKeys.find((key) => normalized[key]);
+    if (matchedKey) normalized[canonicalKey] = normalized[matchedKey];
+  }
+
+  return normalized;
+}
+
 export async function handleCallback(
-  rawData: Record<string, string>,
+  rawData: Record<string, unknown>,
   sourceIp?: string,
   discordClient?: Client | null,
 ): Promise<{ success: boolean; responseHtml: string }> {
@@ -30,8 +62,10 @@ export async function handleCallback(
     return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
   }
 
-  const callbackData = rawData as unknown as SmilePayCallbackData;
+  const normalizedData = normalizeCallbackData(rawData);
+  const callbackData = normalizedData as unknown as SmilePayCallbackData;
   const orderId = callbackData.Od_sob;
+  const okHtml = `<Roturlstatus>${normalizedData.Roturl_status ?? DEFAULT_CALLBACK_OK_STATUS}</Roturlstatus>`;
   if (!orderId) {
     logger.debug({ sourceIp, keys: Object.keys(rawData) }, "Payment callback missing Od_sob");
     return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
@@ -49,14 +83,14 @@ export async function handleCallback(
   // Log raw callback data
   await createCallbackLog({
     transactionId: transaction.id,
-    rawData: JSON.stringify(rawData),
+    rawData: JSON.stringify({ raw: rawData, normalized: normalizedData }),
     sourceIp,
   });
 
   // Skip if already in terminal status
   if (["COMPLETED", "FAILED", "EXPIRED"].includes(transaction.status)) {
     logger.info({ orderId, status: transaction.status }, "Callback for already-terminal transaction, acknowledging");
-    return { success: true, responseHtml: "<Roturlstatus>SmilePay_OK</Roturlstatus>" };
+    return { success: true, responseHtml: okHtml };
   }
 
   // Verify callback authenticity using Mid_smilepay (SmilePay 驗證碼)
@@ -68,7 +102,7 @@ export async function handleCallback(
       const expected = buildMidSmilepay({
         merchantVerifyParam: credentials.merchantVerifyParam,
         amount: parseInt(callbackData.Amount, 10),
-        smseid: callbackData.Smseid,
+        smseid: callbackData.Smseid ?? "",
       });
 
       if (String(expected) !== callbackData.Mid_smilepay) {
@@ -87,12 +121,12 @@ export async function handleCallback(
   // Determine payment status from callback data
   // Amount > 0 means actual payment received; Classif indicates payment method
   const actualAmount = parseInt(callbackData.Amount, 10);
-  const isSuccess = actualAmount > 0 && callbackData.Classif !== "";
+  const isSuccess = Number.isFinite(actualAmount) && actualAmount > 0 && callbackData.Classif !== "";
   const newStatus = isSuccess ? "COMPLETED" : "FAILED";
 
   // Update transaction status
   try {
-    await updateTransactionStatus(transaction.id, newStatus, {
+    const updatedTransaction = await updateTransactionStatus(transaction.id, newStatus, {
       smilePayNo: callbackData.Smseid,
       ...(isSuccess ? { completedAt: new Date() } : {}),
     });
@@ -105,7 +139,7 @@ export async function handleCallback(
 
       // Send Discord notifications
       if (discordClient) {
-        await sendPaymentSuccessNotifications(discordClient, transaction);
+        await sendPaymentSuccessNotifications(discordClient, updatedTransaction);
       }
     } else {
       logger.warn(
@@ -114,14 +148,14 @@ export async function handleCallback(
       );
     }
 
-    return { success: true, responseHtml: "<Roturlstatus>SmilePay_OK</Roturlstatus>" };
+    return { success: true, responseHtml: okHtml };
   } catch (err) {
     logger.error({ err, orderId }, "Failed to update transaction status from callback");
     return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
   }
 }
 
-async function sendPaymentSuccessNotifications(
+export async function sendPaymentSuccessNotifications(
   client: Client,
   transaction: {
     orderId: string;

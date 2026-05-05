@@ -10,6 +10,7 @@ const ENDPOINTS = {
   standardPage: "https://ssl.smse.com.tw/pay/pay_a_utf.asp",
   testPage: "https://ssl.smse.com.tw/pay_test/pay_a_utf.asp",
 };
+export const SMILEPAY_CALLBACK_OK_STATUS = "SmilePay_OK";
 
 const xmlParser = new XMLParser();
 
@@ -25,6 +26,7 @@ export function buildPaymentPageUrl(
     Amount: String(params.amount),
     Pay_zg: params.payZg ?? "3",
     Roturl: credentials.roturl,
+    Roturl_status: SMILEPAY_CALLBACK_OK_STATUS,
     Verify_key: credentials.verifyKey,
     ...(params.payerName ? { Pur_name: params.payerName } : {}),
     ...(params.email ? { Email: params.email } : {}),
@@ -45,6 +47,7 @@ export async function createBackgroundPayment(
     Amount: String(params.amount),
     Pay_zg: params.payZg ?? "3",
     Roturl: credentials.roturl,
+    Roturl_status: SMILEPAY_CALLBACK_OK_STATUS,
     Verify_key: credentials.verifyKey,
     ...(params.payerName ? { Pur_name: params.payerName } : {}),
     ...(params.email ? { Email: params.email } : {}),

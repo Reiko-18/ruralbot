@@ -10,8 +10,8 @@ import {
   updateTransactionStatus,
 } from "../../payment/repo_payment_transaction.js";
 import { generatePaymentOrderId } from "../../payment/payment_id.js";
-import { buildPaymentPageUrl, createBackgroundPayment } from "../../payment/smilepay_api.js";
-import { handleCallback } from "../../payment/payment_callback.js";
+import { buildPaymentPageUrl, createBackgroundPayment, SMILEPAY_CALLBACK_OK_STATUS } from "../../payment/smilepay_api.js";
+import { handleCallback, sendPaymentSuccessNotifications } from "../../payment/payment_callback.js";
 import { validateBuyerInfo } from "../../payment/buyer_info.js";
 
 let discordClient: Client | null = null;
@@ -198,7 +198,14 @@ paymentRoutes.get("/test-callback/:orderId", async (req, res) => {
       Mid_smilepay: "",
     };
 
-    const result = await handleCallback(fakeCallbackData, "test-simulate", discordClient);
+    const result = transaction.status === "COMPLETED" && discordClient
+      ? { success: true, responseHtml: `<Roturlstatus>${SMILEPAY_CALLBACK_OK_STATUS}</Roturlstatus>` }
+      : await handleCallback(fakeCallbackData, "test-simulate", discordClient);
+
+    if (transaction.status === "COMPLETED" && discordClient) {
+      await sendPaymentSuccessNotifications(discordClient, transaction);
+    }
+
     logger.info({ orderId: req.params.orderId }, "Test callback simulated");
     res.json({ orderId: req.params.orderId, result });
   } catch (err) {
@@ -208,10 +215,11 @@ paymentRoutes.get("/test-callback/:orderId", async (req, res) => {
 });
 
 // POST /api/payment/callback — public endpoint for SmilePay Roturl
-paymentRoutes.post("/callback", async (req, res) => {
+async function processSmilePayCallback(req: any, res: any) {
   try {
     const sourceIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip;
-    const result = await handleCallback(req.body ?? {}, sourceIp, discordClient);
+    const data = req.method === "GET" ? req.query ?? {} : req.body ?? {};
+    const result = await handleCallback(data, sourceIp, discordClient);
     res.set("Content-Type", "text/html; charset=utf-8");
     res.send(result.responseHtml);
   } catch (err) {
@@ -219,4 +227,7 @@ paymentRoutes.post("/callback", async (req, res) => {
     res.set("Content-Type", "text/html; charset=utf-8");
     res.send("<Roturlstatus>ERROR</Roturlstatus>");
   }
-});
+}
+
+paymentRoutes.get("/callback", processSmilePayCallback);
+paymentRoutes.post("/callback", processSmilePayCallback);
