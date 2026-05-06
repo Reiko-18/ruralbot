@@ -199,7 +199,7 @@ paymentRoutes.get("/test-callback/:orderId", async (req, res) => {
     };
 
     const result = transaction.status === "COMPLETED" && discordClient
-      ? { success: true, responseHtml: `<Roturlstatus>${SMILEPAY_CALLBACK_OK_STATUS}</Roturlstatus>` }
+      ? { success: true, responseText: SMILEPAY_CALLBACK_OK_STATUS }
       : await handleCallback(fakeCallbackData, "test-simulate", discordClient);
 
     if (transaction.status === "COMPLETED" && discordClient) {
@@ -220,12 +220,12 @@ async function processSmilePayCallback(req: any, res: any) {
     const sourceIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip;
     const data = req.method === "GET" ? req.query ?? {} : req.body ?? {};
     const result = await handleCallback(data, sourceIp, discordClient);
-    res.set("Content-Type", "text/html; charset=utf-8");
-    res.send(result.responseHtml);
+    res.type("text/plain; charset=utf-8");
+    res.send(result.responseText);
   } catch (err) {
     logger.error({ err }, "Payment callback processing error");
-    res.set("Content-Type", "text/html; charset=utf-8");
-    res.send("<Roturlstatus>ERROR</Roturlstatus>");
+    res.type("text/plain; charset=utf-8");
+    res.send("ERROR");
   }
 }
 

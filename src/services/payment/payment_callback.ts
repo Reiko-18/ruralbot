@@ -15,6 +15,8 @@ const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
 const FAMILY_MART_EMOJI = "<:FamilyMart:1332695203735142440>";
 const SEVEN_ELEVEN_EMOJI = "<:711:1332695189403336738>";
 const DEFAULT_CALLBACK_OK_STATUS = "SmilePay_OK";
+const CALLBACK_ERROR_STATUS = "ERROR";
+const CALLBACK_VERIFY_FAIL_STATUS = "VERIFY_FAIL";
 const PAYMENT_THEME_COLOR = 0xb8a7ff;
 
 function formatDisplayOrderId(orderId: string): string {
@@ -57,19 +59,19 @@ export async function handleCallback(
   rawData: Record<string, unknown>,
   sourceIp?: string,
   discordClient?: Client | null,
-): Promise<{ success: boolean; responseHtml: string }> {
+): Promise<{ success: boolean; responseText: string }> {
   if (!rawData || typeof rawData !== "object") {
     logger.debug({ sourceIp }, "Payment callback received without form data");
-    return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
+    return { success: false, responseText: CALLBACK_ERROR_STATUS };
   }
 
   const normalizedData = normalizeCallbackData(rawData);
   const callbackData = normalizedData as unknown as SmilePayCallbackData;
   const orderId = callbackData.Od_sob;
-  const okHtml = `<Roturlstatus>${normalizedData.Roturl_status ?? DEFAULT_CALLBACK_OK_STATUS}</Roturlstatus>`;
+  const okText = normalizedData.Roturl_status ?? DEFAULT_CALLBACK_OK_STATUS;
   if (!orderId) {
     logger.debug({ sourceIp, keys: Object.keys(rawData) }, "Payment callback missing Od_sob");
-    return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
+    return { success: false, responseText: CALLBACK_ERROR_STATUS };
   }
 
   logger.info({ orderId, smseid: callbackData.Smseid, sourceIp }, "Payment callback received");
@@ -78,7 +80,7 @@ export async function handleCallback(
   const transaction = await getTransactionByOrderId(orderId);
   if (!transaction) {
     logger.error({ orderId }, "Payment callback for unknown order");
-    return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
+    return { success: false, responseText: CALLBACK_ERROR_STATUS };
   }
 
   // Log raw callback data
@@ -91,7 +93,7 @@ export async function handleCallback(
   // Skip if already in terminal status
   if (["COMPLETED", "FAILED", "EXPIRED"].includes(transaction.status)) {
     logger.info({ orderId, status: transaction.status }, "Callback for already-terminal transaction, acknowledging");
-    return { success: true, responseHtml: okHtml };
+    return { success: true, responseText: okText };
   }
 
   // Verify callback authenticity using Mid_smilepay (SmilePay 驗證碼)
@@ -111,12 +113,12 @@ export async function handleCallback(
           { expected, received: callbackData.Mid_smilepay, orderId, sourceIp },
           "Callback Mid_smilepay mismatch — possible forgery",
         );
-        return { success: false, responseHtml: "<Roturlstatus>VERIFY_FAIL</Roturlstatus>" };
+        return { success: false, responseText: CALLBACK_VERIFY_FAIL_STATUS };
       }
     }
   } catch (err) {
     logger.error({ err, orderId }, "Failed to verify callback credentials");
-    return { success: false, responseHtml: "<Roturlstatus>VERIFY_FAIL</Roturlstatus>" };
+    return { success: false, responseText: CALLBACK_VERIFY_FAIL_STATUS };
   }
 
   // Determine payment status from callback data
@@ -149,10 +151,10 @@ export async function handleCallback(
       );
     }
 
-    return { success: true, responseHtml: okHtml };
+    return { success: true, responseText: okText };
   } catch (err) {
     logger.error({ err, orderId }, "Failed to update transaction status from callback");
-    return { success: false, responseHtml: "<Roturlstatus>ERROR</Roturlstatus>" };
+    return { success: false, responseText: CALLBACK_ERROR_STATUS };
   }
 }
 

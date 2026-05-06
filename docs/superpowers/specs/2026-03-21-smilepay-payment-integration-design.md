@@ -142,7 +142,7 @@ Error handling: network timeouts and non-200 responses are logged via Logger. Tr
   3. Compare computed code against received verification parameter
   4. If verification fails: log warning, respond with error (do NOT return OK status)
   5. If verification passes: find transaction by `Od_sob`, update status, log to Discord
-  6. Return `<Roturlstatus>SmilePay_OK</Roturlstatus>`
+  6. Return the plain `Roturl_status` value, for example `SmilePay_OK`
 
 ### payment_id.ts
 
@@ -222,7 +222,7 @@ Error (Status != 1): transaction is marked FAILED, `Desc` field logged.
 
 SmilePay POSTs payment results. Response format:
 ```html
-<Roturlstatus>SmilePay_OK</Roturlstatus>
+SmilePay_OK
 ```
 
 Retry schedule: immediate, 60s, 5m, 15m, 30m, 60m, 90m, 180m (max 8 attempts).
@@ -310,7 +310,7 @@ SmilePay POST → /api/payment/callback
   → find transaction by Od_sob
   → updateTransactionStatus(COMPLETED, smilePayData)
   → log to Discord
-  → respond <Roturlstatus>SmilePay_OK</Roturlstatus>
+  → respond SmilePay_OK
 ```
 
 ### Create Payment (Standard Page)

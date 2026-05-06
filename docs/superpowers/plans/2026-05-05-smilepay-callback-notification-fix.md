@@ -18,11 +18,13 @@
 - `src/services/payment/payment_callback.ts`
   - callback 參數改為先正規化，支援 query/body 與常見欄位別名。
   - callback 成功回覆優先使用 SmilePay 回送的 `Roturl_status`，沒有時使用 `SmilePay_OK`。
+  - 2026-05-07 追加：成功回覆改為純文字 `SmilePay_OK`，不再包成 `<Roturlstatus>SmilePay_OK</Roturlstatus>`；官方 FAQ 要求回覆內容必須與 `Roturl_status` 相同，XML 包裝會被視為不同內容而觸發「Roturl 連續拋送失敗」通知。
   - 成功更新交易後，使用更新後的交易資料送 Discord 通知。
   - 付款完成通知、原訊息更新與 DM 均使用既有 `/rp` 淡紫主題色 `0xb8a7ff`，避免成功狀態變成綠色側邊條。
   - 匯出 `sendPaymentSuccessNotifications()` 供人工補發使用。
 - `src/services/dashboard/routes/payment.ts`
   - `/api/payment/callback` 同時支援 GET 與 POST。
+  - 2026-05-07 追加：callback HTTP 回應改用 `text/plain; charset=utf-8` 並直接輸出處理狀態字串。
   - `/api/payment/test-callback/:orderId` 對已完成交易可直接補發 Discord 成功通知。
 
 ## 人工補救方式
@@ -39,9 +41,18 @@ GET /api/payment/test-callback/{完整訂單編號}
 
 - 已執行 `npm run build`。
 - Prisma client、TypeScript 編譯與 dashboard Vite build 皆通過。
+- 2026-05-07 追加驗證方式：
+
+```bash
+curl -i -X POST http://127.0.0.1:3000/api/payment/callback \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "Od_sob=<ORDER_ID>&Smseid=<SMILEPAY_NO>&Amount=<AMOUNT>&Classif=C&Roturl_status=SmilePay_OK"
+```
+
+成功時 body 應為純文字 `SmilePay_OK`，不可含 `<Roturlstatus>` XML 包裝。
 
 ## 風險與回滾
 
 - 未修改資料庫 schema，無 migration 回滾問題。
-- 回滾方式：還原 `smilepay_api.ts`、`payment_callback.ts`、`routes/payment.ts` 三個檔案並重新 build/deploy。
+- 回滾方式：還原 `smilepay_api.ts`、`payment_callback.ts`、`routes/payment.ts` 三個檔案並重新 build/deploy；但若回到 XML 包裝回覆，仍可能再觸發 SmilePay Roturl 失敗通知。
 - 若仍未收到通知，下一步檢查 production log 是否有 `Payment callback received`、`Payment success notification sent to channel` 或 Discord 權限相關 warn。

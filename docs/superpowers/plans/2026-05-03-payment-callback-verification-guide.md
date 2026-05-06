@@ -27,11 +27,11 @@ curl -sS -X POST http://127.0.0.1/api/payment/callback
 
 預期回應：
 
-```xml
-<Roturlstatus>ERROR</Roturlstatus>
+```text
+ERROR
 ```
 
-這只代表入口可達，因為沒有 SmilePay 必要欄位，所以不能代表付款成功。
+這只代表入口可達，因為沒有 SmilePay 必要欄位，所以不能代表付款成功。正式成功 callback 若有送 `Roturl_status=SmilePay_OK`，endpoint body 應直接回純文字 `SmilePay_OK`，不可包成 XML。
 
 ### 3. 使用內建測試 callback
 
