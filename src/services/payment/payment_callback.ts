@@ -9,6 +9,7 @@ import { getPaymentConfig, getEffectiveCredentials } from "./repo_payment_config
 import { buildMidSmilepay } from "./smilepay_api.js";
 import type { SmilePayCallbackData } from "../../types/payment.type.js";
 import { resolveClientEmoji } from "../discord/emoji.js";
+import { sendUserDm } from "../discord/dm.js";
 
 const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
 const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
@@ -264,10 +265,9 @@ export async function sendPaymentSuccessNotifications(
         dmEmbed.addFields({ name: "◇ 備註", value: `└ ${transaction.remark}`, inline: false });
       }
 
-      await user.send({ embeds: [dmEmbed] });
-      logger.info({ orderId: transaction.orderId, userId: transaction.userId }, "Payment success DM sent to user");
+      await sendUserDm(user, { embeds: [dmEmbed] }, { orderId: transaction.orderId, notificationType: "payment_success" });
     } catch (err) {
-      logger.warn({ err, orderId: transaction.orderId, userId: transaction.userId }, "Failed to send payment success DM — user may have DMs disabled");
+      logger.warn({ err, orderId: transaction.orderId, userId: transaction.userId }, "Failed to build payment success DM");
     }
   }
 }

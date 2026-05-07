@@ -16,6 +16,7 @@ import { createBackgroundPayment } from "../../services/payment/smilepay_api.js"
 import { logger } from "../../services/logger/logger.js";
 import { validateBuyerInfo, type BuyerInfo } from "../../services/payment/buyer_info.js";
 import { resolveButtonEmoji, resolveClientEmoji } from "../../services/discord/emoji.js";
+import { sendUserDm } from "../../services/discord/dm.js";
 
 const STORE_LABELS: Record<string, string> = { fami: "全家 FamilyMart", "711": "7-11 ibon" };
 const STORE_PAY_ZG: Record<string, string> = { fami: "6", "711": "4" };
@@ -405,10 +406,9 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
       .setFooter({ text: "◆ 繳費完成後系統會自動更新狀態 ◆ 自動私人訊息" })
       .setTimestamp();
 
-    await interaction.user.send({ embeds: [dmEmbed] });
-    logger.info({ orderId, userId: interaction.user.id }, "Payment info DM sent to user");
+    await sendUserDm(interaction.user, { embeds: [dmEmbed] }, { orderId, notificationType: "payment_info" });
   } catch (dmErr) {
-    logger.warn({ err: dmErr, orderId, userId: interaction.user.id }, "Failed to send payment DM — user may have DMs disabled");
+    logger.warn({ err: dmErr, orderId, userId: interaction.user.id }, "Failed to build payment DM");
   }
 }
 
