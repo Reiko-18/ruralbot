@@ -13,12 +13,13 @@ http://211.22.158.125/api/payment/callback
 ## 三重審查
 
 1. 官方文件：SmilePay 金流 Q&A「已繳費未入帳」指出程式串接建議帶 `Roturl_status`，Roturl 正常接收後必須回覆與 `Roturl_status` 相同內容；若未回覆或回覆不同，SmilePay 會重新傳送交易完成資料，最多 8 次。來源：https://www.smilepay.net/em/FAQ-F-record.asp
-2. 程式碼與部署設定：`/api/payment/callback` 已支援 GET/POST，成功回覆為純文字 `SmilePay_OK`；`src/services/dashboard/server.ts` 預設監聽 `0.0.0.0:3000`，Nginx 範本應將 80 proxy 到 `127.0.0.1:3000`。但 `ops/ruralbot-auto-deploy.sh` 預設部署目錄為 `/var/www/ruralbot`，與 systemd 範本 `/opt/ruralbot` 不一致，可能造成正式服務重啟後仍跑舊目錄。
-3. 維運慣例：正式部署以 Ubuntu systemd 單服務為準，`SMILEPAY_ROTURL`、Nginx 80 port、dashboard 實際監聽 port 必須一致；不得使用 destructive reset 修復部署落差。
+2. 程式碼與部署設定：`/api/payment/callback` 已支援 GET/POST，成功回覆為純文字 `SmilePay_OK`；`src/services/dashboard/server.ts` 預設監聽 `0.0.0.0:3000`，Nginx 範本應將 80 proxy 到 `127.0.0.1:3000`。但 `ops/ruralbot-auto-deploy.sh` 原本預設部署目錄為 `/opt/ruralbot`，實機卻是 `/var/www/ruralbot`，已改成自動偵測並保留 `RURALBOT_APP_DIR` 覆蓋。
+3. 主機實測：`192.168.254.84:80` 內網可通，`211.22.158.125:80` 從主機與外部測試皆逾時。`ufw` 已放行 80/443，Nginx 也正常 listen 80，但 UPnP 沒有 IGD，代表公網入口卡在上層路由器/NAT。
+4. 維運慣例：正式部署以 Ubuntu systemd 單服務為準，`SMILEPAY_ROTURL`、Nginx 80 port、dashboard 實際監聽 port 必須一致；若公網 IP 仍無法直達主機，必須先修路由器 port forwarding，不能只重啟服務。
 
 ## 變更
 
-- 將 `ops/ruralbot-auto-deploy.sh` 的預設 `APP_DIR` 從 `/var/www/ruralbot` 改為 `/opt/ruralbot`，與 `ops/ruralbot.service.example` 的 `WorkingDirectory=/opt/ruralbot` 對齊。
+- 將 `ops/ruralbot-auto-deploy.sh` 改為優先使用 `RURALBOT_APP_DIR`，否則自動選擇 `/opt/ruralbot`，最後回退到 `/var/www/ruralbot`，避免服務與部署路徑再度分岔。
 
 ## Production 必查項目
 
