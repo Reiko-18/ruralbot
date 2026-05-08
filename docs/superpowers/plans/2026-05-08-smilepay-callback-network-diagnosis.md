@@ -12,7 +12,7 @@ http://211.22.158.125/api/payment/callback
 
 ## 三重審查
 
-1. 官方文件：SmilePay FAQ 指出程式串接建議帶 `Roturl_status`，Roturl 正常接收後必須回覆與 `Roturl_status` 相同內容；若未回覆或回覆不同，SmilePay 會重新傳送交易完成資料，最多 8 次。
+1. 官方文件：SmilePay 金流 Q&A「已繳費未入帳」指出程式串接建議帶 `Roturl_status`，Roturl 正常接收後必須回覆與 `Roturl_status` 相同內容；若未回覆或回覆不同，SmilePay 會重新傳送交易完成資料，最多 8 次。來源：https://www.smilepay.net/em/FAQ-F-record.asp
 2. 程式碼與部署設定：`/api/payment/callback` 已支援 GET/POST，成功回覆為純文字 `SmilePay_OK`；`src/services/dashboard/server.ts` 預設監聽 `0.0.0.0:3000`，Nginx 範本應將 80 proxy 到 `127.0.0.1:3000`。但 `ops/ruralbot-auto-deploy.sh` 預設部署目錄為 `/var/www/ruralbot`，與 systemd 範本 `/opt/ruralbot` 不一致，可能造成正式服務重啟後仍跑舊目錄。
 3. 維運慣例：正式部署以 Ubuntu systemd 單服務為準，`SMILEPAY_ROTURL`、Nginx 80 port、dashboard 實際監聽 port 必須一致；不得使用 destructive reset 修復部署落差。
 
