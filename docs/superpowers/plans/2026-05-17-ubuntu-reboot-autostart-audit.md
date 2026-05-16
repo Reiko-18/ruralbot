@@ -239,6 +239,52 @@ Unit=daily-maintenance-poweroff.service
 - `systemd-analyze calendar '*-*-* 04:00:00'`: 下一次觸發為 `2026-05-17 04:00:00 CST`
 - 腳本計算的下一次喚醒時間為 `2026-05-17 06:00:00 +08:00`
 
+### 實機 RTC 關機與自動喚醒測試
+
+為確認不是只有 wake alarm 寫入成功，已額外執行一次短時間實機測試：
+
+```bash
+sudo rtcwake -m off -s 180
+```
+
+測試結果：
+
+- 測試開始時間：`2026-05-17 01:43:42 +08:00`
+- RTC 預定喚醒時間：`2026-05-17 01:46:42 +08:00`
+- SSH 於關機後中斷，確認主機實際進入 poweroff。
+- 主機自行開回來，開機時間為 `2026-05-17 01:47:01 +08:00`。
+- SSH 於 190 秒後恢復連線。
+
+自動喚醒後再次驗證：
+
+- `ruralbot`: `enabled`, `active`
+- `admin-panel`: `enabled`, `active`
+- `snr-bot`: `enabled`, `active`
+- `webhook`: `enabled`, `active`
+- `docker`: `enabled`, `active`
+- `nginx`: `enabled`, `active`
+- `postgresql`: `enabled`, `active`
+- `pm2-reiko`: `enabled`, `active`
+- `cloudflared`: `enabled`, `active`
+- `casaos-gateway`: `enabled`, `active`
+- `casaos-message-bus`: `enabled`, `active`
+- `casaos-user-service`: `enabled`, `active`
+- `casaos`: `enabled`, `active`
+- `casaos-local-storage`: `enabled`, `active`
+- `casaos-app-management`: `enabled`, `active`
+- `daily-maintenance-poweroff.timer`: `enabled`, `active`
+- `snr-bot-auto-deploy.timer`: `enabled`, `active`
+- `ubuntu-dashboard-auto-deploy.timer`: `enabled`, `active`
+- `systemctl list-jobs`: `No jobs running`
+- `ruralbot /healthz`: `{"ok":true,"discordReady":true}`
+- `scloud-server` / `scloud-web`: `online`
+- `snr-bot-app`: `healthy`
+- `coolify`: `healthy`
+- `monitor_cadvisor`: `healthy`
+- 80 port 由 `nginx` 綁定。
+
+短測完成後，正式每日 timer 仍保留下一次 `2026-05-17 04:00:00 CST` 觸發，腳本計算的正式喚醒時間仍為 `2026-05-17 06:00:00 +08:00`。
+
 ### 注意事項
 
 - 此排程會讓主機每日 04:00 到 06:00 離線，期間 Discord bot、dashboard、Docker 專案、PM2 專案與 webhook 都不可用。
