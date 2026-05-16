@@ -192,3 +192,60 @@ ExecStart=/usr/bin/node /var/www/ruralbot/dist/index.js
 
 1. 針對 `ruralbot` 另外開一個部署相容性修正任務，釐清 Prisma generated client 與目前 Node ESM 輸出的落差。
 2. 若要更完整驗證重開機行為，可安排維護時段實做一次主機 reboot，並逐項檢查 service、timer、PM2 與 Docker 容器回復狀態。
+
+## 每日休息維護排程
+
+### 目標
+
+主機每日凌晨 04:00 關機休息，並於早上 06:00 自動開機。
+
+### 官方機制與前置驗證
+
+採用 Linux RTC wake alarm 與 `rtcwake`。實作前已確認：
+
+- `/usr/sbin/rtcwake` 存在，版本為 util-linux `2.39.3`。
+- RTC 裝置為 `/sys/class/rtc/rtc0`。
+- 系統時區為 `Asia/Taipei`。
+- RTC 使用 UTC，`rtcwake` 可正確寫入 wake alarm。
+- 以 `rtcwake -m no -s 180` 做不關機寫入測試，`alarm_IRQ` 成功變為 `yes`，測試後已清除 wake alarm。
+
+### 實作內容
+
+新增遠端主機檔案：
+
+- `/usr/local/sbin/daily-maintenance-poweroff.sh`
+- `/etc/systemd/system/daily-maintenance-poweroff.service`
+- `/etc/systemd/system/daily-maintenance-poweroff.timer`
+
+timer 設定：
+
+```ini
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=daily-maintenance-poweroff.service
+```
+
+腳本行為：
+
+1. 計算下一個 `06:00` 的 epoch。
+2. 清除既有 `/sys/class/rtc/rtc0/wakealarm`。
+3. 使用 `rtcwake -m off -t <epoch>` 設定 RTC 喚醒並關機。
+
+### 驗證結果
+
+- `daily-maintenance-poweroff.timer`: `enabled`, `active`
+- `bash -n /usr/local/sbin/daily-maintenance-poweroff.sh`: 通過
+- `systemd-analyze calendar '*-*-* 04:00:00'`: 下一次觸發為 `2026-05-17 04:00:00 CST`
+- 腳本計算的下一次喚醒時間為 `2026-05-17 06:00:00 +08:00`
+
+### 注意事項
+
+- 此排程會讓主機每日 04:00 到 06:00 離線，期間 Discord bot、dashboard、Docker 專案、PM2 專案與 webhook 都不可用。
+- 若 BIOS / 主機板韌體日後停用 RTC wake，Linux 排程仍會關機，但可能無法自動開機；目前 RTC 寫入測試已通過。
+- 若需要臨時停用每日關機，可執行：
+
+```bash
+sudo systemctl disable --now daily-maintenance-poweroff.timer
+sudo sh -c 'echo 0 > /sys/class/rtc/rtc0/wakealarm'
+```
