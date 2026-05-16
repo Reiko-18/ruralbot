@@ -85,6 +85,69 @@ restart: unless-stopped
 - `snr-bot-auto-deploy.timer`: `enabled`, `active`
 - `ubuntu-dashboard-auto-deploy.timer`: `enabled`, `active`
 
+## 實機 reboot 測試結果
+
+### 第一次 reboot
+
+第一次實際重開機後，`ruralbot`、PostgreSQL、PM2 與部分 systemd 服務有正常回來，但發現兩個實際問題：
+
+- `nginx.service` 啟動失敗，原因是 `apache2` 已先佔用 `0.0.0.0:80`。
+- `docker.service` 與 `snr-bot.service` 留在 systemd job queue 中未完成，原因是 CasaOS 服務鏈路卡住。
+
+進一步追查後確認：
+
+- `casaos-gateway.service` 原本為 disabled。
+- CasaOS 其他服務依賴 `/var/run/casaos/management.url`，但該檔案由 `casaos-gateway` 產生。
+- 啟用 `casaos-gateway` 後又因 gateway 預設綁定 `port=80`，與 `nginx` 衝突而失敗。
+- `casaos-local-storage.service` 設定了 `Before=docker.service`，CasaOS 鏈路失敗會連帶拖住 Docker 與 `snr-bot` 開機流程。
+
+### 實際追加修正
+
+- 停用並 mask `apache2.service`，避免重開機後搶佔 80 port。
+- 保留 `nginx.service` 作為 80 port 正式入口。
+- 啟用 `casaos-gateway.service`。
+- 將 `/etc/casaos/gateway.ini` 的 CasaOS gateway port 從 `80` 改為 `8081`。
+- 重啟 CasaOS chain，確認以下服務皆為 `enabled` / `active`：
+  - `casaos-gateway`
+  - `casaos-message-bus`
+  - `casaos-user-service`
+  - `casaos`
+  - `casaos-local-storage`
+  - `casaos-app-management`
+- 啟動並確認 `docker.service`、`snr-bot.service` 皆恢復 `enabled` / `active`。
+
+### 第二次 reboot 驗證
+
+第二次實際重開機後，確認無需手動介入即可恢復：
+
+- `ruralbot`: `enabled`, `active`
+- `admin-panel`: `enabled`, `active`
+- `snr-bot`: `enabled`, `active`
+- `webhook`: `enabled`, `active`
+- `docker`: `enabled`, `active`
+- `nginx`: `enabled`, `active`
+- `postgresql`: `enabled`, `active`
+- `pm2-reiko`: `enabled`, `active`
+- `cloudflared`: `enabled`, `active`
+- `casaos-gateway`: `enabled`, `active`
+- `casaos-message-bus`: `enabled`, `active`
+- `casaos-user-service`: `enabled`, `active`
+- `casaos`: `enabled`, `active`
+- `casaos-local-storage`: `enabled`, `active`
+- `casaos-app-management`: `enabled`, `active`
+- `apache2`: `masked`, `inactive`
+- `snr-bot-auto-deploy.timer`: `enabled`, `active`
+- `ubuntu-dashboard-auto-deploy.timer`: `enabled`, `active`
+
+第二次 reboot 後也確認：
+
+- `systemctl list-jobs` 顯示 `No jobs running`。
+- `nginx` 綁定 `0.0.0.0:80`。
+- `ruralbot /healthz` 回應 `{"ok":true,"discordReady":true}`。
+- `scloud-server` / `scloud-web` 由 PM2 自動恢復為 `online`。
+- Docker 容器自動恢復，包含 `scloud`、`snr-bot`、`coolify`、`cloudreve`、monitoring、filebrowser。
+- `snr-bot-app` 與 `monitor_cadvisor` health check 最終皆轉為 `healthy`。
+
 ### Ruralbot 健康檢查
 
 `http://127.0.0.1:3000/healthz` 回應：
