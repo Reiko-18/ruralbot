@@ -1,4 +1,4 @@
-# Ubuntu 主機重啟自動啟動審查與修正 - 2026-05-17
+﻿# Ubuntu 主機重啟自動啟動審查與修正 - 2026-05-17
 
 ## 背景
 
@@ -197,7 +197,7 @@ ExecStart=/usr/bin/node /var/www/ruralbot/dist/index.js
 
 ### 目標
 
-主機每日凌晨 04:00 關機休息，並於早上 06:00 自動開機。
+主機每日凌晨 02:00 關機休息，並於早上 06:00 自動開機。
 
 ### 官方機制與前置驗證
 
@@ -221,7 +221,7 @@ timer 設定：
 
 ```ini
 [Timer]
-OnCalendar=*-*-* 04:00:00
+OnCalendar=*-*-* 02:00:00
 Persistent=true
 Unit=daily-maintenance-poweroff.service
 ```
@@ -236,7 +236,7 @@ Unit=daily-maintenance-poweroff.service
 
 - `daily-maintenance-poweroff.timer`: `enabled`, `active`
 - `bash -n /usr/local/sbin/daily-maintenance-poweroff.sh`: 通過
-- `systemd-analyze calendar '*-*-* 04:00:00'`: 下一次觸發為 `2026-05-17 04:00:00 CST`
+- `systemd-analyze calendar '*-*-* 02:00:00'`: 下一次觸發為 `2026-05-17 02:00:00 CST`
 - 腳本計算的下一次喚醒時間為 `2026-05-17 06:00:00 +08:00`
 
 ### 實機 RTC 關機與自動喚醒測試
@@ -283,11 +283,11 @@ sudo rtcwake -m off -s 180
 - `monitor_cadvisor`: `healthy`
 - 80 port 由 `nginx` 綁定。
 
-短測完成後，正式每日 timer 仍保留下一次 `2026-05-17 04:00:00 CST` 觸發，腳本計算的正式喚醒時間仍為 `2026-05-17 06:00:00 +08:00`。
+短測完成後，正式每日 timer 仍保留下一次 `2026-05-17 02:00:00 CST` 觸發，腳本計算的正式喚醒時間仍為 `2026-05-17 06:00:00 +08:00`。
 
 ### 注意事項
 
-- 此排程會讓主機每日 04:00 到 06:00 離線，期間 Discord bot、dashboard、Docker 專案、PM2 專案與 webhook 都不可用。
+- 此排程會讓主機每日 02:00 到 06:00 離線，期間 Discord bot、dashboard、Docker 專案、PM2 專案與 webhook 都不可用。
 - 若 BIOS / 主機板韌體日後停用 RTC wake，Linux 排程仍會關機，但可能無法自動開機；目前 RTC 寫入測試已通過。
 - 若需要臨時停用每日關機，可執行：
 
@@ -295,3 +295,4 @@ sudo rtcwake -m off -s 180
 sudo systemctl disable --now daily-maintenance-poweroff.timer
 sudo sh -c 'echo 0 > /sys/class/rtc/rtc0/wakealarm'
 ```
+
