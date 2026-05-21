@@ -7,6 +7,7 @@ import { loadBotConfig } from "./services/config/repo_bot_config.js";
 import { logger } from "./services/logger/logger.js";
 import { KeepAliveService } from "./services/keepalive/keep_alive.js";
 import { startDashboard } from "./services/dashboard/server.js";
+import { auditPreviousBoot } from "./services/host/boot_audit.js";
 
 // Import commands
 import * as logAdd from "./commands/logger/log-add.cmd.js";
@@ -105,6 +106,12 @@ client.once(Events.ClientReady, async (readyClient) => {
     await loadBotConfig();
   } catch (err) {
     logger.error({ err }, "Failed to load bot config during startup");
+  }
+
+  try {
+    await auditPreviousBoot();
+  } catch (err) {
+    logger.warn({ err }, "Boot audit crashed during startup");
   }
 
   try {
