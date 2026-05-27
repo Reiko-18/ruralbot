@@ -1,1 +1,2 @@
-*/5 * * * * /opt/ruralbot/ops/ruralbot-auto-deploy.sh >> /var/log/ruralbot-deploy.log 2>&1
+RURALBOT_APP_DIR=/var/www/ruralbot
+*/5 * * * * /var/www/ruralbot/ops/ruralbot-auto-deploy.sh >> /var/log/ruralbot-deploy.log 2>&1

@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ -n "${RURALBOT_APP_DIR:-}" ]; then
-  APP_DIR="${RURALBOT_APP_DIR}"
-elif [ -d /opt/ruralbot ]; then
-  APP_DIR="/opt/ruralbot"
-else
-  APP_DIR="/var/www/ruralbot"
-fi
+APP_DIR="${RURALBOT_APP_DIR:-/var/www/ruralbot}"
 LOCK_FILE="/tmp/ruralbot-deploy.lock"
 BRANCH="main"
 
@@ -34,6 +28,7 @@ echo "$(date -Is) updating ${LOCAL_HEAD} -> ${REMOTE_HEAD}"
 git pull --ff-only origin "${BRANCH}"
 
 npm ci
+npm run install:dashboard
 npx prisma migrate deploy
 npm run build
 
