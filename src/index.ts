@@ -8,6 +8,7 @@ import { logger } from "./services/logger/logger.js";
 import { KeepAliveService } from "./services/keepalive/keep_alive.js";
 import { startDashboard } from "./services/dashboard/server.js";
 import { auditPreviousBoot } from "./services/host/boot_audit.js";
+import { startGatewayWatchdog } from "./services/discord/gateway_watchdog.js";
 
 // Import commands
 import * as logAdd from "./commands/logger/log-add.cmd.js";
@@ -91,6 +92,7 @@ const client = new Client({
 });
 
 startDashboard(client);
+const gatewayWatchdog = startGatewayWatchdog(client);
 
 client.once(Events.ClientReady, async (readyClient) => {
   logger.info(`Ready! Logged in as ${readyClient.user.tag}`);
@@ -190,6 +192,7 @@ process.on("unhandledRejection", (reason) => {
 // Graceful shutdown
 process.on("SIGINT", async () => {
   logger.info("Shutting down...");
+  clearInterval(gatewayWatchdog);
   stopPresenceRotator();
   stopTicketTimeout();
   await prisma.$disconnect();
@@ -199,6 +202,7 @@ process.on("SIGINT", async () => {
 
 process.on("SIGTERM", async () => {
   logger.info("Shutting down...");
+  clearInterval(gatewayWatchdog);
   stopPresenceRotator();
   stopTicketTimeout();
   await prisma.$disconnect();
@@ -206,4 +210,7 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 
-client.login(process.env.TOKEN);
+void client.login(process.env.TOKEN).catch((err) => {
+  logger.fatal({ err }, "Discord login failed");
+  setTimeout(() => process.exit(1), 2000);
+});
