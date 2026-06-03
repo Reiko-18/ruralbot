@@ -12,6 +12,7 @@
     "install:all": "npm ci && npm run install:dashboard",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
+    "backfill:accounting-threads": "tsx src/scripts/backfill_threads.ts",
     "db:generate": "npx prisma generate",
     "db:migrate": "npx prisma migrate dev",
     "db:push": "npx prisma db push",

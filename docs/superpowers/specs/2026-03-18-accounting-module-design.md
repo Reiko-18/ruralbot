@@ -64,10 +64,12 @@ E-commerce accounting module for RuralBot Discord bot. Tracks products, orders, 
 
 ## Thread Logging Flow
 
-1. On order create, fetch guild's `AccountingConfig` to get channel ID
-2. In that channel, find thread named `YYYY-MM-DD` (matching order date)
-3. If no thread exists, create one
-4. Send order detail Embed to the thread
+1. On order create, resolve the target guild. If `BotConfig.primaryGuildId` is configured, accounting logs are centralized there.
+2. Resolve the log channel from `AccountingConfig.channelId`; `ACCOUNTING_CHANNEL_ID` may be used as an emergency environment override when DB config is missing or stale.
+3. In that channel, find thread named `YYYY-MM-DD` (matching order date).
+4. If no thread exists, create one.
+5. Send order detail Embed to the thread.
+6. If Discord delivery fails, the order remains in DB and the failure is logged. Use `npm run backfill:accounting-threads -- --start YYYY-MM-DD --end YYYY-MM-DD --channel-id CHANNEL_ID` to dry-run missing records, then add `--yes` to send only missing order IDs in ascending `createdAt` order.
 
 ## Interactive Sales Overview UI
 
