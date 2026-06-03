@@ -1,5 +1,5 @@
 /**
- * Standalone script to deploy all 19 slash commands globally.
+ * Standalone script to deploy all slash commands globally.
  * Does NOT import any project source code (avoids Prisma issues).
  *
  * Usage: node deploy-commands.mjs
@@ -229,7 +229,37 @@ const orderLookup = new SlashCommandBuilder()
       .setRequired(true),
   );
 
-// ── 15. bot-config ──
+// ── 15. accounting-backfill ──
+const accountingBackfill = new SlashCommandBuilder()
+  .setName("accounting-backfill")
+  .setDescription("Backfill missing accounting order thread logs")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .addChannelOption((o) =>
+    o
+      .setName("channel")
+      .setDescription("訂單紀錄頻道")
+      .addChannelTypes(ChannelType.GuildText)
+      .setRequired(true),
+  )
+  .addStringOption((o) =>
+    o
+      .setName("start")
+      .setDescription("起始日期 YYYY-MM-DD，例如 2026-05-01")
+      .setRequired(true),
+  )
+  .addStringOption((o) =>
+    o
+      .setName("end")
+      .setDescription("結束日期 YYYY-MM-DD（不含），例如 2026-06-01")
+      .setRequired(true),
+  )
+  .addBooleanOption((o) =>
+    o
+      .setName("dry_run")
+      .setDescription("只檢查不發送，預設 true"),
+  );
+
+// ── 16. bot-config ──
 const botConfig = new SlashCommandBuilder()
   .setName("bot-config")
   .setDescription("Configure the primary guild and sync channel")
@@ -351,6 +381,7 @@ const commands = [
   orderDelete,
   salesOverview,
   orderLookup,
+  accountingBackfill,
   botConfig,
   priceList,
   payment,

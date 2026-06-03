@@ -21,6 +21,10 @@
   - 支援 `--start`、`--end`、`--order-id`、`--guild-id`、`--channel-id`。
   - 每個日期 thread 先掃描既有 Embed title 的 `#ORDER_ID`，只補發缺漏訂單。
   - DB 查詢以 `createdAt asc, id asc` 補發，維持順序。
+- `src/services/accounting/thread_backfill.ts`
+  - 將補發、掃描既有 Discord 訂單 ID、依日期 thread 分組與送出重試邏輯集中成共用 service。
+- `src/commands/accounting/accounting-backfill.cmd.ts`
+  - 新增 Administrator-only `/accounting-backfill`，可在 Discord 內使用正式 bot client 與正式 DB 執行 dry-run 或實際補發。
 - `package.json`
   - 新增 `npm run backfill:accounting-threads`。
 - `.env.example`
@@ -40,9 +44,16 @@ npm run backfill:accounting-threads -- --start 2026-05-01 --end 2026-06-01 --cha
 npm run backfill:accounting-threads -- --start 2026-05-01 --end 2026-06-01 --channel-id 1483831380029739169 --yes
 ```
 
+若沒有 SSH 或正式主機 shell 權限，部署新版後可由 Discord 管理員執行：
+
+```text
+/accounting-backfill channel:#訂單紀錄 start:2026-05-01 end:2026-06-01 dry_run:true
+/accounting-backfill channel:#訂單紀錄 start:2026-05-01 end:2026-06-01 dry_run:false
+```
+
 ## 驗證
 
-- 已執行 `npm run build`。本機因沒有 `.env`，第一次缺 `DIRECT_URL`；第二次以 `.env.example` 形狀的 dummy `DATABASE_URL` / `DIRECT_URL` 注入該次 shell 後，Prisma generate、server TypeScript 與 dashboard Vite build 皆通過。
+- 已執行 `npm run build`。本機因沒有 `.env`，第一次缺 `DIRECT_URL`；後續以 `.env.example` 形狀的 dummy `DATABASE_URL` / `DIRECT_URL` 注入該次 shell 後，Prisma generate、server TypeScript 與 dashboard Vite build 皆通過。
 - 正式補發需在有 `TOKEN` 與 `DATABASE_URL` 的 Ubuntu 主機執行。
 - 本機目前沒有 SSH 憑證與 `.env`，不能直接登入正式 Discord 或 PostgreSQL。
 

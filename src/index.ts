@@ -27,6 +27,7 @@ import * as orderCustom from "./commands/accounting/order-custom.cmd.js";
 import * as orderDelete from "./commands/accounting/order-delete.cmd.js";
 import * as salesOverview from "./commands/accounting/sales-overview.cmd.js";
 import * as orderLookup from "./commands/accounting/order-lookup.cmd.js";
+import * as accountingBackfill from "./commands/accounting/accounting-backfill.cmd.js";
 
 // Payment commands
 import * as payment from "./commands/payment/payment.cmd.js";
@@ -77,6 +78,7 @@ registerCommand(orderCustom);
 registerCommand(orderDelete);
 registerCommand(salesOverview);
 registerCommand(orderLookup);
+registerCommand(accountingBackfill);
 registerCommand(botConfig);
 registerCommand(priceList);
 registerCommand(payment);

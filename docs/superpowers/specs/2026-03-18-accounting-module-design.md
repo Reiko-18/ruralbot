@@ -61,6 +61,7 @@ E-commerce accounting module for RuralBot Discord bot. Tracks products, orders, 
 | `/order-delete` | `order_id` | Delete order by 6-char ID |
 | `/sales-overview` | (none) | Sales summary with cascading select menu (year -> month -> day) |
 | `/order-lookup` | `id_or_date` | Search by order ID or date |
+| `/accounting-backfill` | `channel`, `start`, `end`, `dry_run?` | Admin backfills missing Discord thread logs by scanning existing order IDs first |
 
 ## Thread Logging Flow
 
@@ -69,7 +70,7 @@ E-commerce accounting module for RuralBot Discord bot. Tracks products, orders, 
 3. In that channel, find thread named `YYYY-MM-DD` (matching order date).
 4. If no thread exists, create one.
 5. Send order detail Embed to the thread.
-6. If Discord delivery fails, the order remains in DB and the failure is logged. Use `npm run backfill:accounting-threads -- --start YYYY-MM-DD --end YYYY-MM-DD --channel-id CHANNEL_ID` to dry-run missing records, then add `--yes` to send only missing order IDs in ascending `createdAt` order.
+6. If Discord delivery fails, the order remains in DB and the failure is logged. Use `/accounting-backfill` or `npm run backfill:accounting-threads -- --start YYYY-MM-DD --end YYYY-MM-DD --channel-id CHANNEL_ID` to dry-run missing records, then disable `dry_run` or add `--yes` to send only missing order IDs in ascending `createdAt` order.
 
 ## Interactive Sales Overview UI
 
