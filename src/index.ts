@@ -9,6 +9,7 @@ import { KeepAliveService } from "./services/keepalive/keep_alive.js";
 import { startDashboard } from "./services/dashboard/server.js";
 import { auditPreviousBoot } from "./services/host/boot_audit.js";
 import { startGatewayWatchdog } from "./services/discord/gateway_watchdog.js";
+import { enforceBlockedGuilds } from "./services/discord/guild_guard.js";
 
 // Import commands
 import * as logAdd from "./commands/logger/log-add.cmd.js";
@@ -104,6 +105,12 @@ client.once(Events.ClientReady, async (readyClient) => {
     logger.info("Log configs loaded from database");
   } catch (err) {
     logger.error({ err }, "Failed to load log configs during startup");
+  }
+
+  try {
+    await enforceBlockedGuilds(readyClient);
+  } catch (err) {
+    logger.error({ err }, "Failed to enforce blocked guild list during startup");
   }
 
   try {

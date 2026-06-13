@@ -6,6 +6,8 @@ import {
   type SharedNameAndDescription,
 } from "discord.js";
 import { mirrorToSyncChannel } from "../services/config/sync_mirror.js";
+import { isBlockedGuildId, leaveBlockedGuild } from "../services/discord/guild_guard.js";
+import { logger } from "../services/logger/logger.js";
 
 interface Command {
   data: SharedNameAndDescription & { toJSON(): unknown };
@@ -21,6 +23,27 @@ export function registerCommand(command: Command): void {
 export async function handleInteraction(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
+  if (isBlockedGuildId(interaction.guildId)) {
+    logger.warn(
+      {
+        guildId: interaction.guildId,
+        commandName: interaction.commandName,
+        userId: interaction.user.id,
+      },
+      "Ignored command from blocked guild",
+    );
+
+    if (interaction.guild) {
+      try {
+        await leaveBlockedGuild(interaction.guild, "blocked_guild_interaction");
+      } catch (err) {
+        logger.error({ err, guildId: interaction.guildId }, "Failed to leave blocked guild after interaction");
+      }
+    }
+
+    return;
+  }
+
   const command = commands.get(interaction.commandName);
   if (!command) return;
   await command.execute(interaction);
