@@ -12,6 +12,7 @@ import { logger } from "../services/logger/logger.js";
 interface Command {
   data: SharedNameAndDescription & { toJSON(): unknown };
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+  mirrorResponse?: boolean;
 }
 
 const commands = new Collection<string, Command>();
@@ -47,8 +48,9 @@ export async function handleInteraction(
   const command = commands.get(interaction.commandName);
   if (!command) return;
   await command.execute(interaction);
-  // Mirror response to primary guild sync channel
-  await mirrorToSyncChannel(interaction);
+  if (command.mirrorResponse !== false) {
+    await mirrorToSyncChannel(interaction);
+  }
 }
 
 export async function deployCommands(): Promise<void> {

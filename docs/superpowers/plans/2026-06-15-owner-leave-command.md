@@ -18,10 +18,10 @@ RuralBot 再次被邀請到不明 Discord 伺服器，本次目標 guild id 為 
 
 ## 實作內容
 
-- 新增 `src/services/discord/bot_owner.ts`，解析 `BOT_OWNER_IDS`，只接受 17 到 20 位數字 Discord user id。
+- 新增 `src/services/discord/bot_owner.ts`，解析 `BOT_OWNER_IDS`，只接受 17 到 20 位數字 Discord user id；若正式環境漏設，會 fallback 到 Discord application owner（team app 則只取 team owner id）。
 - 新增 `src/commands/security/leave.cmd.ts`，提供 `/leave guild_id:<id>`：
   - 使用 ephemeral 回覆。
-  - 未設定 `BOT_OWNER_IDS` 時直接拒絕。
+  - 未設定 `BOT_OWNER_IDS` 且抓不到 application owner 時直接拒絕，並以 warn log 提醒補安全設定。
   - 非 owner 使用者直接拒絕並記錄 warn log。
   - 檢查 guild id 格式。
   - 從 cache 或 Discord API fetch guild 後呼叫 `guild.leave()`。
@@ -30,6 +30,8 @@ RuralBot 再次被邀請到不明 Discord 伺服器，本次目標 guild id 為 
 - 更新 `deploy-commands.mjs`，確保手動部署 slash commands 時也包含 `/leave`。
 - 更新 `.env.example`，加入 `BOT_OWNER_IDS`，並將 `1515521583169409114` 加入封鎖 guild 範例。
 - 更新 `src/services/discord/guild_guard.ts`，將 `1515521583169409114` 加入 emergency default blocklist，啟動掃描或再次加入時會自動離開。
+- 修正 `src/core/command_handler.ts` 與 `src/services/config/sync_mirror.ts`，讓 `/leave` 不進入同步鏡像，且 ephemeral 回覆在抓同步頻道前就直接略過。
+- 若同步頻道權限遺失，`Missing Access` 會轉為簡短 warn log，提示重新執行 `/bot-config set`，避免 Discord logger 顯示整段 stack trace。
 
 ## 安全界線
 
@@ -46,8 +48,9 @@ BLOCKED_GUILD_IDS=1500125455619985460,1515521583169409114
 
 更新後重新部署或重啟 `ruralbot`。啟動時會部署 slash commands，並掃描已加入 guild；若 bot 仍在 `1515521583169409114`，會自動呼叫 `guild.leave()`。
 
+若 Discord logger 出現 `Sync channel missing access`，代表資料庫中的 primary sync channel 已被刪除、權限被移除，或 bot 已離開該伺服器；請在可存取的主伺服器頻道重新執行 `/bot-config set channel:<頻道>`。
+
 ## 驗證
 
 - `npm run build`
 - `node --check deploy-commands.mjs`
-

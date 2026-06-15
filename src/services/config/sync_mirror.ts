@@ -7,10 +7,20 @@ import {
 import { getCachedBotConfig } from "./repo_bot_config.js";
 import { logger } from "../logger/logger.js";
 
+function getDiscordErrorCode(err: unknown): number | string | undefined {
+  if (err && typeof err === "object" && "code" in err) {
+    return (err as { code?: number | string }).code;
+  }
+  return undefined;
+}
+
 export async function mirrorToSyncChannel(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   try {
+    // Ephemeral command replies cannot be fetched and forwarded as public audit messages.
+    if (interaction.ephemeral) return;
+
     const config = getCachedBotConfig();
     if (!config) return;
 
@@ -24,9 +34,6 @@ export async function mirrorToSyncChannel(
       );
       return;
     }
-
-    // Skip mirroring for ephemeral replies — they cannot be fetched/forwarded
-    if (interaction.ephemeral) return;
 
     const reply = await interaction.fetchReply().catch(() => null);
     if (!reply) return;
@@ -72,6 +79,15 @@ export async function mirrorToSyncChannel(
 
     await syncChannel.send({ embeds });
   } catch (err) {
+    if (getDiscordErrorCode(err) === 50001) {
+      const config = getCachedBotConfig();
+      logger.warn(
+        { syncChannelId: config?.syncChannelId, code: 50001 },
+        "Sync channel missing access; run /bot-config set with a channel the bot can access",
+      );
+      return;
+    }
+
     logger.warn({ err }, "Failed to mirror response to sync channel");
   }
 }

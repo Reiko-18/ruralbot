@@ -5,10 +5,11 @@ import {
   type ChatInputCommandInteraction,
   type Guild,
 } from "discord.js";
-import { getBotOwnerIds, isBotOwner } from "../../services/discord/bot_owner.js";
+import { getBotOwnerIds } from "../../services/discord/bot_owner.js";
 import { logger } from "../../services/logger/logger.js";
 
 const GUILD_ID_PATTERN = /^\d{17,20}$/;
+export const mirrorResponse = false;
 
 async function fetchGuild(interaction: ChatInputCommandInteraction, guildId: string): Promise<Guild | null> {
   const cachedGuild = interaction.client.guilds.cache.get(guildId);
@@ -35,17 +36,17 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const ownerIds = getBotOwnerIds();
+  const ownerIds = await getBotOwnerIds(interaction.client);
   if (ownerIds.size === 0) {
-    logger.error(
+    logger.warn(
       { userId: interaction.user.id, commandName: interaction.commandName },
-      "Leave command blocked because BOT_OWNER_IDS is not configured",
+      "Leave command blocked because no bot owner id is available",
     );
     await interaction.editReply("安全設定未完成：請先在環境變數設定 `BOT_OWNER_IDS`。");
     return;
   }
 
-  if (!isBotOwner(interaction.user.id)) {
+  if (!ownerIds.has(interaction.user.id)) {
     logger.warn(
       {
         userId: interaction.user.id,
