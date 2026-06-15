@@ -366,6 +366,19 @@ const ticketAdmin = new SlashCommandBuilder()
   .setName("ticket-admin")
   .setDescription("顯示票口管理員專用按鈕");
 
+const leave = new SlashCommandBuilder()
+  .setName("leave")
+  .setDescription("讓機器人退出指定伺服器")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .addStringOption((o) =>
+    o
+      .setName("guild_id")
+      .setDescription("要退出的 Discord 伺服器 ID")
+      .setRequired(true)
+      .setMinLength(17)
+      .setMaxLength(20),
+  );
+
 const commands = [
   logAdd,
   logList,
@@ -387,6 +400,7 @@ const commands = [
   payment,
   rp,
   ticketAdmin,
+  leave,
 ].map((cmd) => cmd.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);

@@ -1,7 +1,10 @@
 import { type Client, type Guild } from "discord.js";
 import { logger } from "../logger/logger.js";
 
-const DEFAULT_BLOCKED_GUILD_IDS = new Set(["1500125455619985460"]);
+const DEFAULT_BLOCKED_GUILD_IDS = new Set([
+  "1500125455619985460",
+  "1515521583169409114",
+]);
 
 function parseBlockedGuildIds(value: string | undefined): Set<string> {
   const guildIds = new Set(DEFAULT_BLOCKED_GUILD_IDS);

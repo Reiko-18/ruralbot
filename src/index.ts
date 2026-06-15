@@ -43,6 +43,9 @@ import * as priceList from "./commands/price/price-list.cmd.js";
 // Ticket commands
 import * as ticketAdmin from "./commands/ticket/ticket-admin.cmd.js";
 
+// Security commands
+import * as leave from "./commands/security/leave.cmd.js";
+
 // Price events
 import { registerPriceMenuEvent } from "./events/price/price-menu.event.js";
 
@@ -85,6 +88,7 @@ registerCommand(priceList);
 registerCommand(payment);
 registerCommand(rp);
 registerCommand(ticketAdmin);
+registerCommand(leave);
 
 const client = new Client({
   intents: [
