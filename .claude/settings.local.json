@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(npm run:*)",
-      "Bash(\"D:/reiko''s coding:*)"
+      "Bash(\"D:/reiko''s coding:*)",
+      "PowerShell(node --version; npm --version; npm ls -g @anthropic-ai/claude-code 2>$null; \\(Get-Command claude -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(claude --version)",
+      "PowerShell(npm view @anthropic-ai/claude-code version)",
+      "PowerShell(npm install -g @anthropic-ai/claude-code@latest)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
