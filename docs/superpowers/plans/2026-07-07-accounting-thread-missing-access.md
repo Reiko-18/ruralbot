@@ -132,3 +132,21 @@ const CHANNEL_ACCESS_ERROR_CODES = new Set<number | string>([50001, 10003, 50013
 1. 檢查 `/etc/ruralbot/ruralbot.env` 是否設了 `ACCOUNTING_CHANNEL_ID`。若有且指向 bot 存取不到/已刪除的頻道 → 清空或改為有效頻道，重啟 `ruralbot`。
 2. 用 `/bot-config view` 查出 `primaryGuildId`，在**該主群**以管理員身分執行 `/accounting-setup channel:<可存取頻道>`，確保主群 `AccountingConfig.channelId` 有效。
 3. 確認 bot 仍是主群成員（未被 `/leave` 或 `BLOCKED_GUILD_IDS` 誤退），且對該頻道具 View Channel / Send Messages / Create Public Threads / Send Messages in Threads 權限。
+
+---
+
+## 實際處置（2026-07-07 於正式主機執行並驗證）
+
+從新版診斷 log 取得決定性線索：`source: "config"`、`targetGuildId: "1515521583169409114"`、`channelId: "1515521934152962209"`。
+
+**確認根因**：DB `BotConfig.primaryGuildId` 與 `syncChannelId` 都指向 `1515521583169409114`——這正是 2026-06-15 計畫加入封鎖名單、bot 已自動離開的「不明伺服器」。因此記帳轉址查到的頻道在一個 bot 早已不在的 guild，必然 50001。啟動 log 佐證：`BotConfig loaded: primaryGuildId:"1515521583169409114", syncChannelId:"1515521934152962209"`。
+
+**環境事實更正**：正式主機的 EnvironmentFile 實際為 **`/var/www/ruralbot/.env`**（`systemctl cat ruralbot` 確認），非 ops 範本寫的 `/etc/ruralbot/ruralbot.env`；且部署 unit 的 `ExecStart` 用 `node_modules/.bin/tsx`。`ops/ruralbot.service.example` 為過時範本，待另行對齊。
+
+**已套用修法（env 全域覆蓋，繞過壞掉的 primaryGuildId）**：
+1. 備份 `/var/www/ruralbot/.env` → `.env.bak.20260707-163829`。
+2. 寫入 `ACCOUNTING_CHANNEL_ID=1483831380029739169`（使用者指定的「訂單紀錄」頻道）。
+3. `sudo systemctl restart ruralbot`，服務 `active`、`Ready! Logged in as Ruralbot#9611`。
+4. 端對端驗證：以 bot token 打 `GET /channels/1483831380029739169` → `OK name「訂單紀錄」type 0 guild_id 1483731757780959284`，bot 確有存取權。
+
+**尚未處理的深層問題**：DB 的 `primaryGuildId`/`syncChannelId` 仍指向封鎖 guild `1515521583169409114`，故「同步鏡像」等依賴 primaryGuild 的功能仍失效。建議在真正主群 `1483731757780959284` 執行 `/bot-config set channel:<同步頻道>`（會一併把 primaryGuildId 修正為當前 guild），從根本修正；記帳因有 env 覆蓋不受影響。
