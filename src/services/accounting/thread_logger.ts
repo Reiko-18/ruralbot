@@ -10,6 +10,16 @@ import { getAccountingConfig } from "./repo_accounting_config.js";
 import { logger } from "../logger/logger.js";
 import { getCachedBotConfig } from "../config/repo_bot_config.js";
 
+function getDiscordErrorCode(err: unknown): number | string | undefined {
+  if (err && typeof err === "object" && "code" in err) {
+    return (err as { code?: number | string }).code;
+  }
+  return undefined;
+}
+
+// Discord 錯誤碼：50001 Missing Access、10003 Unknown Channel、50013 Missing Permissions
+const CHANNEL_ACCESS_ERROR_CODES = new Set<number | string>([50001, 10003, 50013]);
+
 export type OrderThreadLogOrder = {
   id: string;
   productName: string;
@@ -93,13 +103,14 @@ export async function logOrderToThread(
   guildId: string,
   order: OrderThreadLogOrder,
 ): Promise<void> {
-  try {
-    // Redirect to primary guild if configured
-    const botConfig = getCachedBotConfig();
-    const targetGuildId = botConfig?.primaryGuildId ?? guildId;
+  // Redirect to primary guild if configured
+  const botConfig = getCachedBotConfig();
+  const targetGuildId = botConfig?.primaryGuildId ?? guildId;
+  let channelId: string | null | undefined;
 
+  try {
     const config = await getAccountingConfig(targetGuildId);
-    const channelId = getAccountingChannelId(config?.channelId);
+    channelId = getAccountingChannelId(config?.channelId);
     if (!channelId) {
       logger.warn({ guildId: targetGuildId, orderId: order.id }, "No accounting channel configured, skipping thread log");
       return;
@@ -122,6 +133,19 @@ export async function logOrderToThread(
     await thread.send({ embeds: [embed] });
     logger.info({ orderId: order.id, channelId, threadName }, "Order logged to thread");
   } catch (err) {
+    if (CHANNEL_ACCESS_ERROR_CODES.has(getDiscordErrorCode(err) ?? -1)) {
+      logger.warn(
+        {
+          code: getDiscordErrorCode(err),
+          source: process.env.ACCOUNTING_CHANNEL_ID?.trim() ? "env" : "config",
+          targetGuildId,
+          channelId,
+          orderId: order.id,
+        },
+        "記帳頻道無法存取（Missing Access）；請確認 bot 仍在主群且對記帳頻道有 View/Send/建立討論串權限，或重跑 /accounting-setup 指向可存取頻道（若使用 ACCOUNTING_CHANNEL_ID env 則檢查該值）。",
+      );
+      return;
+    }
     logger.error({ err, guildId, orderId: order.id }, "Failed to log order to thread");
   }
 }

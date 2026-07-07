@@ -110,3 +110,25 @@ const CHANNEL_ACCESS_ERROR_CODES = new Set<number | string>([50001, 10003, 50013
 
 - `git add`/`commit`（建議 `fix(accounting): 收斂會計日誌頻道 Missing Access 錯誤`）/`push`。
 - 更新一份 repo 內文件（本計畫）與對應 Obsidian 筆記（`D:\reiko's coding corner\reiko's corner\ruralbot`）。
+
+---
+
+## 實作結果（2026-07-07 已落地）
+
+只改 `src/services/accounting/thread_logger.ts`，實際做法：
+
+1. 新增 `getDiscordErrorCode` helper 與 `CHANNEL_ACCESS_ERROR_CODES = {50001, 10003, 50013}`（沿用 `services/config/sync_mirror.ts` 慣例）。
+2. 把 `botConfig`、`targetGuildId` 與 `channelId` 宣告移到 `try` 外層，讓 catch 能取用做診斷。
+3. catch 內：若錯誤碼屬存取類，改印**簡短 warn** 並優雅 return（不中斷訂單），payload 含 `code`、`source`（`env`/`config`，依 `ACCOUNTING_CHANNEL_ID` env 是否有值判定）、`targetGuildId`、`channelId`、`orderId`；其他非預期錯誤維持 `logger.error`。
+
+**根因結論**：此錯誤為**設定/權限問題，非程式邏輯 bug**。轉址（`primaryGuildId ?? guildId`）與 env 優先序皆為刻意設計。程式改動只讓失敗「可自我診斷 + 不中斷」，真正要恢復同步需依下方設定步驟排除。
+
+**驗證**：`npm run build:server`（`tsc`）通過；code-reviewer 三軸審查結論「可合入」，無 blocker/major。
+
+## 設定面排除步驟（需在正式主機操作、以 runtime 值為準）
+
+依序排除，下次失敗的 warn log 會直接標出是 `source: env` 還是 `config`、以及 `targetGuildId`/`channelId`：
+
+1. 檢查 `/etc/ruralbot/ruralbot.env` 是否設了 `ACCOUNTING_CHANNEL_ID`。若有且指向 bot 存取不到/已刪除的頻道 → 清空或改為有效頻道，重啟 `ruralbot`。
+2. 用 `/bot-config view` 查出 `primaryGuildId`，在**該主群**以管理員身分執行 `/accounting-setup channel:<可存取頻道>`，確保主群 `AccountingConfig.channelId` 有效。
+3. 確認 bot 仍是主群成員（未被 `/leave` 或 `BLOCKED_GUILD_IDS` 誤退），且對該頻道具 View Channel / Send Messages / Create Public Threads / Send Messages in Threads 權限。
