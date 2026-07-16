@@ -7,6 +7,7 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { resolveButtonEmoji, resolveClientEmoji } from "../../services/discord/emoji.js";
+import { createRemarkToken } from "../../events/payment/rp-interact.event.js";
 
 const RP_THEME_COLOR = 0xb8a7ff;
 const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
@@ -28,7 +29,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const remark = interaction.options.getString("remark") ?? "";
   const userId = interaction.user.id;
   const ts = Math.floor(Date.now() / 1000);
-  const encodedRemark = encodeURIComponent(remark);
+  // 備註不進 customId（中文字經 encodeURIComponent 後容易超過 Discord 100 字元硬限制），
+  // 改用短 token 關聯至 process 內快取，實際內容由 rp-interact.event.ts 管理。
+  const remarkToken = createRemarkToken(remark);
   const paymentEmoji = resolveClientEmoji(interaction.client, PAYMENT_EMOJI);
   const familyMartEmoji = resolveButtonEmoji(interaction.client, FAMILY_MART_EMOJI);
   const sevenElevenEmoji = resolveButtonEmoji(interaction.client, SEVEN_ELEVEN_EMOJI);
@@ -54,12 +57,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(`rp:${userId}:${ts}:store:fami:${amount}:${encodedRemark}`)
+      .setCustomId(`rp:${userId}:${ts}:store:fami:${amount}:${remarkToken}`)
       .setLabel("全家 FamilyMart")
       .setEmoji(familyMartEmoji)
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
-      .setCustomId(`rp:${userId}:${ts}:store:711:${amount}:${encodedRemark}`)
+      .setCustomId(`rp:${userId}:${ts}:store:711:${amount}:${remarkToken}`)
       .setLabel("7-11 ibon")
       .setEmoji(sevenElevenEmoji)
       .setStyle(ButtonStyle.Primary),

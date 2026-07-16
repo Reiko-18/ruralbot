@@ -1,5 +1,6 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   MessageFlags,
   type ChatInputCommandInteraction,
 } from "discord.js";
@@ -12,17 +13,18 @@ import { logger } from "../../services/logger/logger.js";
 export const data = new SlashCommandBuilder()
   .setName("order-custom")
   .setDescription("Create a fully manual order")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o.setName("name").setDescription("Product/item name").setRequired(true),
   )
   .addNumberOption((o) =>
-    o.setName("price").setDescription("Selling price").setRequired(true),
+    o.setName("price").setDescription("Selling price").setRequired(true).setMinValue(0),
   )
   .addNumberOption((o) =>
-    o.setName("cost").setDescription("Cost price").setRequired(true),
+    o.setName("cost").setDescription("Cost price").setRequired(true).setMinValue(0),
   )
   .addIntegerOption((o) =>
-    o.setName("quantity").setDescription("Quantity (default: 1)"),
+    o.setName("quantity").setDescription("Quantity (default: 1)").setMinValue(1),
   )
   .addStringOption((o) =>
     o.setName("date").setDescription("Order date (YYYY-MM-DD, default: today)"),

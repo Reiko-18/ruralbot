@@ -1,5 +1,6 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
@@ -10,9 +11,13 @@ import { getAllCategories } from "../../services/accounting/repo_category.js";
 import { getProductsByCategoryId } from "../../services/accounting/repo_product.js";
 import { logger } from "../../services/logger/logger.js";
 
+// Discord select menu 最多 25 個選項，扣除固定的「全部分類總覽」保留 1 格
+const CATEGORY_MENU_LIMIT = 24;
+
 export const data = new SlashCommandBuilder()
   .setName("product-list")
-  .setDescription("Browse registered products by category");
+  .setDescription("Browse registered products by category")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 function buildOverviewEmbed(
   categories: { id: string; name: string; _count: number }[],
@@ -20,6 +25,10 @@ function buildOverviewEmbed(
   const lines = categories.map(
     (c) => `**${c.name}** — ${c._count} 項商品`,
   );
+  const footerText =
+    categories.length > CATEGORY_MENU_LIMIT
+      ? `請從下拉選單選擇分類查看詳細商品（下拉選單僅顯示前 ${CATEGORY_MENU_LIMIT} 個分類）`
+      : "請從下拉選單選擇分類查看詳細商品";
   return new EmbedBuilder()
     .setTitle("📦 商品清單")
     .setDescription(
@@ -28,7 +37,7 @@ function buildOverviewEmbed(
         : "目前沒有登記任何商品。",
     )
     .setColor(0x2196f3)
-    .setFooter({ text: "請從下拉選單選擇分類查看詳細商品" });
+    .setFooter({ text: footerText });
 }
 
 function buildCategoryEmbed(
@@ -78,12 +87,14 @@ function buildCategoryEmbed(
 function buildCategoryMenu(
   categories: { id: string; name: string; _count: number }[],
 ) {
+  // 比照 ticket_panel_builder.ts 的做法：裁切至上限，避免超過 Discord 25 選項限制
+  const visibleCategories = categories.slice(0, CATEGORY_MENU_LIMIT);
   const menu = new StringSelectMenuBuilder()
     .setCustomId("product_list_select")
     .setPlaceholder("選擇分類查看商品")
     .addOptions(
       { label: "全部分類總覽", value: "overview", description: "返回分類總覽" },
-      ...categories.map((c) => ({
+      ...visibleCategories.map((c) => ({
         label: c.name,
         value: c.id,
         description: `${c._count} 項商品`,

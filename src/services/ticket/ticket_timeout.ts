@@ -6,6 +6,7 @@ import { logger } from "../logger/logger.js";
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 let timer: ReturnType<typeof setInterval> | null = null;
 let clientRef: Client | null = null;
+let isRunning = false; // 防止 checkTimeouts 於前一輪尚未結束時重入
 
 function getEffectiveTimeout(instance: any): { remindHours: number | null; closeHours: number | null } {
   return {
@@ -16,6 +17,8 @@ function getEffectiveTimeout(instance: any): { remindHours: number | null; close
 
 async function checkTimeouts(): Promise<void> {
   if (!clientRef) return;
+  if (isRunning) return; // 前一輪尚未結束，跳過本次觸發避免重入
+  isRunning = true;
 
   try {
     const instances = await getOpenInstances();
@@ -99,6 +102,8 @@ async function checkTimeouts(): Promise<void> {
     }
   } catch (err) {
     logger.error({ err }, "Ticket timeout check failed");
+  } finally {
+    isRunning = false;
   }
 }
 

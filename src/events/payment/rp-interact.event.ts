@@ -8,7 +8,9 @@ import {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  MessageFlags,
 } from "discord.js";
+import { customAlphabet } from "nanoid";
 import { getPaymentConfig, getEffectiveCredentials, calculateFee } from "../../services/payment/repo_payment_config.js";
 import { createTransaction, updateTransactionStatus } from "../../services/payment/repo_payment_transaction.js";
 import { generatePaymentOrderId } from "../../services/payment/payment_id.js";
@@ -24,7 +26,54 @@ const RP_THEME_COLOR = 0xb8a7ff;
 const PAYMENT_EMOJI = "<a:ZSz26520125622:1343576083617812502>";
 const FAMILY_MART_EMOJI = "<:FamilyMart:1332695203735142440>";
 const SEVEN_ELEVEN_EMOJI = "<:711:1332695189403336738>";
-const buyerInfoCache = new Map<string, BuyerInfo>();
+// 備註不進 customId（避免中文備註經 encodeURIComponent 後超過 Discord 100 字元硬限制），
+// 改用短 token 關聯，實際備註內容存在下面的 process 內快取。
+interface CacheEntry<T> {
+  value: T;
+  timestamp: number;
+}
+
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 分鐘，與 /rp 流程逾時時間一致
+const CACHE_SWEEP_INTERVAL_MS = 5 * 60 * 1000; // 定期清掃間隔
+
+const buyerInfoCache = new Map<string, CacheEntry<BuyerInfo>>();
+const remarkCache = new Map<string, CacheEntry<string>>();
+
+const TOKEN_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const generateRemarkToken = customAlphabet(TOKEN_ALPHABET, 10);
+
+/** 建立備註快取並回傳短 token；無備註時回傳空字串，不佔用快取。供 rp.cmd.ts 呼叫。 */
+export function createRemarkToken(remark: string): string {
+  if (!remark) return "";
+  const token = generateRemarkToken();
+  remarkCache.set(token, { value: remark, timestamp: Date.now() });
+  return token;
+}
+
+function getRemark(token: string): string {
+  return remarkCache.get(token)?.value ?? "";
+}
+
+function deleteRemarkToken(token: string): void {
+  if (token) remarkCache.delete(token);
+}
+
+/** 交易完成/取消/逾時後，清除該筆流程殘留的備註與買家資訊快取。 */
+function cleanupRpCaches(parts: string[]): void {
+  deleteRemarkToken(parts[6] ?? "");
+  buyerInfoCache.delete(buildBuyerInfoKey(parts));
+}
+
+/** 定期清掃超過 TTL 仍未被清除的快取（例如使用者中途放棄流程）。 */
+function sweepExpiredCaches(): void {
+  const now = Date.now();
+  for (const [key, entry] of remarkCache) {
+    if (now - entry.timestamp > CACHE_TTL_MS) remarkCache.delete(key);
+  }
+  for (const [key, entry] of buyerInfoCache) {
+    if (now - entry.timestamp > CACHE_TTL_MS) buyerInfoCache.delete(key);
+  }
+}
 
 function buildBuyerInfoKey(parts: string[]): string {
   return [parts[1], parts[2], parts[4], parts[5], parts[6] ?? ""].join(":");
@@ -57,6 +106,8 @@ function formatDisplayOrderId(orderId: string): string {
 }
 
 export function registerRpInteractEvent(client: Client): void {
+  setInterval(sweepExpiredCaches, CACHE_SWEEP_INTERVAL_MS);
+
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton() && !interaction.isModalSubmit()) return;
     if (!interaction.customId.startsWith("rp:")) return;
@@ -66,6 +117,7 @@ export function registerRpInteractEvent(client: Client): void {
 
     // Timeout check (15 min = 900 seconds)
     if (Math.floor(Date.now() / 1000) - ts > 900) {
+      cleanupRpCaches(parts);
       await interaction.reply({ content: "此付款已逾時，請重新使用 /rp" });
       return;
     }
@@ -86,7 +138,7 @@ export function registerRpInteractEvent(client: Client): void {
       } else if (interaction.isButton() && action === "back") {
         await handleStoreSelect(interaction, parts);
       } else if (interaction.isButton() && action === "cancel") {
-        await handleCancel(interaction);
+        await handleCancel(interaction, parts);
       }
     } catch (err) {
       logger.error({ err }, "rp interaction failed");
@@ -94,14 +146,25 @@ export function registerRpInteractEvent(client: Client): void {
         embeds: [new EmbedBuilder().setTitle("發生錯誤").setDescription("操作失敗，請重新使用 /rp").setColor(0xef4444)],
         components: [],
       };
-      if (interaction.isButton()) {
-        await interaction.update(payload);
-      } else if (interaction.isModalSubmit()) {
-        if (interaction.deferred || interaction.replied) {
-          await interaction.editReply(payload);
-        } else {
-          await interaction.reply({ content: "操作失敗，請重新使用 /rp", ephemeral: true });
+      // 已 ack（deferred/replied）的互動不能再用 update()/reply()，否則會二次拋出
+      // InteractionAlreadyReplied；一律改用 editReply()。這裡再包一層 try/catch，
+      // 避免「回報錯誤」這個動作本身失敗又拋出未處理例外。
+      try {
+        if (interaction.isButton()) {
+          if (interaction.deferred || interaction.replied) {
+            await interaction.editReply(payload);
+          } else {
+            await interaction.update(payload);
+          }
+        } else if (interaction.isModalSubmit()) {
+          if (interaction.deferred || interaction.replied) {
+            await interaction.editReply(payload);
+          } else {
+            await interaction.reply({ content: "操作失敗，請重新使用 /rp", flags: MessageFlags.Ephemeral });
+          }
         }
+      } catch (replyErr) {
+        logger.error({ err: replyErr }, "rp interaction 錯誤回覆本身也失敗");
       }
     }
   });
@@ -111,7 +174,7 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
   const ts = parts[2];
   const store = parts[4]; // "fami" or "711"
   const amount = parseInt(parts[5], 10);
-  const encodedRemark = parts[6] ?? "";
+  const remarkToken = parts[6] ?? "";
   const guildId = interaction.guildId;
   const clickerId = interaction.user.id;
 
@@ -127,7 +190,7 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
     `◆ 訂單金額：${amount.toLocaleString()} 新台幣`,
     `◆ 付款方式：${storeEmoji} ${storeName} 代碼繳費`,
   ];
-  const remark = encodedRemark ? decodeURIComponent(encodedRemark) : "";
+  const remark = getRemark(remarkToken);
 
   const embed = new EmbedBuilder()
     .setTitle(`${paymentEmoji} 付款方式確認`)
@@ -145,11 +208,11 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(`rp:${clickerId}:${ts}:cancel`)
+      .setCustomId(buildBaseCustomId(parts, "cancel"))
       .setLabel("取消重選")
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId(`rp:${clickerId}:${ts}:confirm:${store}:${amount}:${encodedRemark}`)
+      .setCustomId(`rp:${clickerId}:${ts}:confirm:${store}:${amount}:${remarkToken}`)
       .setLabel("下一步：確認購買資訊")
       .setEmoji(getPaymentButtonEmoji(interaction))
       .setStyle(ButtonStyle.Primary),
@@ -159,7 +222,7 @@ async function handleStoreSelect(interaction: any, parts: string[]) {
 }
 
 async function handleBuyerInfoReview(interaction: any, parts: string[]) {
-  const buyerInfo = buyerInfoCache.get(buildBuyerInfoKey(parts));
+  const buyerInfo = buyerInfoCache.get(buildBuyerInfoKey(parts))?.value;
   await interaction.update(buildBuyerInfoReviewPayload(interaction, parts, buyerInfo));
 }
 
@@ -210,10 +273,10 @@ async function handleBuyerInfoModal(interaction: any, parts: string[]) {
   const ts = parts[2];
   const store = parts[4];
   const amount = parts[5];
-  const encodedRemark = parts[6] ?? "";
+  const remarkToken = parts[6] ?? "";
 
   const modal = new ModalBuilder()
-    .setCustomId(`rp:${interaction.user.id}:${ts}:buyer:${store}:${amount}:${encodedRemark}`)
+    .setCustomId(`rp:${interaction.user.id}:${ts}:buyer:${store}:${amount}:${remarkToken}`)
     .setTitle("填寫買家資料");
 
   const nameInput = new TextInputBuilder()
@@ -261,12 +324,12 @@ async function handleBuyerInfoSubmit(interaction: any, parts: string[]) {
     return;
   }
 
-  buyerInfoCache.set(buildBuyerInfoKey(parts), buyerInfo.value);
+  buyerInfoCache.set(buildBuyerInfoKey(parts), { value: buyerInfo.value, timestamp: Date.now() });
   await interaction.update(buildBuyerInfoReviewPayload(interaction, parts, buyerInfo.value));
 }
 
 async function handlePay(interaction: any, parts: string[]) {
-  const buyerInfo = buyerInfoCache.get(buildBuyerInfoKey(parts));
+  const buyerInfo = buyerInfoCache.get(buildBuyerInfoKey(parts))?.value;
   if (!buyerInfo) {
     await interaction.update(buildBuyerInfoReviewPayload(interaction, parts));
     return;
@@ -278,8 +341,7 @@ async function handlePay(interaction: any, parts: string[]) {
 async function handleConfirm(interaction: any, parts: string[], buyerInfo: BuyerInfo) {
   const store = parts[4]; // "fami" or "711"
   const amount = parseInt(parts[5], 10);
-  const encodedRemark = parts[6] ?? "";
-  const remark = encodedRemark ? decodeURIComponent(encodedRemark) : undefined;
+  const remark = getRemark(parts[6] ?? "") || undefined;
   const guildId = interaction.guildId;
 
   // Show loading state
@@ -301,31 +363,8 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   const payZg = STORE_PAY_ZG[store];
   const orderId = await generatePaymentOrderId(guildId);
 
-  // Call SmilePay Background API
-  const bgResult = await createBackgroundPayment(credentials, {
-    orderId,
-    amount: total,
-    payZg,
-    payerName: buyerInfo.payerName,
-    email: buyerInfo.payerEmail,
-    phone: buyerInfo.payerPhone,
-    remark,
-  });
-
-  if (bgResult.Status !== "1") {
-    logger.error({ orderId, status: bgResult.Status, desc: bgResult.Desc }, "SmilePay API returned error for /rp");
-    await interaction.editReply({
-      embeds: [new EmbedBuilder().setTitle("取號失敗").setDescription(`SmilePay 回應: ${bgResult.Desc}\n請稍後重試或聯繫管理員`).setColor(RP_THEME_COLOR)],
-      components: [],
-    });
-    return;
-  }
-
-  // Extract payment code based on store
-  const paymentCode = store === "711" ? bgResult.IbonNo : bgResult.FamiNO;
-  const payEndDate = bgResult.PayEndDate;
-
-  // Create transaction record (store channel/message/user for callback notifications)
+  // 先建立本地 PENDING 交易紀錄，再呼叫 SmilePay：避免 SmilePay 取號成功但本地寫入失敗，
+  // 造成日後 callback 對不到訂單的孤兒紀錄。
   const replyMsg = await interaction.fetchReply();
   const transaction = await createTransaction({
     guildId,
@@ -342,6 +381,45 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
     messageId: replyMsg.id,
     userId: interaction.user.id,
   });
+
+  // 本地交易已落地，備註/買家資訊快取不再需要，提前清除避免無限成長
+  cleanupRpCaches(parts);
+
+  // Call SmilePay Background API
+  let bgResult: Awaited<ReturnType<typeof createBackgroundPayment>>;
+  try {
+    bgResult = await createBackgroundPayment(credentials, {
+      orderId,
+      amount: total,
+      payZg,
+      payerName: buyerInfo.payerName,
+      email: buyerInfo.payerEmail,
+      phone: buyerInfo.payerPhone,
+      remark,
+    });
+  } catch (err) {
+    logger.error({ err, orderId }, "SmilePay API 呼叫失敗 for /rp");
+    await updateTransactionStatus(transaction.id, "FAILED");
+    await interaction.editReply({
+      embeds: [new EmbedBuilder().setTitle("取號失敗").setDescription("SmilePay 服務暫時無法連線\n請稍後重試或聯繫管理員").setColor(RP_THEME_COLOR)],
+      components: [],
+    });
+    return;
+  }
+
+  if (bgResult.Status !== "1") {
+    logger.error({ orderId, status: bgResult.Status, desc: bgResult.Desc }, "SmilePay API returned error for /rp");
+    await updateTransactionStatus(transaction.id, "FAILED");
+    await interaction.editReply({
+      embeds: [new EmbedBuilder().setTitle("取號失敗").setDescription(`SmilePay 回應: ${bgResult.Desc}\n請稍後重試或聯繫管理員`).setColor(RP_THEME_COLOR)],
+      components: [],
+    });
+    return;
+  }
+
+  // Extract payment code based on store
+  const paymentCode = store === "711" ? bgResult.IbonNo : bgResult.FamiNO;
+  const payEndDate = bgResult.PayEndDate;
 
   await updateTransactionStatus(transaction.id, "PENDING", {
     smilePayNo: bgResult.SmilePayNO,
@@ -412,7 +490,9 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
   }
 }
 
-async function handleCancel(interaction: any) {
+async function handleCancel(interaction: any, parts: string[]) {
+  cleanupRpCaches(parts);
+
   const embed = new EmbedBuilder()
     .setTitle(`${getPaymentEmoji(interaction)} 付款已取消`)
     .setColor(RP_THEME_COLOR)

@@ -1,5 +1,6 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   MessageFlags,
   type ChatInputCommandInteraction,
   type AutocompleteInteraction,
@@ -14,6 +15,7 @@ import { logger } from "../../services/logger/logger.js";
 export const data = new SlashCommandBuilder()
   .setName("order-add")
   .setDescription("Create an order from an existing product")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("product")
@@ -22,7 +24,7 @@ export const data = new SlashCommandBuilder()
       .setAutocomplete(true),
   )
   .addIntegerOption((o) =>
-    o.setName("quantity").setDescription("Quantity (default: 1)"),
+    o.setName("quantity").setDescription("Quantity (default: 1)").setMinValue(1),
   )
   .addNumberOption((o) =>
     o.setName("face_value").setDescription("面額（折數商品必填）"),

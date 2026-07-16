@@ -1,5 +1,6 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   MessageFlags,
   type ChatInputCommandInteraction,
 } from "discord.js";
@@ -9,6 +10,7 @@ import { logger } from "../../services/logger/logger.js";
 export const data = new SlashCommandBuilder()
   .setName("order-delete")
   .setDescription("Delete an order by its 6-character ID")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("order_id")

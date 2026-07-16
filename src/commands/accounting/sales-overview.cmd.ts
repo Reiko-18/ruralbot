@@ -6,6 +6,8 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ComponentType,
+  PermissionFlagsBits,
+  MessageFlags,
   type ChatInputCommandInteraction,
 } from "discord.js";
 import {
@@ -22,7 +24,8 @@ const PAGE_SIZE = 15;
 
 export const data = new SlashCommandBuilder()
   .setName("sales-overview")
-  .setDescription("View sales summary with order list and date filtering");
+  .setDescription("View sales summary with order list and date filtering")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 type OrderRow = {
   id: string;
@@ -147,24 +150,26 @@ function parseDateRange(state: OverviewState): {
   end?: Date;
   label: string;
 } {
+  // 日 = UTC 曆日，對齊選單 EXTRACT（repo_order.ts 以儲存的 UTC created_at 曆日分組），
+  // 避免行程本地時區解析與選單分桶對「同一天」的定義錯開。
   if (state.level === "all") return { label: "全部時間" };
   if (state.level === "year") {
     return {
-      start: new Date(state.year, 0, 1),
-      end: new Date(state.year + 1, 0, 1),
+      start: new Date(Date.UTC(state.year, 0, 1)),
+      end: new Date(Date.UTC(state.year + 1, 0, 1)),
       label: `${state.year} 年`,
     };
   }
   if (state.level === "month") {
     return {
-      start: new Date(state.year, state.month - 1, 1),
-      end: new Date(state.year, state.month, 1),
+      start: new Date(Date.UTC(state.year, state.month - 1, 1)),
+      end: new Date(Date.UTC(state.year, state.month, 1)),
       label: `${state.year} 年 ${state.month} 月`,
     };
   }
   return {
-    start: new Date(state.year, state.month - 1, state.day),
-    end: new Date(state.year, state.month - 1, state.day + 1),
+    start: new Date(Date.UTC(state.year, state.month - 1, state.day)),
+    end: new Date(Date.UTC(state.year, state.month - 1, state.day + 1)),
     label: `${state.year}-${String(state.month).padStart(2, "0")}-${String(state.day).padStart(2, "0")}`,
   };
 }
@@ -247,25 +252,60 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       time: 300_000,
     });
 
+    // 處理中旗標：避免同一則訊息的多次互動（例如連點按鈕）併發改寫共享狀態造成競態覆寫。
+    let isProcessing = false;
+
     collector.on("collect", async (i) => {
-      if (i.isStringSelectMenu()) {
-        // Date filter changed — reset page
-        currentState = parseSelection(i.values[0]);
-        const range = parseDateRange(currentState);
-        currentLabel = range.label;
-        currentStats = await aggregateSales(range.start, range.end);
-        currentOrders = await getOrders(range.start, range.end);
-        currentPage = 0;
-      } else if (i.isButton()) {
-        if (i.customId === "sales_prev") currentPage = Math.max(0, currentPage - 1);
-        if (i.customId === "sales_next") currentPage++;
+      if (isProcessing) {
+        // 上一次互動仍在處理中，忽略本次事件並僅單純 ack，避免顯示「互動失敗」
+        try {
+          await i.deferUpdate();
+        } catch {
+          // 互動可能已過期，忽略 ack 失敗
+        }
+        return;
       }
 
-      const newEmbed = buildEmbed(currentStats, currentOrders, currentLabel, currentPage);
-      const newDateMenu = await buildDateMenu(currentState);
-      const newComponents = buildComponents(newDateMenu, currentPage, currentOrders.length);
+      isProcessing = true;
+      try {
+        if (i.isStringSelectMenu()) {
+          // Date filter changed — reset page
+          currentState = parseSelection(i.values[0]);
+          const range = parseDateRange(currentState);
+          currentLabel = range.label;
+          currentStats = await aggregateSales(range.start, range.end);
+          currentOrders = await getOrders(range.start, range.end);
+          currentPage = 0;
+        } else if (i.isButton()) {
+          if (i.customId === "sales_prev") currentPage = Math.max(0, currentPage - 1);
+          if (i.customId === "sales_next") currentPage++;
+        }
 
-      await i.update({ embeds: [newEmbed], components: newComponents });
+        const newEmbed = buildEmbed(currentStats, currentOrders, currentLabel, currentPage);
+        const newDateMenu = await buildDateMenu(currentState);
+        const newComponents = buildComponents(newDateMenu, currentPage, currentOrders.length);
+
+        await i.update({ embeds: [newEmbed], components: newComponents });
+      } catch (err) {
+        logger.error({ err }, "Failed to update sales overview on interaction");
+        try {
+          await i.reply({
+            content: "更新營業總覽時發生錯誤，請稍後再試。",
+            flags: MessageFlags.Ephemeral,
+          });
+        } catch {
+          try {
+            await i.followUp({
+              content: "更新營業總覽時發生錯誤，請稍後再試。",
+              flags: MessageFlags.Ephemeral,
+            });
+          } catch {
+            // 回報錯誤本身失敗（互動可能已過期），僅忽略避免二次拋錯
+          }
+        }
+      } finally {
+        isProcessing = false;
+      }
     });
 
     collector.on("end", async () => {

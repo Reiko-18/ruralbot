@@ -1,5 +1,6 @@
 import {
   Collection,
+  MessageFlags,
   REST,
   Routes,
   type ChatInputCommandInteraction,
@@ -47,7 +48,33 @@ export async function handleInteraction(
 
   const command = commands.get(interaction.commandName);
   if (!command) return;
-  await command.execute(interaction);
+
+  try {
+    await command.execute(interaction);
+  } catch (err) {
+    logger.error(
+      { err, commandName: interaction.commandName, userId: interaction.user.id },
+      "指令執行時發生未攔截例外",
+    );
+
+    if (interaction.isRepliable() && !interaction.replied) {
+      try {
+        const failureContent = "❌ 指令執行時發生錯誤，請稍後再試。";
+        if (interaction.deferred) {
+          await interaction.editReply({ content: failureContent });
+        } else {
+          await interaction.reply({ content: failureContent, flags: MessageFlags.Ephemeral });
+        }
+      } catch (replyErr) {
+        logger.error(
+          { err: replyErr, commandName: interaction.commandName },
+          "回覆指令錯誤訊息失敗",
+        );
+      }
+    }
+    return;
+  }
+
   if (command.mirrorResponse !== false) {
     await mirrorToSyncChannel(interaction);
   }

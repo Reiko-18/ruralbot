@@ -200,11 +200,18 @@ export const deployTicketPanel = (guildId: string) =>
 
 // === Payment ===
 
+// GET/PUT /config 不再回傳 dcvc/rvg2c/verifyKey 明文，改回布林旗標，避免商家金鑰經 API 外洩。
+export type SanitizedPaymentConfig = Omit<PaymentConfig, "dcvc" | "rvg2c" | "verifyKey"> & {
+  hasDcvc: boolean;
+  hasRvg2c: boolean;
+  hasVerifyKey: boolean;
+};
+
 export const fetchPaymentConfig = (guildId: string) =>
-  request<{ config: PaymentConfig | null; hasEnvCredentials: boolean }>(`/payment/config/${guildId}`);
+  request<{ config: SanitizedPaymentConfig | null; hasEnvCredentials: boolean }>(`/payment/config/${guildId}`);
 
 export const updatePaymentConfig = (guildId: string, data: Partial<PaymentConfig>) =>
-  request<PaymentConfig>(`/payment/config/${guildId}`, {
+  request<SanitizedPaymentConfig>(`/payment/config/${guildId}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });

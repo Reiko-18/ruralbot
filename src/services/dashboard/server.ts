@@ -1,7 +1,9 @@
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import crypto from "crypto";
 import { type Client, ChannelType, type TextChannel } from "discord.js";
 import { logger } from "../logger/logger.js";
 import { refreshPriceCache } from "../price/price_cache.js";
@@ -73,6 +75,66 @@ import { paymentRoutes, setPaymentDiscordClient } from "./routes/payment.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// SmilePay 回呼必須維持匿名可存取，否則正式付款回呼會被鑑權擋下。
+const DASHBOARD_AUTH_BYPASS_PATHS = new Set(["/api/payment/callback"]);
+
+// 使用等長比較，避免密碼/帳號比對時的 timing side-channel。
+function safeCompareStrings(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) {
+    // 長度不同時仍執行一次等長比較（比較自身），維持大致固定的執行時間。
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// Express Basic Auth 中介層：fail-closed，未設定 DASHBOARD_USER/DASHBOARD_PASS 時一律回 503。
+function createDashboardAuthMiddleware() {
+  const dashboardUser = process.env.DASHBOARD_USER;
+  const dashboardPass = process.env.DASHBOARD_PASS;
+  const credentialsConfigured = !!(dashboardUser && dashboardPass);
+
+  if (!credentialsConfigured) {
+    logger.error(
+      "Dashboard 未設定存取憑證 (DASHBOARD_USER/DASHBOARD_PASS)，所有受保護路由將回傳 503",
+    );
+  }
+
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (DASHBOARD_AUTH_BYPASS_PATHS.has(req.path)) {
+      return next();
+    }
+
+    if (!credentialsConfigured) {
+      res.status(503).json({ error: "Dashboard 未設定存取憑證 (DASHBOARD_USER/DASHBOARD_PASS)" });
+      return;
+    }
+
+    const authHeader = req.headers.authorization;
+    const match = authHeader ? /^Basic\s+(.+)$/i.exec(authHeader) : null;
+    if (!match) {
+      res.set("WWW-Authenticate", 'Basic realm="RuralBot Dashboard"');
+      res.status(401).json({ error: "需要登入" });
+      return;
+    }
+
+    const decoded = Buffer.from(match[1], "base64").toString("utf8");
+    const sepIdx = decoded.indexOf(":");
+    const reqUser = sepIdx >= 0 ? decoded.slice(0, sepIdx) : decoded;
+    const reqPass = sepIdx >= 0 ? decoded.slice(sepIdx + 1) : "";
+
+    if (!safeCompareStrings(reqUser, dashboardUser!) || !safeCompareStrings(reqPass, dashboardPass!)) {
+      res.set("WWW-Authenticate", 'Basic realm="RuralBot Dashboard"');
+      res.status(401).json({ error: "帳號或密碼錯誤" });
+      return;
+    }
+
+    next();
+  };
+}
+
 export function startDashboard(client: Client): void {
   setPaymentDiscordClient(client);
   const app = express();
@@ -85,6 +147,10 @@ export function startDashboard(client: Client): void {
       uptimeSec: Math.floor(process.uptime()),
     });
   });
+
+  // ── 存取控制：以下所有 /api 路由與靜態 SPA 皆需通過 Basic Auth ──
+  // （SmilePay callback 於中介層內部排除，/healthz 維持匿名供監控使用）
+  app.use(createDashboardAuthMiddleware());
 
   // ── Discord Guild API Routes ──
 

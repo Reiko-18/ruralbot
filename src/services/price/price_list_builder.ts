@@ -15,6 +15,9 @@ interface PriceView {
   components: ActionRowBuilder<StringSelectMenuBuilder>[];
 }
 
+// Discord embed 欄位上限（EmbedBuilder.addFields 最多 25 筆）
+const MAX_EMBED_FIELDS = 25;
+
 function parseEmbedSettings(raw: string | null | undefined): EmbedSettings {
   if (!raw) return {};
   try {
@@ -176,8 +179,15 @@ function buildLeafView(node: any): PriceView {
   if (node.content) embed.setDescription(node.content);
   if (node.imageUrl) embed.setImage(node.imageUrl);
 
-  for (const item of node.items) {
+  const items = node.items.slice(0, MAX_EMBED_FIELDS);
+  for (const item of items) {
     embed.addFields({ name: item.label, value: item.price, inline: true });
+  }
+
+  if (node.items.length > MAX_EMBED_FIELDS) {
+    const existing = settings.footerText || "";
+    const warn = `⚠️ 僅顯示前 ${MAX_EMBED_FIELDS} 項`;
+    embed.setFooter({ text: existing ? `${existing} | ${warn}` : warn, iconURL: settings.footerIconUrl || undefined });
   }
 
   const backValue = node.parentId ? `back:${node.parentId}` : "back:root";

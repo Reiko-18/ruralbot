@@ -1,4 +1,5 @@
 import {
+  type AnyThreadChannel,
   type Client,
   type TextChannel,
   ChannelType,
@@ -35,27 +36,42 @@ export function formatOrderThreadDate(date: Date): string {
   return date.toISOString().split("T")[0]; // YYYY-MM-DD
 }
 
+// 同一頻道 + 同一討論串名稱的並發建立請求，共用同一個「建立中」Promise，避免競態下重複建立討論串。
+// 鍵：`${channel.id}:${name}`；Promise settle（成功或失敗）後從 Map 移除。
+const pendingThreadCreations = new Map<string, Promise<AnyThreadChannel>>();
+
 export async function getOrCreateOrderThread(channel: TextChannel, name: string) {
-  // Check active threads
-  const active = await channel.threads.fetchActive();
-  let thread = active.threads.find((t) => t.name === name);
-  if (thread) return thread;
+  const key = `${channel.id}:${name}`;
+  const existing = pendingThreadCreations.get(key);
+  if (existing) return existing;
 
-  // Check archived threads
-  const archived = await channel.threads.fetchArchived({ type: "public" });
-  thread = archived.threads.find((t) => t.name === name);
-  if (thread) {
-    await thread.setArchived(false);
-    return thread;
-  }
+  const creation = (async (): Promise<AnyThreadChannel> => {
+    // Check active threads
+    const active = await channel.threads.fetchActive();
+    let thread = active.threads.find((t) => t.name === name);
+    if (thread) return thread;
 
-  // Create new thread
-  return channel.threads.create({
-    name,
-    autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
-    type: ChannelType.PublicThread,
-    reason: `會計日誌 - ${name}`,
+    // Check archived threads
+    const archived = await channel.threads.fetchArchived({ type: "public" });
+    thread = archived.threads.find((t) => t.name === name);
+    if (thread) {
+      await thread.setArchived(false);
+      return thread;
+    }
+
+    // Create new thread
+    return channel.threads.create({
+      name,
+      autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+      type: ChannelType.PublicThread,
+      reason: `會計日誌 - ${name}`,
+    });
+  })().finally(() => {
+    pendingThreadCreations.delete(key);
   });
+
+  pendingThreadCreations.set(key, creation);
+  return creation;
 }
 
 export function buildOrderLogEmbed(order: OrderThreadLogOrder) {

@@ -10,8 +10,8 @@ import {
   updateTransactionStatus,
 } from "../../payment/repo_payment_transaction.js";
 import { generatePaymentOrderId } from "../../payment/payment_id.js";
-import { buildPaymentPageUrl, createBackgroundPayment, SMILEPAY_CALLBACK_OK_STATUS } from "../../payment/smilepay_api.js";
-import { handleCallback, sendPaymentSuccessNotifications } from "../../payment/payment_callback.js";
+import { buildPaymentPageUrl, createBackgroundPayment } from "../../payment/smilepay_api.js";
+import { handleCallback } from "../../payment/payment_callback.js";
 import { validateBuyerInfo } from "../../payment/buyer_info.js";
 
 let discordClient: Client | null = null;
@@ -26,12 +26,24 @@ export function getPaymentDiscordClient(): Client | null {
 
 export const paymentRoutes = Router();
 
+// 將 config 回應中的 dcvc/rvg2c/verifyKey 明文移除，改回布林旗標，避免商家金鑰經 API 外洩。
+function sanitizeConfig(config: Awaited<ReturnType<typeof getPaymentConfig>>) {
+  if (!config) return null;
+  const { dcvc, rvg2c, verifyKey, ...rest } = config;
+  return {
+    ...rest,
+    hasDcvc: !!(dcvc || process.env.SMILEPAY_DCVC),
+    hasRvg2c: !!(rvg2c || process.env.SMILEPAY_RVG2C),
+    hasVerifyKey: !!(verifyKey || process.env.SMILEPAY_VERIFY_KEY),
+  };
+}
+
 // GET /api/payment/config/:guildId
 paymentRoutes.get("/config/:guildId", async (req, res) => {
   try {
     const config = await getPaymentConfig(req.params.guildId);
     const hasEnvCredentials = !!(process.env.SMILEPAY_DCVC && process.env.SMILEPAY_RVG2C && process.env.SMILEPAY_VERIFY_KEY);
-    res.json({ config, hasEnvCredentials });
+    res.json({ config: sanitizeConfig(config), hasEnvCredentials });
   } catch (err) {
     logger.error({ err }, "Failed to fetch payment config");
     res.status(500).json({ error: "Internal server error" });
@@ -42,15 +54,21 @@ paymentRoutes.get("/config/:guildId", async (req, res) => {
 paymentRoutes.put("/config/:guildId", async (req, res) => {
   try {
     const { dcvc, rvg2c, verifyKey, enabled, feeFamily, fee711, fee711Over, fee711Threshold } = req.body;
-    const config = await upsertPaymentConfig(req.params.guildId, {
-      dcvc, rvg2c, verifyKey, enabled,
+    const data: Parameters<typeof upsertPaymentConfig>[1] = {
+      enabled,
       feeFamily: feeFamily != null ? Number(feeFamily) : null,
       fee711: fee711 != null ? Number(fee711) : null,
       fee711Over: fee711Over != null ? Number(fee711Over) : null,
       fee711Threshold: fee711Threshold != null ? Number(fee711Threshold) : null,
-    });
+    };
+    // 敏感金鑰欄位：留空字串或未提供時不覆寫既有 DB 值，避免前端讀不到金鑰、存檔時把既有值清空。
+    if (typeof dcvc === "string" && dcvc.trim() !== "") data.dcvc = dcvc;
+    if (typeof rvg2c === "string" && rvg2c.trim() !== "") data.rvg2c = rvg2c;
+    if (typeof verifyKey === "string" && verifyKey.trim() !== "") data.verifyKey = verifyKey;
+
+    const config = await upsertPaymentConfig(req.params.guildId, data);
     logger.info({ guildId: req.params.guildId }, "Payment config updated");
-    res.json(config);
+    res.json(sanitizeConfig(config));
   } catch (err) {
     logger.error({ err }, "Failed to update payment config");
     res.status(500).json({ error: "Internal server error" });
@@ -178,39 +196,6 @@ paymentRoutes.get("/stats/:guildId", async (req, res) => {
   } catch (err) {
     logger.error({ err }, "Failed to fetch transaction stats");
     res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// GET /api/payment/test-callback/:orderId — simulate a successful SmilePay callback
-paymentRoutes.get("/test-callback/:orderId", async (req, res) => {
-  try {
-    const { getTransactionByOrderId } = await import("../../payment/repo_payment_transaction.js");
-    const transaction = await getTransactionByOrderId(req.params.orderId);
-    if (!transaction) {
-      return res.status(404).json({ error: "Transaction not found" });
-    }
-
-    const fakeCallbackData: Record<string, string> = {
-      Od_sob: transaction.orderId,
-      Smseid: transaction.smilePayNo ?? `TEST-${Date.now()}`,
-      Amount: String(transaction.amount),
-      Classif: "C",
-      Mid_smilepay: "",
-    };
-
-    const result = transaction.status === "COMPLETED" && discordClient
-      ? { success: true, responseText: SMILEPAY_CALLBACK_OK_STATUS }
-      : await handleCallback(fakeCallbackData, "test-simulate", discordClient);
-
-    if (transaction.status === "COMPLETED" && discordClient) {
-      await sendPaymentSuccessNotifications(discordClient, transaction);
-    }
-
-    logger.info({ orderId: req.params.orderId }, "Test callback simulated");
-    res.json({ orderId: req.params.orderId, result });
-  } catch (err) {
-    logger.error({ err }, "Test callback simulation failed");
-    res.status(500).json({ error: "Simulation failed", message: String(err) });
   }
 });
 

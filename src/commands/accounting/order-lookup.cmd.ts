@@ -1,5 +1,6 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   EmbedBuilder,
   MessageFlags,
   type ChatInputCommandInteraction,
@@ -13,6 +14,7 @@ import { logger } from "../../services/logger/logger.js";
 export const data = new SlashCommandBuilder()
   .setName("order-lookup")
   .setDescription("Look up orders by ID or date")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("query")
@@ -28,9 +30,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const dateMatch = query.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
     if (dateMatch) {
-      const start = new Date(`${query}T00:00:00`);
-      const end = new Date(start);
-      end.setDate(end.getDate() + 1);
+      // 帶台北時區（+08:00），避免以主機系統時區解讀日期造成偏移
+      const start = new Date(`${query}T00:00:00+08:00`);
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
       const orders = await getOrdersByDateRange(start, end);
       if (orders.length === 0) {

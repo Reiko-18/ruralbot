@@ -1,20 +1,18 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   MessageFlags,
   type ChatInputCommandInteraction,
   type AutocompleteInteraction,
 } from "discord.js";
-import {
-  getAllProducts,
-  getProductById,
-  deleteProduct,
-  getProductOrderCount,
-} from "../../services/accounting/repo_product.js";
+import { getAllProducts } from "../../services/accounting/repo_product.js";
+import { prisma } from "../../core/db.js";
 import { logger } from "../../services/logger/logger.js";
 
 export const data = new SlashCommandBuilder()
   .setName("product-delete")
   .setDescription("Delete a registered product")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("product")
@@ -46,23 +44,39 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const productId = interaction.options.getString("product", true);
 
   try {
-    const product = await getProductById(productId);
-    if (!product) {
+    // 查詢關聯數量與刪除包在同一個互動式交易中，避免「查通過但刪除前又新增關聯訂單」的競態
+    const result = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({
+        where: { id: productId },
+        include: { category: true },
+      });
+      if (!product) {
+        return { status: "not_found" as const };
+      }
+
+      const orderCount = await tx.order.count({ where: { productId } });
+      if (orderCount > 0) {
+        return { status: "has_orders" as const, product, orderCount };
+      }
+
+      await tx.product.delete({ where: { id: productId } });
+      return { status: "deleted" as const, product };
+    });
+
+    if (result.status === "not_found") {
       await interaction.editReply("找不到該商品。");
       return;
     }
 
-    const orderCount = await getProductOrderCount(productId);
-    if (orderCount > 0) {
+    if (result.status === "has_orders") {
       await interaction.editReply(
-        `無法刪除：商品 **${product.name}** 仍有 **${orderCount}** 筆關聯訂單，請先刪除相關訂單。`,
+        `無法刪除：商品 **${result.product.name}** 仍有 **${result.orderCount}** 筆關聯訂單，請先刪除相關訂單。`,
       );
       return;
     }
 
-    await deleteProduct(productId);
-    logger.info({ productId, productName: product.name }, "Product deleted");
-    await interaction.editReply(`商品 **${product.name}** 已刪除`);
+    logger.info({ productId, productName: result.product.name }, "Product deleted");
+    await interaction.editReply(`商品 **${result.product.name}** 已刪除`);
   } catch (err: any) {
     if (err?.code === "P2025") {
       await interaction.editReply("找不到該商品。");

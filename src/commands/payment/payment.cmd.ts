@@ -1,5 +1,6 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   MessageFlags,
   EmbedBuilder,
   type ChatInputCommandInteraction,
@@ -20,6 +21,7 @@ import { validateBuyerInfo } from "../../services/payment/buyer_info.js";
 export const data = new SlashCommandBuilder()
   .setName("payment")
   .setDescription("金流管理")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand((sub) =>
     sub
       .setName("create")

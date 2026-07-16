@@ -1,5 +1,6 @@
 import {
   SlashCommandBuilder,
+  PermissionFlagsBits,
   MessageFlags,
   type ChatInputCommandInteraction,
   type AutocompleteInteraction,
@@ -11,14 +12,15 @@ import { logger } from "../../services/logger/logger.js";
 export const data = new SlashCommandBuilder()
   .setName("product-add")
   .setDescription("Register a new product")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o.setName("name").setDescription("Product name").setRequired(true),
   )
   .addNumberOption((o) =>
-    o.setName("price").setDescription("Selling price").setRequired(true),
+    o.setName("price").setDescription("Selling price").setRequired(true).setMinValue(0),
   )
   .addNumberOption((o) =>
-    o.setName("cost").setDescription("Cost price").setRequired(true),
+    o.setName("cost").setDescription("Cost price").setRequired(true).setMinValue(0),
   )
   .addStringOption((o) =>
     o

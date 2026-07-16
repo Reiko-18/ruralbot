@@ -2,7 +2,8 @@ import { type Client, EmbedBuilder, type TextChannel } from "discord.js";
 import { logger } from "../logger/logger.js";
 import {
   getTransactionByOrderId,
-  updateTransactionStatus,
+  completePendingTransaction,
+  failPendingTransaction,
   createCallbackLog,
 } from "./repo_payment_transaction.js";
 import { getPaymentConfig, getEffectiveCredentials } from "./repo_payment_config.js";
@@ -98,11 +99,21 @@ export async function handleCallback(
   }
 
   // Verify callback authenticity using Mid_smilepay (SmilePay 驗證碼)
+  // 條件式 fail-closed：有設定商家驗證參數時必須驗簽章成功，未設定時明確記錄「驗證停用」，
+  // 但無論簽章是否有驗，仍必須通過下方金額比對才會被視為付款成功。
   try {
     const config = await getPaymentConfig(transaction.guildId);
     const credentials = getEffectiveCredentials(config);
 
-    if (credentials.merchantVerifyParam && callbackData.Mid_smilepay) {
+    if (credentials.merchantVerifyParam) {
+      if (!callbackData.Mid_smilepay) {
+        logger.warn(
+          { orderId, sourceIp },
+          "Callback 缺少 Mid_smilepay 簽章，驗證失敗——拒絕標記為完成",
+        );
+        return { success: false, responseText: CALLBACK_VERIFY_FAIL_STATUS };
+      }
+
       const expected = buildMidSmilepay({
         merchantVerifyParam: credentials.merchantVerifyParam,
         amount: parseInt(callbackData.Amount, 10),
@@ -110,46 +121,78 @@ export async function handleCallback(
       });
 
       if (String(expected) !== callbackData.Mid_smilepay) {
-        logger.error(
+        logger.warn(
           { expected, received: callbackData.Mid_smilepay, orderId, sourceIp },
           "Callback Mid_smilepay mismatch — possible forgery",
         );
         return { success: false, responseText: CALLBACK_VERIFY_FAIL_STATUS };
       }
+    } else {
+      logger.warn(
+        { orderId, sourceIp },
+        "Mid_smilepay 簽章驗證停用：未設定 SMILEPAY_MERCHANT_VERIFY_PARAM，僅以金額比對作為驗證依據",
+      );
     }
   } catch (err) {
     logger.error({ err, orderId }, "Failed to verify callback credentials");
     return { success: false, responseText: CALLBACK_VERIFY_FAIL_STATUS };
   }
 
+  // 金額比對（一律啟用）：callback 回傳金額必須與建立交易時記錄的金額一致，
+  // 避免金額遭竄改後仍被標記為完成付款的詐欺情境。
+  const actualAmount = parseInt(callbackData.Amount, 10);
+  if (actualAmount !== transaction.amount) {
+    logger.warn(
+      { orderId, callbackAmount: actualAmount, expectedAmount: transaction.amount, sourceIp },
+      "Callback 金額與交易金額不符，拒絕標記為完成",
+    );
+    return { success: false, responseText: CALLBACK_VERIFY_FAIL_STATUS };
+  }
+
   // Determine payment status from callback data
   // Amount > 0 means actual payment received; Classif indicates payment method
-  const actualAmount = parseInt(callbackData.Amount, 10);
   const isSuccess = Number.isFinite(actualAmount) && actualAmount > 0 && callbackData.Classif !== "";
-  const newStatus = isSuccess ? "COMPLETED" : "FAILED";
 
-  // Update transaction status
+  // Update transaction status atomically（PENDING → COMPLETED/FAILED）
+  // 用 updateMany 帶 status: 'PENDING' 條件取代 read-then-write，避免並發回呼重複轉態、重複發通知。
   try {
-    const updatedTransaction = await updateTransactionStatus(transaction.id, newStatus, {
-      smilePayNo: callbackData.Smseid,
-      ...(isSuccess ? { completedAt: new Date() } : {}),
-    });
-
     if (isSuccess) {
-      logger.info(
-        { orderId, smseid: callbackData.Smseid, amount: actualAmount },
-        "Payment completed successfully",
-      );
+      const completed = await completePendingTransaction(orderId, {
+        smilePayNo: callbackData.Smseid,
+      });
 
-      // Send Discord notifications
-      if (discordClient) {
-        await sendPaymentSuccessNotifications(discordClient, updatedTransaction);
+      if (completed) {
+        logger.info(
+          { orderId, smseid: callbackData.Smseid, amount: actualAmount },
+          "Payment completed successfully",
+        );
+
+        // Send Discord notifications
+        if (discordClient) {
+          await sendPaymentSuccessNotifications(discordClient, transaction);
+        }
+      } else {
+        logger.info(
+          { orderId, smseid: callbackData.Smseid },
+          "交易已由並發的回呼完成轉態，本次呼叫略過通知避免重複發送",
+        );
       }
     } else {
-      logger.warn(
-        { orderId, smseid: callbackData.Smseid, classif: callbackData.Classif, amount: actualAmount },
-        "Payment failed per SmilePay callback",
-      );
+      const failed = await failPendingTransaction(orderId, {
+        smilePayNo: callbackData.Smseid,
+      });
+
+      if (failed) {
+        logger.warn(
+          { orderId, smseid: callbackData.Smseid, classif: callbackData.Classif, amount: actualAmount },
+          "Payment failed per SmilePay callback",
+        );
+      } else {
+        logger.info(
+          { orderId, smseid: callbackData.Smseid },
+          "交易已由並發的回呼處理完成，本次失敗轉態略過",
+        );
+      }
     }
 
     return { success: true, responseText: okText };

@@ -38,21 +38,46 @@ export async function getOrders(start?: Date, end?: Date) {
   });
 }
 
+type AggregateRow = {
+  total_revenue: number | null;
+  total_cost: number | null;
+  total_profit: number | null;
+  order_count: bigint;
+};
+
 export async function aggregateSales(
   start?: Date,
   end?: Date,
 ): Promise<SalesAggregation> {
-  const where = start && end ? { createdAt: { gte: start, lt: end } } : {};
-  const result = await prisma.order.aggregate({
-    where,
-    _sum: { actualPrice: true, actualCost: true, profit: true },
-    _count: true,
-  });
+  // actual_price / actual_cost 為單價/單位成本，需乘上 quantity 才是營收/成本；
+  // profit 於寫入時已乘入 quantity，故直接加總即可。Prisma _sum 無法做欄位相乘，改用 $queryRaw。
+  // WHERE 條件比照原本 Prisma where：僅在 start 與 end 同時提供時套用日期區間過濾，其餘情況不過濾。
+  const rows =
+    start && end
+      ? await prisma.$queryRaw<AggregateRow[]>`
+          SELECT
+            SUM(actual_price * quantity) AS total_revenue,
+            SUM(actual_cost * quantity) AS total_cost,
+            SUM(profit) AS total_profit,
+            COUNT(*) AS order_count
+          FROM orders
+          WHERE created_at >= ${start} AND created_at < ${end}
+        `
+      : await prisma.$queryRaw<AggregateRow[]>`
+          SELECT
+            SUM(actual_price * quantity) AS total_revenue,
+            SUM(actual_cost * quantity) AS total_cost,
+            SUM(profit) AS total_profit,
+            COUNT(*) AS order_count
+          FROM orders
+        `;
+
+  const row = rows[0];
   return {
-    totalRevenue: result._sum.actualPrice ?? 0,
-    totalCost: result._sum.actualCost ?? 0,
-    totalProfit: result._sum.profit ?? 0,
-    orderCount: result._count,
+    totalRevenue: Number(row?.total_revenue ?? 0),
+    totalCost: Number(row?.total_cost ?? 0),
+    totalProfit: Number(row?.total_profit ?? 0),
+    orderCount: Number(row?.order_count ?? 0),
   };
 }
 
