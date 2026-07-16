@@ -15,6 +15,7 @@ import type {
   DiscordGuild,
   DiscordChannel,
   PaymentConfig,
+  SanitizedPaymentConfig,
   PaymentTransaction,
   PaymentTransactionDetail,
   PaymentTransactionList,
@@ -199,13 +200,7 @@ export const deployTicketPanel = (guildId: string) =>
   request<{ success: boolean; action: string }>(`/ticket/deploy-panel/${guildId}`, { method: "POST" });
 
 // === Payment ===
-
-// GET/PUT /config 不再回傳 dcvc/rvg2c/verifyKey 明文，改回布林旗標，避免商家金鑰經 API 外洩。
-export type SanitizedPaymentConfig = Omit<PaymentConfig, "dcvc" | "rvg2c" | "verifyKey"> & {
-  hasDcvc: boolean;
-  hasRvg2c: boolean;
-  hasVerifyKey: boolean;
-};
+// SanitizedPaymentConfig 型別已移至 ../types 與 PaymentConfig 集中定義。
 
 export const fetchPaymentConfig = (guildId: string) =>
   request<{ config: SanitizedPaymentConfig | null; hasEnvCredentials: boolean }>(`/payment/config/${guildId}`);

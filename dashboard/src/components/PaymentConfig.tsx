@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Settings, Store, Shield } from "lucide-react";
-import { fetchPaymentConfig, updatePaymentConfig, type SanitizedPaymentConfig } from "../api/client";
+import { fetchPaymentConfig, updatePaymentConfig } from "../api/client";
+import type { SanitizedPaymentConfig } from "../types";
 import { BlurFade } from "./magicui/blur-fade";
 
 interface Props {

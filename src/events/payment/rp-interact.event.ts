@@ -38,6 +38,8 @@ const CACHE_SWEEP_INTERVAL_MS = 5 * 60 * 1000; // 定期清掃間隔
 
 const buyerInfoCache = new Map<string, CacheEntry<BuyerInfo>>();
 const remarkCache = new Map<string, CacheEntry<string>>();
+// 進行中的確認流程鎖（鍵為付款訊息 ID），防止使用者連點確認鈕建立兩筆交易 / 向 SmilePay 取兩次號。
+const confirmInFlight = new Set<string>();
 
 const TOKEN_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const generateRemarkToken = customAlphabet(TOKEN_ALPHABET, 10);
@@ -339,6 +341,15 @@ async function handlePay(interaction: any, parts: string[]) {
 }
 
 async function handleConfirm(interaction: any, parts: string[], buyerInfo: BuyerInfo) {
+  // 防連點：同步（無 await）檢查並設定鎖，單執行緒下可序列化兩次近乎同時的點擊；
+  // 第二次點擊會落入 has()===true 分支，靜默 ack 後直接返回，不重複建單。
+  const lockKey = interaction.message?.id ?? buildBuyerInfoKey(parts);
+  if (confirmInFlight.has(lockKey)) {
+    await interaction.deferUpdate().catch(() => {});
+    return;
+  }
+  confirmInFlight.add(lockKey);
+  try {
   const store = parts[4]; // "fami" or "711"
   const amount = parseInt(parts[5], 10);
   const remark = getRemark(parts[6] ?? "") || undefined;
@@ -487,6 +498,9 @@ async function handleConfirm(interaction: any, parts: string[], buyerInfo: Buyer
     await sendUserDm(interaction.user, { embeds: [dmEmbed] }, { orderId, notificationType: "payment_info" });
   } catch (dmErr) {
     logger.warn({ err: dmErr, orderId, userId: interaction.user.id }, "Failed to build payment DM");
+  }
+  } finally {
+    confirmInFlight.delete(lockKey);
   }
 }
 

@@ -182,6 +182,8 @@ export interface TicketStats {
 export interface PaymentConfig {
   id: string;
   guildId: string;
+  // 以下三個為 SmilePay 商家金鑰，屬 write-only：可經 PUT 更新，但 API GET 一律不回傳明文，
+  // 改回傳 SanitizedPaymentConfig 的 hasDcvc/hasRvg2c/hasVerifyKey 布林旗標。
   dcvc: string | null;
   rvg2c: string | null;
   verifyKey: string | null;
@@ -192,6 +194,13 @@ export interface PaymentConfig {
   fee711Threshold: number | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// GET /payment/config 回傳的安全形狀：移除三個金鑰明文，改以布林旗標表示是否已設定。
+export interface SanitizedPaymentConfig extends Omit<PaymentConfig, "dcvc" | "rvg2c" | "verifyKey"> {
+  hasDcvc: boolean;
+  hasRvg2c: boolean;
+  hasVerifyKey: boolean;
 }
 
 export interface PaymentTransaction {
