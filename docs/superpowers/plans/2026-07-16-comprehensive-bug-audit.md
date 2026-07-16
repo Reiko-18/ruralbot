@@ -55,14 +55,26 @@
 - 完整 `npm run build`（db:generate + tsc + vite）：通過。
 - opus code-reviewer 對整份 diff 覆核：可合入，7 個高風險點逐一查證無誤。
 
-## 部署必要步驟（主機端）
-> ⚠️ Basic Auth 為 **fail-closed**：新版部署後若未設帳密，dashboard 會全鎖（回 503）。
-1. 於主機 `.env` / systemd EnvironmentFile 設定：
-   - `DASHBOARD_USER`、`DASHBOARD_PASS`（dashboard 登入帳密）。
-   - `SMILEPAY_MERCHANT_VERIFY_PARAM`（SmilePay 後台檢查碼；設定後才會強制驗簽章，強烈建議設定）。
-2. 重新 `npm run build` 並重啟服務。
-3. 驗證：`GET /healthz` 匿名 200；未帶帳密存取 `/api/*` 回 401；SmilePay `POST /api/payment/callback` 匿名可達；
-   `GET /api/payment/config/:guildId` 回應不含金鑰明文。
+## 主機端部署（已於 2026-07-16 完成）
+主機：`reiko@ReikosDATA`，env 檔 `/var/www/ruralbot/.env`（reiko 擁有，已改 chmod 600），
+auto-deploy 每分鐘 `git pull --ff-only → npm ci → npm run build → systemctl restart`。
+> ⚠️ Basic Auth 為 **fail-closed**：`7e1be41` 部署後未設帳密期間 dashboard 一度全鎖（503），
+> 已補設帳密恢復。
+已完成設定：
+- `DASHBOARD_USER=0908638390`、`DASHBOARD_PASS`（dashboard Basic Auth 登入）。
+- `SMILEPAY_DCVC/RVG2C/VERIFY_KEY/ROTURL` 確認為正式商家值（Dcvc 19567）。
+- **`SMILEPAY_MERCHANT_VERIFY_PARAM` 保持空白**（原因見下方發現事項）。
+驗證結果（本機 curl）：`healthz` 匿名 200、`/api/*` 無帳密 401、正確帳密 200、錯誤帳密 401、
+`/api/payment/callback` 匿名可達 200；服務日誌乾淨（`Dashboard server started`、`Logged in as Ruralbot#9611`、無 unhandled）。
+
+## 發現：SmilePay 回呼未送 Mid_smilepay 簽章（重要）
+查 `payment_callback_logs` 最近 3 筆真實回呼，`Mid_smilepay` **皆為空字串**。因此：
+- 新版 callback 邏輯在 `SMILEPAY_MERCHANT_VERIFY_PARAM` 有設定時為 fail-closed，遇空簽章即拒絕；
+  若設定該參數，**所有真實付款回呼都會被擋、訂單無法標記完成**。
+- 舊版因「param 且 Mid_smilepay 皆非空才驗」而 fail-open，故此參數過去雖已設 `1617` 卻無作用。
+- 處置：**清空 `SMILEPAY_MERCHANT_VERIFY_PARAM`**，付款改以「金額硬比對」驗證（已一律啟用）。
+- 若要啟用簽章驗證：先做一筆測試付款，確認新的 `payment_callback_logs.raw_data` 內 `Mid_smilepay`
+  為非空且與 `buildMidSmilepay` 計算值一致，再填入該參數。
 
 ## 發現但未於本次處理（既有、需後續決策）
 - `smilepay_api.ts::buildPaymentPageUrl` 的轉址付款頁 URL 依 SmilePay 規格內嵌 `Dcvc/Rvg2c/Verify_key`。
