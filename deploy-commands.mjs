@@ -92,14 +92,16 @@ const accountingSetup = new SlashCommandBuilder()
 const categoryAdd = new SlashCommandBuilder()
   .setName("category-add")
   .setDescription("Create a new product category")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
-    o.setName("name").setDescription("Category name").setRequired(true),
+    o.setName("name").setDescription("Category name").setRequired(true).setMaxLength(80),
   );
 
 // ── 6. category-delete ──
 const categoryDelete = new SlashCommandBuilder()
   .setName("category-delete")
   .setDescription("Delete an existing product category")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("category")
@@ -112,14 +114,15 @@ const categoryDelete = new SlashCommandBuilder()
 const productAdd = new SlashCommandBuilder()
   .setName("product-add")
   .setDescription("Register a new product")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
-    o.setName("name").setDescription("Product name").setRequired(true),
+    o.setName("name").setDescription("Product name").setRequired(true).setMaxLength(80),
   )
   .addNumberOption((o) =>
-    o.setName("price").setDescription("Selling price").setRequired(true),
+    o.setName("price").setDescription("Selling price").setRequired(true).setMinValue(0),
   )
   .addNumberOption((o) =>
-    o.setName("cost").setDescription("Cost price").setRequired(true),
+    o.setName("cost").setDescription("Cost price").setRequired(true).setMinValue(0),
   )
   .addStringOption((o) =>
     o
@@ -144,12 +147,14 @@ const productAdd = new SlashCommandBuilder()
 // ── 8. product-list ──
 const productList = new SlashCommandBuilder()
   .setName("product-list")
-  .setDescription("Browse registered products by category");
+  .setDescription("Browse registered products by category")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 // ── 9. product-delete ──
 const productDelete = new SlashCommandBuilder()
   .setName("product-delete")
   .setDescription("Delete a registered product")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("product")
@@ -162,6 +167,7 @@ const productDelete = new SlashCommandBuilder()
 const orderAdd = new SlashCommandBuilder()
   .setName("order-add")
   .setDescription("Create an order from an existing product")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("product")
@@ -170,13 +176,13 @@ const orderAdd = new SlashCommandBuilder()
       .setAutocomplete(true),
   )
   .addIntegerOption((o) =>
-    o.setName("quantity").setDescription("Quantity (default: 1)"),
+    o.setName("quantity").setDescription("Quantity (default: 1)").setMinValue(1),
   )
   .addNumberOption((o) =>
-    o.setName("face_value").setDescription("面額（折數商品必填）"),
+    o.setName("face_value").setDescription("面額（折數商品必填）").setMinValue(0),
   )
   .addNumberOption((o) =>
-    o.setName("custom_price").setDescription("Override selling price"),
+    o.setName("custom_price").setDescription("Override selling price").setMinValue(0),
   )
   .addStringOption((o) =>
     o.setName("date").setDescription("Order date (YYYY-MM-DD, default: today)"),
@@ -186,17 +192,18 @@ const orderAdd = new SlashCommandBuilder()
 const orderCustom = new SlashCommandBuilder()
   .setName("order-custom")
   .setDescription("Create a fully manual order")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
-    o.setName("name").setDescription("Product/item name").setRequired(true),
+    o.setName("name").setDescription("Product/item name").setRequired(true).setMaxLength(80),
   )
   .addNumberOption((o) =>
-    o.setName("price").setDescription("Selling price").setRequired(true),
+    o.setName("price").setDescription("Selling price").setRequired(true).setMinValue(0),
   )
   .addNumberOption((o) =>
-    o.setName("cost").setDescription("Cost price").setRequired(true),
+    o.setName("cost").setDescription("Cost price").setRequired(true).setMinValue(0),
   )
   .addIntegerOption((o) =>
-    o.setName("quantity").setDescription("Quantity (default: 1)"),
+    o.setName("quantity").setDescription("Quantity (default: 1)").setMinValue(1),
   )
   .addStringOption((o) =>
     o.setName("date").setDescription("Order date (YYYY-MM-DD, default: today)"),
@@ -206,6 +213,19 @@ const orderCustom = new SlashCommandBuilder()
 const orderDelete = new SlashCommandBuilder()
   .setName("order-delete")
   .setDescription("Delete an order by its 6-character ID")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .addStringOption((o) =>
+    o
+      .setName("order_id")
+      .setDescription("6-character order ID")
+      .setRequired(true),
+  );
+
+// ── 12b. order-restore ──
+const orderRestore = new SlashCommandBuilder()
+  .setName("order-restore")
+  .setDescription("Restore a voided order by its 6-character ID")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("order_id")
@@ -216,12 +236,30 @@ const orderDelete = new SlashCommandBuilder()
 // ── 13. sales-overview ──
 const salesOverview = new SlashCommandBuilder()
   .setName("sales-overview")
-  .setDescription("View sales summary with order list and date filtering");
+  .setDescription("View sales summary with order list and date filtering")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+
+// ── 13b. sales-export ──
+const salesExport = new SlashCommandBuilder()
+  .setName("sales-export")
+  .setDescription("Export sales orders in a date range as CSV")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .addStringOption((o) =>
+    o
+      .setName("start")
+      .setDescription("起始日期 YYYY-MM-DD（台北曆日，選填，預設本月）"),
+  )
+  .addStringOption((o) =>
+    o
+      .setName("end")
+      .setDescription("結束日期 YYYY-MM-DD（台北曆日，含當日，選填，預設本月）"),
+  );
 
 // ── 14. order-lookup ──
 const orderLookup = new SlashCommandBuilder()
   .setName("order-lookup")
   .setDescription("Look up orders by ID or date")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
     o
       .setName("query")
@@ -298,6 +336,7 @@ const priceList = new SlashCommandBuilder()
 const payment = new SlashCommandBuilder()
   .setName("payment")
   .setDescription("金流管理")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand((sub) =>
     sub
       .setName("create")
@@ -392,7 +431,9 @@ const commands = [
   orderAdd,
   orderCustom,
   orderDelete,
+  orderRestore,
   salesOverview,
+  salesExport,
   orderLookup,
   accountingBackfill,
   botConfig,

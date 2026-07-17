@@ -227,7 +227,7 @@ export async function sendPaymentSuccessNotifications(
 
   // Build the success embed for channel notification
   const successEmbed = new EmbedBuilder()
-    .setTitle(`${paymentEmoji} 已成功登入消費紀錄`)
+    .setTitle(`${paymentEmoji} 付款成功`)
     .setColor(PAYMENT_THEME_COLOR)
     .setDescription(
       `◆ 超商：${storeEmoji} **${storeName}**\n` +

@@ -15,7 +15,7 @@ export const data = new SlashCommandBuilder()
   .setDescription("Create a fully manual order")
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
-    o.setName("name").setDescription("Product/item name").setRequired(true),
+    o.setName("name").setDescription("Product/item name").setRequired(true).setMaxLength(80),
   )
   .addNumberOption((o) =>
     o.setName("price").setDescription("Selling price").setRequired(true).setMinValue(0),
@@ -58,6 +58,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       profit: result.profit,
       isCustom: true,
       createdAt,
+      createdBy: interaction.user.id,
     });
 
     logger.info(

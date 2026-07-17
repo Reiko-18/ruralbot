@@ -12,7 +12,7 @@ export const data = new SlashCommandBuilder()
   .setDescription("Create a new product category")
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
-    o.setName("name").setDescription("Category name").setRequired(true),
+    o.setName("name").setDescription("Category name").setRequired(true).setMaxLength(80),
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {

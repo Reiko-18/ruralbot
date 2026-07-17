@@ -5,7 +5,7 @@ import type {
   PresenceText,
   AccountingCategory,
   AccountingProduct,
-  AccountingOrder,
+  AccountingOrderList,
   SalesAggregation,
   TicketConfig,
   TicketButtonType,
@@ -115,7 +115,7 @@ export const fetchOrders = (start?: string, end?: string) => {
   if (start) params.set("start", start);
   if (end) params.set("end", end);
   const qs = params.toString();
-  return request<AccountingOrder[]>(`/accounting/orders${qs ? `?${qs}` : ""}`);
+  return request<AccountingOrderList>(`/accounting/orders${qs ? `?${qs}` : ""}`);
 };
 
 export const fetchSales = (start?: string, end?: string) => {

@@ -5,6 +5,7 @@ import {
   ActionRowBuilder,
   StringSelectMenuBuilder,
   ComponentType,
+  MessageFlags,
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { getAllCategories } from "../../services/accounting/repo_category.js";
@@ -141,28 +142,63 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       time: 300_000,
     });
 
-    collector.on("collect", async (i) => {
-      const value = i.values[0];
+    // 處理中旗標：避免同一則訊息的多次互動（例如快速切換分類）併發處理造成競態。
+    let isProcessing = false;
 
-      if (value === "overview") {
-        await i.update({
-          embeds: [buildOverviewEmbed(categories)],
-          components: [buildCategoryMenu(categories)],
-        });
+    collector.on("collect", async (i) => {
+      if (isProcessing) {
+        // 上一次互動仍在處理中，忽略本次事件並僅單純 ack，避免顯示「互動失敗」
+        try {
+          await i.deferUpdate();
+        } catch {
+          // 互動可能已過期，忽略 ack 失敗
+        }
         return;
       }
 
-      const products = await getProductsByCategoryId(value);
-      const cat = categories.find((c) => c.id === value);
-      const catEmbed = buildCategoryEmbed(
-        cat?.name ?? "未知分類",
-        products,
-      );
+      isProcessing = true;
+      try {
+        const value = i.values[0];
 
-      await i.update({
-        embeds: [catEmbed],
-        components: [buildCategoryMenu(categories)],
-      });
+        if (value === "overview") {
+          await i.update({
+            embeds: [buildOverviewEmbed(categories)],
+            components: [buildCategoryMenu(categories)],
+          });
+          return;
+        }
+
+        const products = await getProductsByCategoryId(value);
+        const cat = categories.find((c) => c.id === value);
+        const catEmbed = buildCategoryEmbed(
+          cat?.name ?? "未知分類",
+          products,
+        );
+
+        await i.update({
+          embeds: [catEmbed],
+          components: [buildCategoryMenu(categories)],
+        });
+      } catch (err) {
+        logger.error({ err }, "Failed to update product list on interaction");
+        try {
+          await i.reply({
+            content: "更新商品清單時發生錯誤，請稍後再試。",
+            flags: MessageFlags.Ephemeral,
+          });
+        } catch {
+          try {
+            await i.followUp({
+              content: "更新商品清單時發生錯誤，請稍後再試。",
+              flags: MessageFlags.Ephemeral,
+            });
+          } catch {
+            // 回報錯誤本身失敗（互動可能已過期），僅忽略避免二次拋錯
+          }
+        }
+      } finally {
+        isProcessing = false;
+      }
     });
 
     collector.on("end", async () => {

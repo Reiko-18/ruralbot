@@ -65,6 +65,7 @@ function SalesOverview() {
   const [datePath, setDatePath] = useState<DatePath>({});
   const [sales, setSales] = useState<SalesAggregation | null>(null);
   const [orders, setOrders] = useState<AccountingOrder[]>([]);
+  const [ordersTotalCount, setOrdersTotalCount] = useState(0);
   const [years, setYears] = useState<number[]>([]);
   const [months, setMonths] = useState<number[]>([]);
   const [days, setDays] = useState<number[]>([]);
@@ -82,7 +83,8 @@ function SalesOverview() {
         fetchOrders(range.start, range.end),
       ]);
       setSales(salesData);
-      setOrders(ordersData);
+      setOrders(ordersData.orders);
+      setOrdersTotalCount(ordersData.totalCount);
 
       // Load navigation options
       if (path.month != null && path.year != null) {
@@ -278,7 +280,9 @@ function SalesOverview() {
           {orders.length > 0 && (
             <div>
               <h3 className="text-sm text-gray-400 mb-2">
-                訂單列表（{orders.length} 筆）
+                {orders.length < ordersTotalCount
+                  ? `顯示最新 ${orders.length} 筆（共 ${ordersTotalCount} 筆）`
+                  : `共 ${ordersTotalCount} 筆`}
               </h3>
               <BlurFade delay={0.15} direction="up">
                 <div className="glow-card overflow-hidden">

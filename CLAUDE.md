@@ -49,6 +49,11 @@
 - 遠端操作若遇到明確可判定的權限/擁有者錯誤、既有目錄不存在、build 產物權限錯誤、systemd 舊設定殘留等常見阻塞，代理應優先嘗試安全修復後再繼續；僅在高風險操作、資料不可逆變更或需求不明確時才中止回問。
 - migration 回滾需特別標記風險；若 schema 變更無法自動回滾，需提出手動還原方案。
 
+## 環境已知坑
+
+- `deploy-commands.mjs` 是**手動鏡像** `src/commands/` 全部指令定義的獨立部署腳本（不 import 原始碼）：改任何指令的 option（min/max/length/choices）或 `setDefaultMemberPermissions`、或新增指令時，必須同步改兩邊並在主機重跑 `node deploy-commands.mjs`，否則線上定義與程式碼脫節（證據：2026-07-17 曾發現 11 個指令線上缺權限預設值，見 `docs/superpowers/plans/2026-07-17-accounting-audit-upgrade.md`）。
+- 記帳系統的日期語義全系統統一為**台北曆日**（工具在 `src/services/accounting/tz_date.ts`，SQL 分桶用 `created_at + INTERVAL '8 hours'`）：新增任何日期範圍查詢不得改用 UTC 曆日（2026-07-17 收斂）。
+
 ## 例外與衝突處理
 
 - 若使用者有明確新指示，優先以使用者當前指示為準。

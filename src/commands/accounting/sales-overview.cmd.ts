@@ -13,10 +13,16 @@ import {
 import {
   aggregateSales,
   getOrders,
+  countOrders,
   getDistinctYears,
   getDistinctMonths,
   getDistinctDays,
 } from "../../services/accounting/repo_order.js";
+import {
+  taipeiYearRangeUtc,
+  taipeiMonthRangeUtc,
+  taipeiDayRangeUtc,
+} from "../../services/accounting/tz_date.js";
 import type { OverviewState, SalesAggregation } from "../../types/accounting.type.js";
 import { logger } from "../../services/logger/logger.js";
 
@@ -42,15 +48,17 @@ function formatOrderLine(o: OrderRow) {
   return `\`${o.id}\` ${date} | ${o.productName}${qty} | $${o.actualPrice} | 利潤 $${o.profit.toFixed(0)}`;
 }
 
+// pageOrders 為資料庫層已依 page 做 skip/take 截斷後的單頁資料（非整段期間全表拉回再前端切片），
+// totalCount 另由 countOrders 取得整段期間筆數，只用來計算總頁數與頁尾顯示。
+// 訂單量大時避免像舊版一樣把整段期間全撈進記憶體，見 execute() 內的 fetchPage()。
 function buildEmbed(
   stats: SalesAggregation,
-  orders: OrderRow[],
+  pageOrders: OrderRow[],
+  totalCount: number,
   label: string,
   page: number,
 ) {
-  const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
-  const start = page * PAGE_SIZE;
-  const pageOrders = orders.slice(start, start + PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const profitColor = stats.totalProfit >= 0 ? 0x00c853 : 0xff1744;
 
   const embed = new EmbedBuilder()
@@ -64,7 +72,7 @@ function buildEmbed(
       { name: "總成本", value: `$${stats.totalCost.toFixed(2)}`, inline: true },
       { name: "總利潤", value: `$${stats.totalProfit.toFixed(2)}`, inline: true },
     )
-    .setFooter({ text: `第 ${page + 1}/${totalPages} 頁 ・ 共 ${orders.length} 筆訂單` })
+    .setFooter({ text: `第 ${page + 1}/${totalPages} 頁 ・ 共 ${totalCount} 筆訂單` })
     .setTimestamp();
 
   if (pageOrders.length === 0) {
@@ -150,26 +158,21 @@ function parseDateRange(state: OverviewState): {
   end?: Date;
   label: string;
 } {
-  // 日 = UTC 曆日，對齊選單 EXTRACT（repo_order.ts 以儲存的 UTC created_at 曆日分組），
-  // 避免行程本地時區解析與選單分桶對「同一天」的定義錯開。
+  // 日 = 台北曆日，改用 tz_date.ts 換算 UTC 起訖，對齊 repo_order.ts 的 EXTRACT 分桶
+  // （已位移 +8 小時）與 order-lookup 的日期查詢，避免「同一天」的定義在各處錯開。
   if (state.level === "all") return { label: "全部時間" };
   if (state.level === "year") {
-    return {
-      start: new Date(Date.UTC(state.year, 0, 1)),
-      end: new Date(Date.UTC(state.year + 1, 0, 1)),
-      label: `${state.year} 年`,
-    };
+    const { start, end } = taipeiYearRangeUtc(state.year);
+    return { start, end, label: `${state.year} 年` };
   }
   if (state.level === "month") {
-    return {
-      start: new Date(Date.UTC(state.year, state.month - 1, 1)),
-      end: new Date(Date.UTC(state.year, state.month, 1)),
-      label: `${state.year} 年 ${state.month} 月`,
-    };
+    const { start, end } = taipeiMonthRangeUtc(state.year, state.month);
+    return { start, end, label: `${state.year} 年 ${state.month} 月` };
   }
+  const { start, end } = taipeiDayRangeUtc(state.year, state.month, state.day);
   return {
-    start: new Date(Date.UTC(state.year, state.month - 1, state.day)),
-    end: new Date(Date.UTC(state.year, state.month - 1, state.day + 1)),
+    start,
+    end,
     label: `${state.year}-${String(state.month).padStart(2, "0")}-${String(state.day).padStart(2, "0")}`,
   };
 }
@@ -215,9 +218,9 @@ async function buildDateMenu(state: OverviewState) {
 function buildComponents(
   dateMenu: ActionRowBuilder<StringSelectMenuBuilder>,
   page: number,
-  totalOrders: number,
+  totalCount: number,
 ) {
-  const totalPages = Math.max(1, Math.ceil(totalOrders / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const rows: ActionRowBuilder<any>[] = [dateMenu];
   if (totalPages > 1) {
     rows.push(buildPageButtons(page, totalPages));
@@ -225,26 +228,44 @@ function buildComponents(
   return rows;
 }
 
+// 依目前篩選範圍（range.start/range.end 皆為 undefined 代表「全部時間」）與頁碼，
+// 向資料庫查詢單頁訂單（getOrders 的 skip/take）並取得該範圍總筆數（countOrders），
+// 取代舊版「整段期間全撈進記憶體再前端 slice」的作法。
+async function fetchPage(
+  range: { start?: Date; end?: Date },
+  page: number,
+): Promise<{ orders: OrderRow[]; totalCount: number }> {
+  const [orders, totalCount] = await Promise.all([
+    getOrders(range.start, range.end, PAGE_SIZE, page * PAGE_SIZE),
+    countOrders(range.start, range.end),
+  ]);
+  return { orders, totalCount };
+}
+
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
 
   try {
     let currentState: OverviewState = { level: "all" };
+    let currentRange: { start?: Date; end?: Date } = {};
     let currentStats = await aggregateSales();
-    let currentOrders = await getOrders();
     let currentLabel = "全部時間";
     let currentPage = 0;
+    let { orders: currentPageOrders, totalCount: currentTotalCount } = await fetchPage(
+      currentRange,
+      currentPage,
+    );
 
     const years = await getDistinctYears();
     if (years.length === 0) {
-      const embed = buildEmbed(currentStats, currentOrders, currentLabel, 0);
+      const embed = buildEmbed(currentStats, currentPageOrders, currentTotalCount, currentLabel, 0);
       await interaction.editReply({ embeds: [embed] });
       return;
     }
 
     const dateMenu = buildYearMenu(years);
-    const embed = buildEmbed(currentStats, currentOrders, currentLabel, 0);
-    const components = buildComponents(dateMenu, 0, currentOrders.length);
+    const embed = buildEmbed(currentStats, currentPageOrders, currentTotalCount, currentLabel, 0);
+    const components = buildComponents(dateMenu, 0, currentTotalCount);
     const response = await interaction.editReply({ embeds: [embed], components });
 
     const collector = response.createMessageComponentCollector({
@@ -272,18 +293,26 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           // Date filter changed — reset page
           currentState = parseSelection(i.values[0]);
           const range = parseDateRange(currentState);
+          currentRange = { start: range.start, end: range.end };
           currentLabel = range.label;
           currentStats = await aggregateSales(range.start, range.end);
-          currentOrders = await getOrders(range.start, range.end);
           currentPage = 0;
         } else if (i.isButton()) {
           if (i.customId === "sales_prev") currentPage = Math.max(0, currentPage - 1);
           if (i.customId === "sales_next") currentPage++;
         }
 
-        const newEmbed = buildEmbed(currentStats, currentOrders, currentLabel, currentPage);
+        const fetched = await fetchPage(currentRange, currentPage);
+        currentPageOrders = fetched.orders;
+        currentTotalCount = fetched.totalCount;
+        // 併發作廢可能使總筆數在互動之間下降；以本次 fetchPage 取回的最新 totalCount 夾住頁碼，
+        // 避免 sales_next 連點導致 currentPage 超出實際頁數上限（頁尾顯示「第 X/Y 頁」出現 X > Y）。
+        const totalPages = Math.max(1, Math.ceil(currentTotalCount / PAGE_SIZE));
+        currentPage = Math.min(currentPage, totalPages - 1);
+
+        const newEmbed = buildEmbed(currentStats, currentPageOrders, currentTotalCount, currentLabel, currentPage);
         const newDateMenu = await buildDateMenu(currentState);
-        const newComponents = buildComponents(newDateMenu, currentPage, currentOrders.length);
+        const newComponents = buildComponents(newDateMenu, currentPage, currentTotalCount);
 
         await i.update({ embeds: [newEmbed], components: newComponents });
       } catch (err) {

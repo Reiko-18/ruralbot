@@ -92,10 +92,15 @@ model Order {
   profit      Float
   isCustom    Boolean  @default(false) @map("is_custom")
   createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String?  @map("created_by")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?  @map("deleted_by")
 
   product Product?         @relation(fields: [productId], references: [id])
   tickets TicketInstance[]
 
+  @@index([createdAt])
+  @@index([productId])
   @@map("orders")
 }
 

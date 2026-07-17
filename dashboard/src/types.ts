@@ -64,6 +64,13 @@ export interface AccountingOrder {
   createdAt: string;
 }
 
+// /api/accounting/orders 回應：orders 為套用 limit 截斷後的清單，totalCount 為該日期範圍內未作廢訂單總數，
+// 用於前端判斷清單是否遭截斷（orders.length < totalCount）並顯示「共 N 筆」。
+export interface AccountingOrderList {
+  orders: AccountingOrder[];
+  totalCount: number;
+}
+
 export interface SalesAggregation {
   totalRevenue: number;
   totalCost: number;

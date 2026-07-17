@@ -27,10 +27,10 @@ export const data = new SlashCommandBuilder()
     o.setName("quantity").setDescription("Quantity (default: 1)").setMinValue(1),
   )
   .addNumberOption((o) =>
-    o.setName("face_value").setDescription("面額（折數商品必填）"),
+    o.setName("face_value").setDescription("面額（折數商品必填）").setMinValue(0),
   )
   .addNumberOption((o) =>
-    o.setName("custom_price").setDescription("Override selling price"),
+    o.setName("custom_price").setDescription("Override selling price").setMinValue(0),
   )
   .addStringOption((o) =>
     o.setName("date").setDescription("Order date (YYYY-MM-DD, default: today)"),
@@ -90,6 +90,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       actualCost: result.actualCost,
       profit: result.profit,
       createdAt,
+      createdBy: interaction.user.id,
     });
 
     logger.info(

@@ -27,19 +27,8 @@ export async function getProductById(id: string) {
   });
 }
 
-export async function getProductByName(name: string) {
-  return prisma.product.findUnique({
-    where: { name },
-    include: { category: true },
-  });
-}
-
 export async function deleteProduct(id: string) {
   return prisma.product.delete({ where: { id } });
-}
-
-export async function getProductOrderCount(id: string): Promise<number> {
-  return prisma.order.count({ where: { productId: id } });
 }
 
 export async function getProductsByCategoryId(categoryId: string) {

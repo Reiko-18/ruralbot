@@ -14,7 +14,7 @@ export const data = new SlashCommandBuilder()
   .setDescription("Register a new product")
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addStringOption((o) =>
-    o.setName("name").setDescription("Product name").setRequired(true),
+    o.setName("name").setDescription("Product name").setRequired(true).setMaxLength(80),
   )
   .addNumberOption((o) =>
     o.setName("price").setDescription("Selling price").setRequired(true).setMinValue(0),

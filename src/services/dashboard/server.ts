@@ -33,6 +33,7 @@ import { getAllCategories } from "../accounting/repo_category.js";
 import { getAllProducts } from "../accounting/repo_product.js";
 import {
   getOrders,
+  countOrders,
   aggregateSales,
   getDistinctYears,
   getDistinctMonths,
@@ -540,22 +541,50 @@ export function startDashboard(client: Client): void {
     }
   });
 
-  // GET /api/accounting/orders?start=ISO&end=ISO — orders with optional date range
+  // GET /api/accounting/orders?start=ISO&end=ISO&limit=N — orders with optional date range
+  // limit 預設 200、上限 500，非法值（非數字、<=0）一律回退預設值，避免無上限查詢拖垮資料庫與前端。
+  const DEFAULT_ORDERS_LIMIT = 200;
+  const MAX_ORDERS_LIMIT = 500;
   app.get("/api/accounting/orders", async (req, res) => {
     try {
       const start = req.query.start ? new Date(req.query.start as string) : undefined;
       const end = req.query.end ? new Date(req.query.end as string) : undefined;
-      const orders = await getOrders(start, end);
-      const ordersWithTickets = await Promise.all(
-        orders.map(async (o) => {
-          const tickets = await prisma.ticketInstance.findMany({
-            where: { orderId: o.id },
-            select: { ticketNum: true, channelId: true },
-          });
-          return { ...o, tickets };
-        }),
-      );
-      res.json(ordersWithTickets);
+      const rawLimit = Number(req.query.limit);
+      const limit =
+        Number.isFinite(rawLimit) && rawLimit > 0
+          ? Math.min(Math.floor(rawLimit), MAX_ORDERS_LIMIT)
+          : DEFAULT_ORDERS_LIMIT;
+
+      const [orders, totalCount] = await Promise.all([
+        getOrders(start, end, limit),
+        countOrders(start, end),
+      ]);
+
+      // 一次撈回所有相關 tickets 再於記憶體 group，取代逐筆訂單各查一次（N+1）。
+      const orderIds = orders.map((o) => o.id);
+      const tickets = orderIds.length
+        ? await prisma.ticketInstance.findMany({
+            where: { orderId: { in: orderIds } },
+            select: { orderId: true, ticketNum: true, channelId: true },
+          })
+        : [];
+      const ticketsByOrderId = new Map<string, typeof tickets>();
+      for (const t of tickets) {
+        if (!t.orderId) continue;
+        const list = ticketsByOrderId.get(t.orderId);
+        if (list) list.push(t);
+        else ticketsByOrderId.set(t.orderId, [t]);
+      }
+
+      const ordersWithTickets = orders.map((o) => ({
+        ...o,
+        tickets: (ticketsByOrderId.get(o.id) ?? []).map(({ ticketNum, channelId }) => ({
+          ticketNum,
+          channelId,
+        })),
+      }));
+      // totalCount 為該日期範圍內未作廢訂單總數，用於前端顯示「共 N 筆」並判斷列表是否遭 limit 截斷。
+      res.json({ orders: ordersWithTickets, totalCount });
     } catch (err) {
       logger.error({ err }, "Failed to fetch orders");
       res.status(500).json({ error: "Internal server error" });
