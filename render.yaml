@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: ruralbot
+    runtime: node
+    plan: starter
+    repo: https://github.com/Reiko-18/ruralbot
+    region: singapore
+    branch: main
+    autoDeployTrigger: commit
+    numInstances: 1
+    buildCommand: npm ci && npm run install:dashboard && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /healthz
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - key: TOKEN
+        sync: false
+      - key: APPLICATION_ID
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: DASHBOARD_USER
+        sync: false
+      - key: DASHBOARD_PASS
+        sync: false
+      - key: ACCOUNTING_CHANNEL_ID
+        sync: false
+      - key: SMILEPAY_ENV
+        sync: false
+      - key: SMILEPAY_DCVC
+        sync: false
+      - key: SMILEPAY_RVG2C
+        sync: false
+      - key: SMILEPAY_VERIFY_KEY
+        sync: false
+      - key: SMILEPAY_ROTURL
+        sync: false
+      - key: SMILEPAY_MERCHANT_VERIFY_PARAM
+        sync: false

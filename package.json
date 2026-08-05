@@ -10,7 +10,7 @@
     "build:dashboard": "cd dashboard && npm run build",
     "install:dashboard": "cd dashboard && npm ci --include=dev",
     "install:all": "npm ci && npm run install:dashboard",
-    "start": "node dist/index.js",
+    "start": "tsx dist/index.js",
     "dev": "tsx src/index.ts",
     "backfill:accounting-threads": "tsx src/scripts/backfill_threads.ts",
     "db:generate": "npx prisma generate",
