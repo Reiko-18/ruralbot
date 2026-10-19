@@ -5,6 +5,7 @@ import { logger } from "../../services/logger/logger.js";
 
 export function registerPriceMenuEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.inGuild()) return;
     if (!interaction.isStringSelectMenu()) return;
     if (interaction.customId !== PRICE_MENU_ID) return;
 

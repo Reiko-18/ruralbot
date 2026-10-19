@@ -1,18 +1,13 @@
 import { Router } from "express";
 import type { Client } from "discord.js";
 import { logger } from "../../logger/logger.js";
-import { getPaymentConfig, upsertPaymentConfig, getEffectiveCredentials } from "../../payment/repo_payment_config.js";
+import { getPaymentConfig, upsertPaymentConfig } from "../../payment/repo_payment_config.js";
 import {
-  createTransaction,
   listTransactions,
   getTransaction,
   getTransactionStats,
-  updateTransactionStatus,
 } from "../../payment/repo_payment_transaction.js";
-import { generatePaymentOrderId } from "../../payment/payment_id.js";
-import { buildPaymentPageUrl, createBackgroundPayment } from "../../payment/smilepay_api.js";
 import { handleCallback } from "../../payment/payment_callback.js";
-import { validateBuyerInfo } from "../../payment/buyer_info.js";
 
 let discordClient: Client | null = null;
 
@@ -53,14 +48,8 @@ paymentRoutes.get("/config/:guildId", async (req, res) => {
 // PUT /api/payment/config/:guildId
 paymentRoutes.put("/config/:guildId", async (req, res) => {
   try {
-    const { dcvc, rvg2c, verifyKey, enabled, feeFamily, fee711, fee711Over, fee711Threshold } = req.body;
-    const data: Parameters<typeof upsertPaymentConfig>[1] = {
-      enabled,
-      feeFamily: feeFamily != null ? Number(feeFamily) : null,
-      fee711: fee711 != null ? Number(fee711) : null,
-      fee711Over: fee711Over != null ? Number(fee711Over) : null,
-      fee711Threshold: fee711Threshold != null ? Number(fee711Threshold) : null,
-    };
+    const { dcvc, rvg2c, verifyKey } = req.body;
+    const data: Parameters<typeof upsertPaymentConfig>[1] = {};
     // 敏感金鑰欄位：留空字串或未提供時不覆寫既有 DB 值，避免前端讀不到金鑰、存檔時把既有值清空。
     if (typeof dcvc === "string" && dcvc.trim() !== "") data.dcvc = dcvc;
     if (typeof rvg2c === "string" && rvg2c.trim() !== "") data.rvg2c = rvg2c;
@@ -71,84 +60,6 @@ paymentRoutes.put("/config/:guildId", async (req, res) => {
     res.json(sanitizeConfig(config));
   } catch (err) {
     logger.error({ err }, "Failed to update payment config");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// POST /api/payment/create/:guildId
-paymentRoutes.post("/create/:guildId", async (req, res) => {
-  try {
-    const { amount, payerName, payerEmail, payerPhone, remark } = req.body;
-    if (!amount || typeof amount !== "number" || amount <= 0) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-
-    const buyerInfo = validateBuyerInfo({ payerName, payerEmail, payerPhone });
-    if (!buyerInfo.ok) {
-      return res.status(400).json({ error: buyerInfo.error });
-    }
-
-    const guildId = req.params.guildId;
-    const config = await getPaymentConfig(guildId);
-    const credentials = getEffectiveCredentials(config);
-    const orderId = await generatePaymentOrderId(guildId);
-
-    // Create transaction record
-    const transaction = await createTransaction({
-      guildId,
-      orderId,
-      amount,
-      payerName: buyerInfo.value.payerName,
-      payerEmail: buyerInfo.value.payerEmail,
-      payerPhone: buyerInfo.value.payerPhone,
-      remark,
-    });
-
-    // Build payment page URL
-    const paymentUrl = buildPaymentPageUrl(credentials, {
-      orderId,
-      amount,
-      payerName: buyerInfo.value.payerName,
-      email: buyerInfo.value.payerEmail,
-      phone: buyerInfo.value.payerPhone,
-      remark,
-    });
-
-    // Try background API for payment code
-    let paymentCode: string | undefined;
-    let smilePayNo: string | undefined;
-    try {
-      const bgResult = await createBackgroundPayment(credentials, {
-        orderId,
-        amount,
-        payerName: buyerInfo.value.payerName,
-        email: buyerInfo.value.payerEmail,
-        phone: buyerInfo.value.payerPhone,
-        remark,
-      });
-
-      if (bgResult.Status === "1") {
-        paymentCode = bgResult.SmilePayNO;
-        smilePayNo = bgResult.SmilePayNO;
-        await updateTransactionStatus(transaction.id, "PENDING", {
-          smilePayNo,
-          paymentCode,
-        });
-      } else {
-        logger.warn({ orderId, status: bgResult.Status, desc: bgResult.Desc }, "SmilePay background API returned non-success");
-      }
-    } catch (err) {
-      logger.warn({ err, orderId }, "Background payment API failed, falling back to payment page URL only");
-    }
-
-    logger.info({ orderId, amount, guildId, payerName: buyerInfo.value.payerName }, "Payment created");
-
-    res.status(201).json({
-      transaction: { ...transaction, paymentCode, smilePayNo },
-      paymentUrl,
-    });
-  } catch (err) {
-    logger.error({ err }, "Failed to create payment");
     res.status(500).json({ error: "Internal server error" });
   }
 });

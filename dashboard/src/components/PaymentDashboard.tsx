@@ -4,8 +4,6 @@ import { fetchGuilds } from "../api/client";
 import { PaymentConfig } from "./PaymentConfig";
 import { PaymentStats } from "./PaymentStats";
 import { PaymentTransactions } from "./PaymentTransactions";
-import { PaymentCreateModal } from "./PaymentCreateModal";
-import { ShimmerButton } from "./magicui/shimmer-button";
 import { BlurFade } from "./magicui/blur-fade";
 
 type View = "stats" | "transactions" | "config";
@@ -14,8 +12,6 @@ export function PaymentDashboard() {
   const [guildId, setGuildId] = useState(() => localStorage.getItem("payment_guild_id") ?? "");
   const [guilds, setGuilds] = useState<{ id: string; name: string }[]>([]);
   const [view, setView] = useState<View>("stats");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchGuilds()
@@ -55,44 +51,27 @@ export function PaymentDashboard() {
 
       {guildId && (
         <>
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1">
-              {([
-                ["stats", "統計總覽"],
-                ["transactions", "交易紀錄"],
-                ["config", "金流設定"],
-              ] as const).map(([key, label]) => (
-                <button
-                  key={key}
-                  className={`tab-btn ${view === key ? "active" : ""}`}
-                  onClick={() => setView(key)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <ShimmerButton
-              shimmerColor="#a78bfa"
-              background="linear-gradient(135deg, #7c3aed, #6d28d9)"
-              onClick={() => setShowCreateModal(true)}
-            >
-              建立付款
-            </ShimmerButton>
+          <div className="flex flex-wrap gap-1">
+            {([
+              ["stats", "統計總覽"],
+              ["transactions", "交易紀錄"],
+              ["config", "付款回報設定"],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                className={`tab-btn ${view === key ? "active" : ""}`}
+                onClick={() => setView(key)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           <BlurFade delay={0.1} direction="up">
             {view === "stats" && <PaymentStats guildId={guildId} />}
-            {view === "transactions" && <PaymentTransactions guildId={guildId} refreshKey={refreshKey} />}
+            {view === "transactions" && <PaymentTransactions guildId={guildId} />}
             {view === "config" && <PaymentConfig guildId={guildId} />}
           </BlurFade>
-
-          {showCreateModal && (
-            <PaymentCreateModal
-              guildId={guildId}
-              onClose={() => setShowCreateModal(false)}
-              onCreated={() => setRefreshKey((k) => k + 1)}
-            />
-          )}
         </>
       )}
     </div>

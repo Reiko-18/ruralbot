@@ -69,6 +69,8 @@ const MODAL_IDS = new Set([
 
 export function registerTicketManageEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.inGuild()) return;
+
     if (interaction.isButton() && MANAGE_IDS.has(interaction.customId)) {
       await handleButton(client, interaction);
       return;

@@ -16,7 +16,6 @@ import type {
   DiscordChannel,
   PaymentConfig,
   SanitizedPaymentConfig,
-  PaymentTransaction,
   PaymentTransactionDetail,
   PaymentTransactionList,
   PaymentStats,
@@ -208,12 +207,6 @@ export const fetchPaymentConfig = (guildId: string) =>
 export const updatePaymentConfig = (guildId: string, data: Partial<PaymentConfig>) =>
   request<SanitizedPaymentConfig>(`/payment/config/${guildId}`, {
     method: "PUT",
-    body: JSON.stringify(data),
-  });
-
-export const createPayment = (guildId: string, data: { amount: number; payerName?: string; payerEmail?: string; payerPhone?: string; remark?: string }) =>
-  request<{ transaction: PaymentTransaction; paymentUrl: string }>(`/payment/create/${guildId}`, {
-    method: "POST",
     body: JSON.stringify(data),
   });
 

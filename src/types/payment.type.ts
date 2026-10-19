@@ -1,35 +1,5 @@
 export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "EXPIRED";
 
-export interface SmilePayRequestParams {
-  Dcvc: string;
-  Rvg2c: string;
-  Od_sob: string;
-  Amount: number;
-  Pur_name?: string;
-  Email?: string;
-  Tel_number?: string;
-  Mobile_number?: string;
-  Remark?: string;
-  Roturl: string;
-  Pay_zg: string;
-  Verify_key: string;
-}
-
-export interface SmilePayXmlResponse {
-  Status: string;
-  Desc: string;
-  SmilePayNO?: string;
-  Amount?: string;
-  AtmBankNo?: string;
-  AtmNo?: string;
-  Data_id?: string;
-  Rvg2c?: string;
-  Dcvc?: string;
-  IbonNo?: string;
-  FamiNO?: string;
-  PayEndDate?: string;
-}
-
 export interface SmilePayCallbackData {
   Classif: string;
   Od_sob: string;

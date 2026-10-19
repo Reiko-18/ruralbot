@@ -5,33 +5,17 @@ import {
   EmbedBuilder,
   type ChatInputCommandInteraction,
 } from "discord.js";
-import { getPaymentConfig, getEffectiveCredentials } from "../../services/payment/repo_payment_config.js";
 import {
-  createTransaction,
   getTransactionByOrderId,
   listTransactions,
   getTransactionStats,
-  updateTransactionStatus,
 } from "../../services/payment/repo_payment_transaction.js";
-import { generatePaymentOrderId } from "../../services/payment/payment_id.js";
-import { buildPaymentPageUrl, createBackgroundPayment } from "../../services/payment/smilepay_api.js";
 import { logger } from "../../services/logger/logger.js";
-import { validateBuyerInfo } from "../../services/payment/buyer_info.js";
 
 export const data = new SlashCommandBuilder()
   .setName("payment")
   .setDescription("金流管理")
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-  .addSubcommand((sub) =>
-    sub
-      .setName("create")
-      .setDescription("建立付款")
-      .addIntegerOption((o) => o.setName("amount").setDescription("金額 (新台幣)").setRequired(true).setMinValue(1))
-      .addStringOption((o) => o.setName("payer").setDescription("買家真實姓名").setRequired(true))
-      .addStringOption((o) => o.setName("email").setDescription("買家 Gmail").setRequired(true))
-      .addStringOption((o) => o.setName("phone").setDescription("買家電話").setRequired(true))
-      .addStringOption((o) => o.setName("remark").setDescription("備註")),
-  )
   .addSubcommand((sub) =>
     sub
       .setName("status")
@@ -77,9 +61,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   try {
     switch (sub) {
-      case "create":
-        await handleCreate(interaction, guildId);
-        break;
       case "status":
         await handleStatus(interaction);
         break;
@@ -94,79 +75,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     logger.error({ err, sub }, "Payment command failed");
     await interaction.editReply("操作失敗，請稍後再試。");
   }
-}
-
-async function handleCreate(interaction: ChatInputCommandInteraction, guildId: string) {
-  const amount = interaction.options.getInteger("amount", true);
-  const payerName = interaction.options.getString("payer", true);
-  const payerEmail = interaction.options.getString("email", true);
-  const payerPhone = interaction.options.getString("phone", true);
-  const remark = interaction.options.getString("remark") ?? undefined;
-  const buyerInfo = validateBuyerInfo({ payerName, payerEmail, payerPhone });
-
-  if (!buyerInfo.ok) {
-    await interaction.editReply(buyerInfo.error);
-    return;
-  }
-
-  const config = await getPaymentConfig(guildId);
-  const credentials = getEffectiveCredentials(config);
-  const orderId = await generatePaymentOrderId(guildId);
-
-  const transaction = await createTransaction({
-    guildId,
-    orderId,
-    amount,
-    payerName: buyerInfo.value.payerName,
-    payerEmail: buyerInfo.value.payerEmail,
-    payerPhone: buyerInfo.value.payerPhone,
-    remark,
-  });
-
-  const paymentUrl = buildPaymentPageUrl(credentials, {
-    orderId,
-    amount,
-    payerName: buyerInfo.value.payerName,
-    email: buyerInfo.value.payerEmail,
-    phone: buyerInfo.value.payerPhone,
-    remark,
-  });
-
-  // Try background API
-  let paymentCode: string | undefined;
-  try {
-    const bgResult = await createBackgroundPayment(credentials, {
-      orderId,
-      amount,
-      payerName: buyerInfo.value.payerName,
-      email: buyerInfo.value.payerEmail,
-      phone: buyerInfo.value.payerPhone,
-      remark,
-    });
-    if (bgResult.Status === "1") {
-      paymentCode = bgResult.SmilePayNO;
-      await updateTransactionStatus(transaction.id, "PENDING", {
-        smilePayNo: bgResult.SmilePayNO,
-        paymentCode: bgResult.SmilePayNO,
-      });
-    }
-  } catch {
-    // Background API failed, payment page URL still works
-  }
-
-  const embed = new EmbedBuilder()
-    .setTitle("付款已建立")
-    .setColor(0x7c3aed)
-    .addFields(
-      { name: "訂單編號", value: orderId, inline: true },
-      { name: "金額", value: `$${amount.toLocaleString()}`, inline: true },
-      { name: "付款人", value: buyerInfo.value.payerName, inline: true },
-      ...(paymentCode ? [{ name: "超商繳費代碼", value: `\`${paymentCode}\``, inline: false }] : []),
-      { name: "付款連結", value: paymentUrl, inline: false },
-    );
-
-  logger.info({ orderId, amount, guildId, payerName: buyerInfo.value.payerName }, "Payment created via Discord command");
-  await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleStatus(interaction: ChatInputCommandInteraction) {

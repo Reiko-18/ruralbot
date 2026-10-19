@@ -1,5 +1,6 @@
 import {
   Collection,
+  InteractionContextType,
   MessageFlags,
   REST,
   Routes,
@@ -25,6 +26,8 @@ export function registerCommand(command: Command): void {
 export async function handleInteraction(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
+  if (!interaction.inGuild()) return;
+
   if (isBlockedGuildId(interaction.guildId)) {
     logger.warn(
       {
@@ -82,9 +85,12 @@ export async function handleInteraction(
 
 export async function deployCommands(): Promise<void> {
   const rest = new REST().setToken(process.env.TOKEN!);
-  const body = commands.map((cmd) => cmd.data.toJSON());
+  const body = commands.map((cmd) => ({
+    ...(cmd.data.toJSON() as object),
+    contexts: [InteractionContextType.Guild],
+  }));
 
-  // Deploy globally — available in all servers + DMs
+  // 全域註冊，但只允許在伺服器內使用。
   await rest.put(
     Routes.applicationCommands(process.env.APPLICATION_ID!),
     { body },

@@ -11,11 +11,6 @@ export async function upsertPaymentConfig(
     dcvc?: string | null;
     rvg2c?: string | null;
     verifyKey?: string | null;
-    enabled?: boolean;
-    feeFamily?: number | null;
-    fee711?: number | null;
-    fee711Over?: number | null;
-    fee711Threshold?: number | null;
   },
 ) {
   return prisma.paymentConfig.upsert({
@@ -42,15 +37,4 @@ export function getEffectiveCredentials(dbConfig: {
   }
 
   return { dcvc, rvg2c, verifyKey, roturl, isTest, merchantVerifyParam };
-}
-
-export function calculateFee(
-  config: { feeFamily?: number | null; fee711?: number | null; fee711Over?: number | null; fee711Threshold?: number | null } | null,
-  store: "fami" | "711",
-  amount: number,
-): number {
-  if (!config) return 0;
-  if (store === "fami") return config.feeFamily ?? 0;
-  const threshold = config.fee711Threshold ?? 1000;
-  return amount > threshold ? (config.fee711Over ?? 0) : (config.fee711 ?? 0);
 }

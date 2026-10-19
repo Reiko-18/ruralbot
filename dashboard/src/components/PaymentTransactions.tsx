@@ -5,7 +5,6 @@ import { BlurFade } from "./magicui/blur-fade";
 
 interface Props {
   guildId: string;
-  refreshKey: number;
 }
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
@@ -15,7 +14,7 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   EXPIRED: { label: "已過期", cls: "badge bg-gray-500/15 text-gray-500" },
 };
 
-export function PaymentTransactions({ guildId, refreshKey }: Props) {
+export function PaymentTransactions({ guildId }: Props) {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -37,7 +36,7 @@ export function PaymentTransactions({ guildId, refreshKey }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [guildId, page, statusFilter, refreshKey]);
+  }, [guildId, page, statusFilter]);
 
   useEffect(() => { load(); }, [load]);
 

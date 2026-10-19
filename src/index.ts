@@ -34,7 +34,6 @@ import * as accountingBackfill from "./commands/accounting/accounting-backfill.c
 
 // Payment commands
 import * as payment from "./commands/payment/payment.cmd.js";
-import * as rp from "./commands/payment/rp.cmd.js";
 
 // Config commands
 import * as botConfig from "./commands/config/bot-config.cmd.js";
@@ -62,7 +61,6 @@ import { registerGuildCreateEvent } from "./events/guild/guild-create.event.js";
 
 // Ticket events
 import { registerTicketButtonEvent } from "./events/ticket/ticket-button.event.js";
-import { registerRpInteractEvent } from "./events/payment/rp-interact.event.js";
 import { registerTicketManageEvent } from "./events/ticket/ticket-manage.event.js";
 import { registerTicketActivityEvent } from "./events/ticket/ticket-activity.event.js";
 
@@ -90,7 +88,6 @@ registerCommand(accountingBackfill);
 registerCommand(botConfig);
 registerCommand(priceList);
 registerCommand(payment);
-registerCommand(rp);
 registerCommand(ticketAdmin);
 registerCommand(leave);
 
@@ -156,11 +153,12 @@ client.once(Events.ClientReady, async (readyClient) => {
 registerGuildCreateEvent(client);
 registerPriceMenuEvent(client);
 registerTicketButtonEvent(client);
-registerRpInteractEvent(client);
 registerTicketManageEvent(client);
 registerTicketActivityEvent(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.inGuild()) return;
+
   if (interaction.isAutocomplete()) {
     const command = commands.get(interaction.commandName) as any;
     if (command?.autocomplete) {

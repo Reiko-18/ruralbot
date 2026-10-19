@@ -12,6 +12,7 @@ import {
   SlashCommandBuilder,
   PermissionFlagsBits,
   ChannelType,
+  InteractionContextType,
 } from "discord.js";
 
 const TOKEN = process.env.TOKEN || process.env.DISCORD_TOKEN;
@@ -339,24 +340,6 @@ const payment = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand((sub) =>
     sub
-      .setName("create")
-      .setDescription("建立付款")
-      .addIntegerOption((o) =>
-        o.setName("amount").setDescription("金額 (新台幣)").setRequired(true).setMinValue(1),
-      )
-      .addStringOption((o) =>
-        o.setName("payer").setDescription("買家真實姓名").setRequired(true),
-      )
-      .addStringOption((o) =>
-        o.setName("email").setDescription("買家 Gmail").setRequired(true),
-      )
-      .addStringOption((o) =>
-        o.setName("phone").setDescription("買家電話").setRequired(true),
-      )
-      .addStringOption((o) => o.setName("remark").setDescription("備註")),
-  )
-  .addSubcommand((sub) =>
-    sub
       .setName("status")
       .setDescription("查詢交易狀態")
       .addStringOption((o) => o.setName("order_id").setDescription("訂單編號").setRequired(true)),
@@ -387,17 +370,6 @@ const payment = new SlashCommandBuilder()
       .addIntegerOption((o) =>
         o.setName("days").setDescription("天數 (預設 30)").setMinValue(1).setMaxValue(365),
       ),
-  );
-
-// ── 18. rp ──
-const rp = new SlashCommandBuilder()
-  .setName("rp")
-  .setDescription("互動式超商繳費")
-  .addIntegerOption((o) =>
-    o.setName("amount").setDescription("訂單金額 (新台幣)").setRequired(true).setMinValue(1).setMaxValue(20000),
-  )
-  .addStringOption((o) =>
-    o.setName("remark").setDescription("備註 (最多 30 字)").setMaxLength(30),
   );
 
 // ── Deploy ──
@@ -439,10 +411,12 @@ const commands = [
   botConfig,
   priceList,
   payment,
-  rp,
   ticketAdmin,
   leave,
-].map((cmd) => cmd.toJSON());
+].map((cmd) => ({
+  ...cmd.toJSON(),
+  contexts: [InteractionContextType.Guild],
+}));
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);
 

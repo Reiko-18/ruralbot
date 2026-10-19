@@ -35,6 +35,8 @@ import { logger } from "../../services/logger/logger.js";
 
 export function registerTicketButtonEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.inGuild()) return;
+
     const isTicketButton = interaction.isButton() && interaction.customId.startsWith(TICKET_BUTTON_PREFIX);
     const isTicketSelect = interaction.isStringSelectMenu() && interaction.customId === TICKET_SELECT_ID;
     const isTicketModal = interaction.isModalSubmit() && interaction.customId.startsWith(TICKET_CREATE_MODAL_PREFIX);
@@ -46,7 +48,6 @@ export function registerTicketButtonEvent(client: Client): void {
       ? interaction.values[0]
       : interaction.customId.slice(TICKET_BUTTON_PREFIX.length);
     const guildId = interaction.guildId;
-    if (!guildId) return;
 
     try {
       const config = await getTicketConfig(guildId);
